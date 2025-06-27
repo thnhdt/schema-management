@@ -1,2 +1,5 @@
-node_modules
-/package-lock.json
+# .gitignore
+node_modules/
+# .env
+mongo_data/
+**/package-lock.json
