@@ -66,7 +66,7 @@ const AppLayout = () => {
             {
                 key: '/sheet',
                 icon: <FileExcelOutlined />,
-                label: 'Node',
+                label: 'Nodes',
               },
             {
               key: '/database',
