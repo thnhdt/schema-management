@@ -5,7 +5,9 @@ import Main from './components/Main'
 import AppLayout from './Layout';
 import SheetComponent from './components/Sheet/Sheet';
 import Node from './components/Node';
+import Database from './components/Database';
 import SchemaComponent from './components/Schema/Schema';
+import ReactFlowTest from './components/Schema/ReactFlowTest';
 // import { RequireUsername, AlreadyLogined } from './Authentication';
 
 function App() {
@@ -23,9 +25,12 @@ function App() {
             {/* <Route element={<RequireUsername />}> */}
               <Route element={<AppLayout />}>
                 <Route path='/sheet' element={<Node />} />
-                <Route path='/database' element={<SheetComponent />} />
+                <Route path='/database' element={<Database />} />
+                <Route path='/database/:id' element={<Database />} />
                 <Route path='/schema' element={<SchemaComponent />} />
+                <Route path='/schema/:id' element={<SchemaComponent />} />
                 <Route path='/schema/table' element={<SchemaComponent />} />
+                <Route path='/schema/test' element={<ReactFlowTest />} />
                 <Route path='/user' element={<SheetComponent />} />
               </Route>
             {/* </Route> */}
@@ -36,6 +41,5 @@ function App() {
     </BrowserRouter>
   )
 }
-
 
 export default App

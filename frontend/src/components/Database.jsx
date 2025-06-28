@@ -1,341 +1,441 @@
-import React, { useEffect, useState } from 'react';
-import { Space, Button, Flex, Spin, Checkbox, Tooltip, Tag, message, Form, Input, Radio } from 'antd';
-import { useNavigate } from 'react-router-dom';
-import {
-  PlusOutlined,
-  LoadingOutlined,
-  EditOutlined,
+import React, { useState, useEffect } from 'react';
+import { 
+  Typography, 
+  message, 
+  Button, 
+  Card, 
+  Space, 
+  Tag,
+  Table,
+  Tooltip,
+  Popconfirm,
+  Badge,
+  Row,
+  Col,
+  Statistic
+} from 'antd';
+import { 
+  DatabaseOutlined, 
+  TableOutlined, 
+  EyeOutlined, 
   DeleteOutlined,
-  UnorderedListOutlined
+  ReloadOutlined,
+  ExportOutlined,
+  ImportOutlined,
+  SettingOutlined
 } from '@ant-design/icons';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
-import { TableComponent } from '../../util/helper';
-// import FormModalSheet from './Form-Modal-Sheet';
-// import { getAllSheet, createSheet, updateSheet, deleteSheet, getOrdersInSheet } from '../../api';
-import '../../App.css';
-import { io } from "socket.io-client";
+const { Title, Text } = Typography;
 
+// Dữ liệu mẫu cho database
+const sampleDatabases = {
+  1: {
+    id: 1,
+    name: 'PostgreSQL Production',
+    type: 'postgresql',
+    status: 'connected',
+    tables: [
+      { name: 'users', rows: 1250, size: '2.5 MB', lastModified: '2024-01-15 10:30:00' },
+      { name: 'posts', rows: 3450, size: '8.2 MB', lastModified: '2024-01-15 11:15:00' },
+      { name: 'categories', rows: 45, size: '0.1 MB', lastModified: '2024-01-14 16:20:00' },
+      { name: 'comments', rows: 8900, size: '15.7 MB', lastModified: '2024-01-15 12:45:00' },
+      { name: 'orders', rows: 2340, size: '5.8 MB', lastModified: '2024-01-15 09:30:00' },
+      { name: 'products', rows: 567, size: '3.2 MB', lastModified: '2024-01-15 08:15:00' }
+    ],
+    schemas: ['public', 'auth', 'analytics', 'reports'],
+    totalSize: '35.5 MB',
+    connections: 12,
+    uptime: '15 days'
+  },
+  2: {
+    id: 2,
+    name: 'MySQL Development',
+    type: 'mysql',
+    status: 'connected',
+    tables: [
+      { name: 'users', rows: 89, size: '0.8 MB', lastModified: '2024-01-15 14:20:00' },
+      { name: 'projects', rows: 23, size: '0.3 MB', lastModified: '2024-01-15 13:45:00' },
+      { name: 'tasks', rows: 156, size: '1.2 MB', lastModified: '2024-01-15 15:10:00' }
+    ],
+    schemas: ['dev', 'test'],
+    totalSize: '2.3 MB',
+    connections: 3,
+    uptime: '2 days'
+  },
+  3: {
+    id: 3,
+    name: 'PostgreSQL Staging',
+    type: 'postgresql',
+    status: 'disconnected',
+    tables: [],
+    schemas: [],
+    totalSize: '0 MB',
+    connections: 0,
+    uptime: '0 days'
+  },
+  4: {
+    id: 4,
+    name: 'MongoDB Analytics',
+    type: 'mongodb',
+    status: 'connected',
+    collections: [
+      { name: 'user_events', documents: 1250000, size: '45.2 MB', lastModified: '2024-01-15 16:30:00' },
+      { name: 'page_views', documents: 890000, size: '32.1 MB', lastModified: '2024-01-15 17:15:00' },
+      { name: 'conversions', documents: 45000, size: '8.7 MB', lastModified: '2024-01-15 18:00:00' }
+    ],
+    totalSize: '86.0 MB',
+    connections: 8,
+    uptime: '7 days'
+  }
+};
 
-function SheetComponent() {
-  const [visibleNewSheet, setvisibleNewSheet] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [chinhSua, setChinhSua] = useState();
-  const navigate = useNavigate();
-  const [data, setData] = useState([]);
-  const [activeRows, setActiveRows] = useState({});
-  const [category, setCategory] = useState('foods');
+const Database = () => {
+  const [database, setDatabase] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [editingKey, setEditingKey] = useState('');
-  const [socket, setSocket] = useState(null);
-  const [form] = Form.useForm();
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const location = useLocation();
+  const nodeData = location.state?.nodeData;
 
   useEffect(() => {
-    const adminStatus = sessionStorage.getItem('admin');
-    setIsAdmin(adminStatus === 'true');
-  }, []);
-  const fetchSheet = async () => {
-    try {
-      const response = await getAllSheet(category);
-      setData(response.data);
-      const initialActiveRows = {};
-      response.data.forEach(item => {
-        initialActiveRows[item._id] = item.status;
+    if (id && sampleDatabases[id]) {
+      setDatabase(sampleDatabases[id]);
+    } else if (nodeData) {
+      // Fallback to node data if no specific database found
+      setDatabase({
+        id: nodeData.id,
+        name: nodeData.name,
+        type: nodeData.type,
+        status: nodeData.status,
+        tables: [],
+        schemas: [],
+        totalSize: '0 MB',
+        connections: 0,
+        uptime: '0 days'
       });
-      setActiveRows(initialActiveRows);
-    } catch (error) {
-      console.error('Error fetching Sheets:', error.message);
-    } finally {
+    }
+  }, [id, nodeData]);
+
+  const handleRefresh = () => {
+    setLoading(true);
+    setTimeout(() => {
       setLoading(false);
+      messageApi.success('Đã làm mới dữ liệu!');
+    }, 1000);
+  };
+
+  const handleExport = () => {
+    messageApi.info('Tính năng export sẽ được phát triển sau');
+  };
+
+  const handleImport = () => {
+    messageApi.info('Tính năng import sẽ được phát triển sau');
+  };
+
+  const handleViewSchema = () => {
+    navigate(`/schema/${database?.id}`, { 
+      state: { 
+        nodeData: nodeData,
+        nodeName: database?.name 
+      } 
+    });
+  };
+
+  const handleDeleteTable = (tableName) => {
+    messageApi.success(`Đã xóa bảng ${tableName}!`);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'connected': return 'success';
+      case 'disconnected': return 'error';
+      case 'connecting': return 'processing';
+      default: return 'default';
     }
   };
 
-  useEffect(() => {
-    fetchSheet();
-  }, [category])
-
-  const onCreate = async (values) => {
-    try {
-      const value = { ...values };
-      await createSheet(value);
-      setCategory(values.category[0]);
-    } catch (error) {
-      console.error('Error create sheet:', error.message);
-    } finally {
-      setvisibleNewSheet(false);
-      setChinhSua(null);
-      socket.emit('update-sheet');
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'connected': return 'Đã kết nối';
+      case 'disconnected': return 'Chưa kết nối';
+      case 'connecting': return 'Đang kết nối';
+      default: return 'Không xác định';
     }
   };
 
-  const onUpdate = async (values) => {
-    try {
-      const { _id, ...updateData } = values;
-      await updateSheet({ id: _id, ...updateData });
-    } catch (error) {
-      console.error('Error create sheet:', error.message);
-    } finally {
-      setvisibleNewSheet(false);
-      setChinhSua(null);
-      socket.emit('update-sheet');
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'postgresql': return <DatabaseOutlined style={{ color: '#336791' }} />;
+      case 'mysql': return <DatabaseOutlined style={{ color: '#00758F' }} />;
+      case 'mongodb': return <DatabaseOutlined style={{ color: '#4DB33D' }} />;
+      default: return <DatabaseOutlined />;
     }
   };
 
-  const handleDelete = async (record) => {
-    try {
-      await deleteSheet(record._id);
-      socket.emit('update-sheet');
-    }
-    catch (error) {
-      console.error('Error delete sheet:', error.message);
-    }
+  const tableColumns = [
+    {
+      title: 'Tên Bảng',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text) => <Text code>{text}</Text>,
+    },
+    {
+      title: 'Số Dòng',
+      dataIndex: 'rows',
+      key: 'rows',
+      render: (text) => text?.toLocaleString() || '0',
+    },
+    {
+      title: 'Kích Thước',
+      dataIndex: 'size',
+      key: 'size',
+      render: (text) => <Text type="secondary">{text}</Text>,
+    },
+    {
+      title: 'Cập Nhật Cuối',
+      dataIndex: 'lastModified',
+      key: 'lastModified',
+      render: (text) => <Text type="secondary">{text}</Text>,
+    },
+    {
+      title: 'Thao Tác',
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          <Tooltip title="Xem chi tiết">
+            <Button 
+              type="primary" 
+              size="small" 
+              icon={<EyeOutlined />}
+            />
+          </Tooltip>
+          <Popconfirm
+            title="Xác nhận xóa"
+            description={`Bạn có chắc chắn muốn xóa bảng "${record.name}"?`}
+            onConfirm={() => handleDeleteTable(record.name)}
+            okText="Xóa"
+            cancelText="Hủy"
+          >
+            <Button 
+              type="primary" 
+              danger 
+              size="small" 
+              icon={<DeleteOutlined />}
+            />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  const collectionColumns = [
+    {
+      title: 'Tên Collection',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text) => <Text code>{text}</Text>,
+    },
+    {
+      title: 'Số Document',
+      dataIndex: 'documents',
+      key: 'documents',
+      render: (text) => text?.toLocaleString() || '0',
+    },
+    {
+      title: 'Kích Thước',
+      dataIndex: 'size',
+      key: 'size',
+      render: (text) => <Text type="secondary">{text}</Text>,
+    },
+    {
+      title: 'Cập Nhật Cuối',
+      dataIndex: 'lastModified',
+      key: 'lastModified',
+      render: (text) => <Text type="secondary">{text}</Text>,
+    },
+    {
+      title: 'Thao Tác',
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          <Tooltip title="Xem chi tiết">
+            <Button 
+              type="primary" 
+              size="small" 
+              icon={<EyeOutlined />}
+            />
+          </Tooltip>
+          <Popconfirm
+            title="Xác nhận xóa"
+            description={`Bạn có chắc chắn muốn xóa collection "${record.name}"?`}
+            onConfirm={() => handleDeleteTable(record.name)}
+            okText="Xóa"
+            cancelText="Hủy"
+          >
+            <Button 
+              type="primary" 
+              danger 
+              size="small" 
+              icon={<DeleteOutlined />}
+            />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
+
+  if (!database) {
+    return (
+      <div style={{ textAlign: 'center', padding: '50px' }}>
+        <Title level={3}>Không tìm thấy database</Title>
+        <Button type="primary" onClick={() => navigate('/sheet')}>
+          Quay lại Nodes
+        </Button>
+      </div>
+    );
   }
 
-  const handleCancelFormSheet = () => {
-    setvisibleNewSheet(false);
-    setChinhSua(null);
-  };
-
-  const handleToggleActive = async (record) => {
-    try {
-      if (activeRows[record._id] === 'Active') {
-        const response = await getOrdersInSheet(record._id);
-        const orders = response.data || [];
-        const allPaid = orders.length === 0 || (orders.length > 0 && orders.every(order => order.paid));
-        const newStatus = allPaid ? 'Done' : 'Ongoing';
-        await updateSheet({ id: record._id, status: newStatus });
-        setActiveRows((prev) => ({
-          ...prev,
-          [record._id]: newStatus
-        }));
-      } else {
-        await updateSheet({ id: record._id, status: 'Active' });
-        setActiveRows((prev) => ({
-          ...prev,
-          [record._id]: 'Active'
-        }));
-      }
-      socket.emit('update-sheet');
-    } catch (error) {
-      if (error.status === 401) {
-        messageApi.open({
-          type: 'error',
-          content: 'Bạn phải là admin mới được chỉnh sửa!',
-        });
-      }
-      console.error('Error updating sheet status:', error.message);
-    }
-  };
-
-  const isEditing = (record) => record._id === editingKey;
-
-  const edit = (record) => {
-    form.setFieldsValue({ date: '', note: '', ...record });
-    setEditingKey(record._id);
-  };
-
-  const cancel = () => {
-    setEditingKey('');
-  };
-
-  const save = async (id) => {
-    try {
-      const row = await form.validateFields();
-      await updateSheet({ id: id, ...row });
-      setEditingKey('');
-      const response = await getAllSheet(category);
-      setData(response.data);
-      socket.emit('update-sheet');
-      message.success('Cập nhật thành công');
-    } catch (err) {
-      message.error('Cập nhật thất bại', err.message);
-    }
-  };
-
-  useEffect(() => {
-    const socketUrl = import.meta.env.VITE_BACKEND_URL || '/';
-    const newSocket = io(socketUrl, { transports: ['websocket'] });
-    setSocket(newSocket);
-    return () => newSocket.close();
-  }, []);
-
-  useEffect(() => {
-    if (!socket) return;
-    socket.on('update-sheet', fetchSheet);
-    return () => {
-      socket.off('update-sheet', fetchSheet);
-    };
-  }, [socket, category]);
-
-  const columns = [
-    {
-      title: <div style={{ textAlign: 'center' }}>Tên người đặt</div>,
-      dataIndex: 'user',
-      width: '15%',
-    },
-    {
-      title: <div style={{ textAlign: 'center' }}>Tiêu đề </div>,
-      dataIndex: 'date',
-      width: '30%',
-      render: (text, record) => {
-        const editable = isEditing(record);
-        return editable ? (
-          <Form form={form} component={false}>
-            <Form.Item
-              name="date"
-              style={{ margin: 0 }}
-              rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}
-            >
-              <Input />
-            </Form.Item>
-          </Form>
-        ) : (
-          text
-        );
-      }
-    },
-    {
-      title: <div style={{ textAlign: 'center' }}>Ghi chú</div>,
-      dataIndex: 'note',
-      width: '20%',
-      render: (text, record) => {
-        const editable = isEditing(record);
-        return editable ? (
-          <Form form={form} component={false}>
-            <Form.Item
-              name="note"
-              style={{ margin: 0 }}
-            >
-              <Input />
-            </Form.Item>
-          </Form>
-        ) : (
-          text
-        );
-      }
-    },
-    {
-      title: <div style={{ textAlign: 'center' }}>Trạng Thái</div>,
-      key: 'action',
-      render: (_, record) => (
-        <Space.Compact block size="middle" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <Button
-            type={activeRows[record._id] === 'Active' ? 'primary' : 'default'}
-            onClick={() => { isAdmin && handleToggleActive(record) }}
-          >
-            {activeRows[record._id] === 'Active' ? 'Đang đặt' : (activeRows[record._id] || 'Active')}
-          </Button>
-        </Space.Compact>
-      ),
-      width: '20%'
-    },
-    {
-      title: <div style={{ textAlign: 'center' }}>Action</div>,
-      key: 'action',
-      render: (_, record) => {
-        const editable = isEditing(record);
-        return (
-          <Space.Compact block size="large" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-            {editable ? (
-              <span>
-                <a onClick={() => save(record._id)} style={{ marginRight: 8 }}>Lưu</a>
-                <a onClick={cancel}>Hủy</a>
-              </span>
-            ) : (
-              <>
-                {isAdmin && (
-                  <Tooltip title="Chỉnh sửa">
-                    <Button
-                      icon={<EditOutlined />}
-                      type="primary"
-                      style={{ backgroundColor: '#32CD32' }}
-                      disabled={editingKey !== ''}
-                      onClick={() => edit(record)}
-                    />
-                  </Tooltip>
-                )}
-                <Tooltip title="Chi tiết">
-                  <Button type="primary"
-                    icon={<UnorderedListOutlined />}
-                    onClick={() => {
-                      navigate(`/sheet/detail?id=${record?._id}`, {
-                        state: {
-                          userData: { date: record?.date, menus: record?.menus, status: record?.status }
-                        }
-                      });
-                    }}
-                  />
-                </Tooltip>
-                {isAdmin && (
-                  <Tooltip title="Xóa">
-                    <Button danger type="primary" onClick={() => handleDelete(record)} icon={<DeleteOutlined />} />
-                  </Tooltip>
-                )}
-              </>
-            )}
-          </Space.Compact>
-        );
-      },
-      width: '15%'
-    },
-  ];
-  const options = [
-    { label: 'Món ăn', value: 'foods', className: 'label-1' },
-    { label: 'Thức uống', value: 'drinks', className: 'label-2' },
-  ];
-  const onChange = e => {
-    setCategory(e.target.value);
-  };
-  if (loading)
-    return (
-      <>
-        {contextHolder}
-        <Flex align="center"
-          justify="center"
-          style={{ height: '80%' }}>
-          <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
-        </Flex>
-      </>);
   return (
-    <>
+    <div>
       {contextHolder}
-      <TableComponent
-        title={'Bảng đặt cơm'}
-        customButton={
-          <Space style={{ gap: '10px' }} wrap>
-            <Space style={{ gap: '10px', float: 'right' }} wrap>
-              <Radio.Group
-                value={category}
-                options={options}
-                onChange={onChange}
-                optionType="button"
-              />
-            </Space>
-            {isAdmin && (
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => setvisibleNewSheet(true)}
-              >
-                Tạo sheet đặt
-              </Button>
-            )}
-          </Space>
-        }
-        columns={columns}
-        loading={loading}
-        data={data}
-        pagination={false}
-        scroll={{ x: 'max-content' }}
-        rowClassName={(record) => {
-          const status = activeRows[record._id];
-          if (status === 'Active') return 'active-row';
-          if (status === 'Ongoing') return 'notdone-row';
-          return 'inactive-row';
-        }}
-      />
-    </>
-  );
-}
+      
+      <div style={{ marginBottom: 20 }}>
+        <Space align="center">
+          <Button 
+            type="text" 
+            icon={<DatabaseOutlined />} 
+            onClick={() => navigate('/sheet')}
+          >
+            ← Quay lại Nodes
+          </Button>
+          <Title level={2} style={{ margin: 0 }}>
+            {getTypeIcon(database.type)} {database.name}
+          </Title>
+          <Badge 
+            status={getStatusColor(database.status)} 
+            text={getStatusText(database.status)} 
+          />
+        </Space>
+      </div>
 
-export default SheetComponent;
+      {/* Database Statistics */}
+      <Row gutter={16} style={{ marginBottom: 24 }}>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="Tổng Kích Thước"
+              value={database.totalSize}
+              prefix={<DatabaseOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="Kết Nối Hiện Tại"
+              value={database.connections}
+              prefix={<DatabaseOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title="Uptime"
+              value={database.uptime}
+              prefix={<DatabaseOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col span={6}>
+          <Card>
+            <Statistic
+              title={database.type === 'mongodb' ? 'Collections' : 'Tables'}
+              value={database.type === 'mongodb' ? database.collections?.length || 0 : database.tables?.length || 0}
+              prefix={<TableOutlined />}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Action Buttons */}
+      <Card style={{ marginBottom: 24 }}>
+        <Space>
+          <Button 
+            type="primary" 
+            icon={<ReloadOutlined />}
+            onClick={handleRefresh}
+            loading={loading}
+          >
+            Làm Mới
+          </Button>
+          <Button 
+            icon={<ExportOutlined />}
+            onClick={handleExport}
+          >
+            Export
+          </Button>
+          <Button 
+            icon={<ImportOutlined />}
+            onClick={handleImport}
+          >
+            Import
+          </Button>
+          <Button 
+            icon={<SettingOutlined />}
+            onClick={handleViewSchema}
+          >
+            Xem Schema
+          </Button>
+        </Space>
+      </Card>
+
+      {/* Schemas (for PostgreSQL/MySQL) */}
+      {database.type !== 'mongodb' && database.schemas && database.schemas.length > 0 && (
+        <Card title="Schemas" style={{ marginBottom: 24 }}>
+          <Space wrap>
+            {database.schemas.map(schema => (
+              <Tag key={schema} color="blue">{schema}</Tag>
+            ))}
+          </Space>
+        </Card>
+      )}
+
+      {/* Tables/Collections */}
+      <Card 
+        title={database.type === 'mongodb' ? 'Collections' : 'Tables'}
+        extra={
+          <Button 
+            type="primary" 
+            icon={<TableOutlined />}
+            size="small"
+          >
+            Thêm {database.type === 'mongodb' ? 'Collection' : 'Table'}
+          </Button>
+        }
+      >
+        {database.type === 'mongodb' ? (
+          <Table
+            columns={collectionColumns}
+            dataSource={database.collections || []}
+            loading={loading}
+            rowKey="name"
+            pagination={false}
+          />
+        ) : (
+          <Table
+            columns={tableColumns}
+            dataSource={database.tables || []}
+            loading={loading}
+            rowKey="name"
+            pagination={false}
+          />
+        )}
+      </Card>
+    </div>
+  );
+};
+
+export default Database; 
