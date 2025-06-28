@@ -1,20 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Typography, 
-  message, 
-  Button, 
-  Modal, 
-  Form, 
-  Input, 
-  Select, 
-  Card, 
-  Space, 
-  Tag,
-  Table,
-  Tooltip,
-  Popconfirm,
-  Badge
-} from 'antd';
+import { Typography, message, Button, Modal, Form, Input, Card, Space, Tag, Table, Tooltip, Popconfirm, Badge } from 'antd';
 import { 
   DatabaseOutlined, 
   PlusOutlined, 
@@ -27,9 +12,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 
-// Dữ liệu mẫu cho database nodes
+// Dữ liệu mẫu cho PostgreSQL database nodes
 const sampleNodes = [
   {
     id: 1,
@@ -39,7 +23,6 @@ const sampleNodes = [
     database: 'production_db',
     username: 'admin',
     status: 'connected',
-    type: 'postgresql',
     description: 'Database sản xuất chính',
     lastConnected: '2024-01-15 10:30:00',
     tables: 45,
@@ -47,46 +30,17 @@ const sampleNodes = [
   },
   {
     id: 2,
-    name: 'MySQL Development',
-    host: '192.168.1.101',
-    port: 3306,
-    database: 'dev_db',
-    username: 'developer',
-    status: 'connected',
-    type: 'mysql',
-    description: 'Database phát triển',
-    lastConnected: '2024-01-15 09:15:00',
-    tables: 23,
-    schemas: 3
-  },
-  {
-    id: 3,
     name: 'PostgreSQL Staging',
     host: '192.168.1.102',
     port: 5432,
     database: 'staging_db',
     username: 'staging_user',
     status: 'disconnected',
-    type: 'postgresql',
     description: 'Database staging cho testing',
     lastConnected: '2024-01-14 16:45:00',
     tables: 38,
     schemas: 6
   },
-  {
-    id: 4,
-    name: 'MongoDB Analytics',
-    host: '192.168.1.103',
-    port: 27017,
-    database: 'analytics_db',
-    username: 'analytics_user',
-    status: 'connected',
-    type: 'mongodb',
-    description: 'Database phân tích dữ liệu',
-    lastConnected: '2024-01-15 11:20:00',
-    collections: 15,
-    documents: 1250000
-  }
 ];
 
 const Node = () => {
@@ -124,7 +78,6 @@ const Node = () => {
       port: node.port,
       database: node.database,
       username: node.username,
-      type: node.type,
       description: node.description
     });
     setIsEditModalVisible(true);
@@ -228,15 +181,6 @@ const Node = () => {
     }
   };
 
-  const getTypeIcon = (type) => {
-    switch (type) {
-      case 'postgresql': return <DatabaseOutlined style={{ color: '#336791' }} />;
-      case 'mysql': return <DatabaseOutlined style={{ color: '#00758F' }} />;
-      case 'mongodb': return <DatabaseOutlined style={{ color: '#4DB33D' }} />;
-      default: return <DatabaseOutlined />;
-    }
-  };
-
   const columns = [
     {
       title: 'Tên Node',
@@ -244,11 +188,9 @@ const Node = () => {
       key: 'name',
       render: (text, record) => (
         <Space>
-          {getTypeIcon(record.type)}
+          <DatabaseOutlined style={{ color: '#336791' }} />
           <Text strong>{text}</Text>
-          <Tag color={record.type === 'postgresql' ? 'blue' : record.type === 'mysql' ? 'green' : 'orange'}>
-            {record.type.toUpperCase()}
-          </Tag>
+          <Tag color="blue">PostgreSQL</Tag>
         </Space>
       ),
     },
@@ -282,12 +224,8 @@ const Node = () => {
       key: 'stats',
       render: (_, record) => (
         <Space direction="vertical" size="small">
-          <Text type="secondary">
-            {record.type === 'mongodb' ? 'Collections:' : 'Tables:'} {record.tables || record.collections || 0}
-          </Text>
-          {record.type !== 'mongodb' && (
-            <Text type="secondary">Schemas: {record.schemas || 0}</Text>
-          )}
+          <Text type="secondary">Tables: {record.tables || 0}</Text>
+          <Text type="secondary">Schemas: {record.schemas || 0}</Text>
         </Space>
       ),
     },
@@ -296,14 +234,6 @@ const Node = () => {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Tooltip title="Xem Database">
-            <Button 
-              type="primary" 
-              size="small" 
-              icon={<EyeOutlined />}
-              onClick={() => handleViewDatabase(record)}
-            />
-          </Tooltip>
           <Tooltip title="Xem Schema">
             <Button 
               type="default" 
@@ -364,15 +294,15 @@ const Node = () => {
       
       <div style={{ marginBottom: 20 }}>
         <Title level={2}>
-          <DatabaseOutlined /> Database Nodes Management
+          <DatabaseOutlined /> PostgreSQL Database Nodes
         </Title>
         <Text type="secondary">
-          Quản lý các kết nối database và chuyển đổi giữa các môi trường
+          Quản lý các kết nối PostgreSQL database và chuyển đổi giữa các môi trường
         </Text>
       </div>
 
       <Card
-        title="Danh Sách Database Nodes"
+        title="Danh Sách PostgreSQL Nodes"
         extra={
           <Button 
             type="primary" 
@@ -396,10 +326,8 @@ const Node = () => {
           }}
         />
       </Card>
-
-      {/* Modal thêm node */}
       <Modal
-        title="Thêm Database Node"
+        title="Thêm PostgreSQL Node"
         open={isAddModalVisible}
         onCancel={() => setIsAddModalVisible(false)}
         footer={null}
@@ -415,18 +343,6 @@ const Node = () => {
           </Form.Item>
           
           <Form.Item
-            name="type"
-            label="Loại Database"
-            rules={[{ required: true, message: 'Vui lòng chọn loại database!' }]}
-          >
-            <Select placeholder="Chọn loại database">
-              <Option value="postgresql">PostgreSQL</Option>
-              <Option value="mysql">MySQL</Option>
-              <Option value="mongodb">MongoDB</Option>
-            </Select>
-          </Form.Item>
-          
-          <Form.Item
             name="host"
             label="Host"
             rules={[{ required: true, message: 'Vui lòng nhập host!' }]}
@@ -439,7 +355,7 @@ const Node = () => {
             label="Port"
             rules={[{ required: true, message: 'Vui lòng nhập port!' }]}
           >
-            <Input placeholder="5432, 3306, 27017..." />
+            <Input placeholder="5432" defaultValue="5432" />
           </Form.Item>
           
           <Form.Item
@@ -478,9 +394,8 @@ const Node = () => {
         </Form>
       </Modal>
 
-      {/* Modal chỉnh sửa node */}
       <Modal
-        title="Chỉnh Sửa Database Node"
+        title="Chỉnh Sửa PostgreSQL Node"
         open={isEditModalVisible}
         onCancel={() => setIsEditModalVisible(false)}
         footer={null}
@@ -496,18 +411,6 @@ const Node = () => {
           </Form.Item>
           
           <Form.Item
-            name="type"
-            label="Loại Database"
-            rules={[{ required: true, message: 'Vui lòng chọn loại database!' }]}
-          >
-            <Select placeholder="Chọn loại database">
-              <Option value="postgresql">PostgreSQL</Option>
-              <Option value="mysql">MySQL</Option>
-              <Option value="mongodb">MongoDB</Option>
-            </Select>
-          </Form.Item>
-          
-          <Form.Item
             name="host"
             label="Host"
             rules={[{ required: true, message: 'Vui lòng nhập host!' }]}
@@ -520,7 +423,7 @@ const Node = () => {
             label="Port"
             rules={[{ required: true, message: 'Vui lòng nhập port!' }]}
           >
-            <Input placeholder="5432, 3306, 27017..." />
+            <Input placeholder="5432" />
           </Form.Item>
           
           <Form.Item

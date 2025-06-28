@@ -11,8 +11,8 @@ import {
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
 import SchemaFlow from './SchemaFlow';
-import DatabaseConnection from '../DatabaseConnection';
-import { getSchemas, getTables, exportSchema, importSchema } from '../../api/schemaApi';
+import DatabaseConnection from '../Database/DatabaseConnection';
+import { getSchemas, getTables, exportSchema, importSchema } from '../../api/index';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -301,9 +301,6 @@ function SchemaComponent() {
             text={getStatusText(database.status)} 
           />
         </Space>
-        <Text type="secondary">
-          Quản lý và trực quan hóa schema database {database.type.toUpperCase()}
-        </Text>
       </div>
 
       {!isConnected && (
@@ -366,7 +363,7 @@ function SchemaComponent() {
                         ))}
                       </select>
                     )}
-                    <Button 
+                    {/* <Button 
                       icon={<ReloadOutlined />} 
                       onClick={handleRefresh}
                       loading={loading}
@@ -385,7 +382,7 @@ function SchemaComponent() {
                       onClick={handleImportSchema}
                     >
                       Import
-                    </Button>
+                    </Button> */}
                   </Space>
                 </div>
                 

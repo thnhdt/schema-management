@@ -45,15 +45,12 @@ const SchemaFlow = () => {
     <div style={{ width: '100%', height: '100vh', padding: '20px' }}>
       {contextHolder}
       
-      <Card title="PostgreSQL Schema Manager (Demo Mode)">
+      <Card title="PostgreSQL Schema Manager">
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <div>
             <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
               <DatabaseOutlined /> Schema Flow Visualization
             </Title>
-            <Text type="secondary">
-              React Flow component đang được cấu hình. Hiện tại đang chạy ở chế độ demo.
-            </Text>
           </div>
           
           <Space>

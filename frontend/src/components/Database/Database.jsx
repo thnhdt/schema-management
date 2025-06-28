@@ -1,19 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Typography, 
-  message, 
-  Button, 
-  Card, 
-  Space, 
-  Tag,
-  Table,
-  Tooltip,
-  Popconfirm,
-  Badge,
-  Row,
-  Col,
-  Statistic
-} from 'antd';
+import { Typography, message, Button, Card, Space, Tag, Table, Tooltip, Popconfirm, Badge, Row, Col, Statistic} from 'antd';
 import { 
   DatabaseOutlined, 
   TableOutlined, 
@@ -50,21 +36,6 @@ const sampleDatabases = {
   },
   2: {
     id: 2,
-    name: 'MySQL Development',
-    type: 'mysql',
-    status: 'connected',
-    tables: [
-      { name: 'users', rows: 89, size: '0.8 MB', lastModified: '2024-01-15 14:20:00' },
-      { name: 'projects', rows: 23, size: '0.3 MB', lastModified: '2024-01-15 13:45:00' },
-      { name: 'tasks', rows: 156, size: '1.2 MB', lastModified: '2024-01-15 15:10:00' }
-    ],
-    schemas: ['dev', 'test'],
-    totalSize: '2.3 MB',
-    connections: 3,
-    uptime: '2 days'
-  },
-  3: {
-    id: 3,
     name: 'PostgreSQL Staging',
     type: 'postgresql',
     status: 'disconnected',
@@ -74,20 +45,6 @@ const sampleDatabases = {
     connections: 0,
     uptime: '0 days'
   },
-  4: {
-    id: 4,
-    name: 'MongoDB Analytics',
-    type: 'mongodb',
-    status: 'connected',
-    collections: [
-      { name: 'user_events', documents: 1250000, size: '45.2 MB', lastModified: '2024-01-15 16:30:00' },
-      { name: 'page_views', documents: 890000, size: '32.1 MB', lastModified: '2024-01-15 17:15:00' },
-      { name: 'conversions', documents: 45000, size: '8.7 MB', lastModified: '2024-01-15 18:00:00' }
-    ],
-    totalSize: '86.0 MB',
-    connections: 8,
-    uptime: '7 days'
-  }
 };
 
 const Database = () => {
@@ -168,8 +125,6 @@ const Database = () => {
   const getTypeIcon = (type) => {
     switch (type) {
       case 'postgresql': return <DatabaseOutlined style={{ color: '#336791' }} />;
-      case 'mysql': return <DatabaseOutlined style={{ color: '#00758F' }} />;
-      case 'mongodb': return <DatabaseOutlined style={{ color: '#4DB33D' }} />;
       default: return <DatabaseOutlined />;
     }
   };
@@ -320,7 +275,7 @@ const Database = () => {
         </Space>
       </div>
 
-      {/* Database Statistics */}
+      {/* Database Statistics
       <Row gutter={16} style={{ marginBottom: 24 }}>
         <Col span={6}>
           <Card>
@@ -358,7 +313,7 @@ const Database = () => {
             />
           </Card>
         </Col>
-      </Row>
+      </Row> */}
 
       {/* Action Buttons */}
       <Card style={{ marginBottom: 24 }}>
@@ -371,7 +326,7 @@ const Database = () => {
           >
             Làm Mới
           </Button>
-          <Button 
+          {/* <Button 
             icon={<ExportOutlined />}
             onClick={handleExport}
           >
@@ -382,7 +337,7 @@ const Database = () => {
             onClick={handleImport}
           >
             Import
-          </Button>
+          </Button> */}
           <Button 
             icon={<SettingOutlined />}
             onClick={handleViewSchema}

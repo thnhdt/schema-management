@@ -5,7 +5,7 @@ import Main from './components/Main'
 import AppLayout from './Layout';
 import SheetComponent from './components/Sheet/Sheet';
 import Node from './components/Node';
-import Database from './components/Database';
+import Database from './components/Database/Database';
 import SchemaComponent from './components/Schema/Schema';
 import ReactFlowTest from './components/Schema/ReactFlowTest';
 // import { RequireUsername, AlreadyLogined } from './Authentication';

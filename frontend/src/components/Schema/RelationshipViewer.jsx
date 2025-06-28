@@ -1,19 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  Table, 
-  Button, 
-  Space, 
-  Modal, 
-  Form, 
-  Select, 
-  message, 
-  Typography,
-  Tag,
-  Tooltip,
-  Popconfirm,
-  Divider
-} from 'antd';
+import { Card, Table, Button, Space, Modal, Form, Select, message, Typography, Tag, Tooltip, Popconfirm } from 'antd';
 import { 
   PlusOutlined, 
   EditOutlined, 
@@ -22,7 +8,7 @@ import {
   KeyOutlined,
   InfoCircleOutlined
 } from '@ant-design/icons';
-import { getTableRelationships, createRelationship, deleteRelationship } from '../../api/schemaApi';
+import { getTableRelationships, createRelationship, deleteRelationship } from '../../api/index';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
