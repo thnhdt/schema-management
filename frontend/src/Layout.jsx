@@ -69,12 +69,12 @@ const AppLayout = () => {
                 label: 'Nodes',
               },
             {
-              key: '/database',
+              key: '/database/1',
               icon: <UnorderedListOutlined />,
               label: 'Database',
             },
             {
-                key: '/schema',
+                key: '/schema/1',
                 icon: <TableOutlined />,
                 label: 'Schema',
               },

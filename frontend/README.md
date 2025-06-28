@@ -64,7 +64,7 @@ frontend/
 │   │   │   └── TableSchema.jsx     # Quản lý chi tiết bảng
 │   │   └── DatabaseConnection.jsx  # Kết nối database
 │   ├── api/
-│   │   └── schemaApi.js           # API services
+│   │   └── api.js           # API services
 │   ├── App.jsx
 │   └── App.css
 ├── package.json

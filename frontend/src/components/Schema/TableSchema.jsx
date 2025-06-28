@@ -23,7 +23,7 @@ import {
   LinkOutlined,
   InfoCircleOutlined
 } from '@ant-design/icons';
-import { getTableColumns, addColumn, updateColumn, deleteColumn } from '../../api/schemaApi';
+import { getTableColumns, addColumn, updateColumn, deleteColumn } from '../../api/index';
 
 const { Title, Text } = Typography;
 const { Option } = Select;

@@ -1,17 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Card, 
-  Form, 
-  Input, 
-  Button, 
-  Space, 
-  message, 
-  Typography, 
-  Divider,
-  Alert,
-  Switch,
-  InputNumber
-} from 'antd';
+import { Card, Form, Input, Button, Space, message, Typography, Divider, Alert, Switch, InputNumber } from 'antd';
 import { 
   DatabaseOutlined, 
   CheckCircleOutlined, 
@@ -19,7 +7,7 @@ import {
   EyeInvisibleOutlined,
   EyeTwoTone
 } from '@ant-design/icons';
-import { testDatabaseConnection, connectToDatabase } from '../api/schemaApi';
+import { testDatabaseConnection, connectToDatabase } from '../../api/index';
 
 const { Title, Text } = Typography;
 const { Password } = Input;
