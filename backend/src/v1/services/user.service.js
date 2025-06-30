@@ -1,15 +1,17 @@
 const userModel = require('../models/user.model');
 const env = require('../config/environment');
-const { createKeyToken } = require('../utils/auth.utils');
+const { createTokenPair } = require('../utils/auth.utils');
+const bcrypt = require('bcrypt');
+const { AuthFailureError, ForbiddenError, BadResponseError } = require('../cores/error.response');
 const signUp = async (dataCreated) => {
   const { email } = dataCreated
-  const validateEmail = await userModel.findOne({ email }).lean()
+  const validateEmail = await userModel.findOne({ email }).lean();
   if (validateEmail) {
     throw new BadResponseError("Error: User is exist !")
   }
   const salt = await bcrypt.genSalt(parseInt(env.SALT));
   const hashPassword = await bcrypt.hash(dataCreated.password, salt);
-  const newUser = await userModel.create({ ...dataCreated, password: hashPassword })
+  const newUser = await userModel.create({ ...dataCreated, password: hashPassword });
   if (newUser) {
     // sign access token va refresh token
     const tokens = await createTokenPair({ userId: newUser._id, email }, env.SECRET_KEY)
@@ -38,26 +40,12 @@ const login = async ({ email, password, refreshToken = null }) => {
     throw new AuthFailureError("Error: Email is not Exist !")
   }
   //kiem tra mat khau co match hay khong
-  const isMatchPassword = bcrypt.compare(password, targetUser.password)
+  const isMatchPassword = await bcrypt.compare(password, targetUser.password);
   if (!isMatchPassword) {
-    throw new BadResponseError("Error: PassWord is incorrect !")
+    throw new BadResponseError("Error: PassWord is incorrect !");
   }
-  //tao public key va private key
-  const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
-    modulusLength: 4096,
-    publicKeyEncoding: {
-      type: 'pkcs1',
-      format: 'pem',
-    },
-    privateKeyEncoding: {
-      type: 'pkcs1',
-      format: 'pem'
-    }
-  })
   //tao 2 access token va refresh token
-  const tokens = await createTokenPair({ userId: targetUser._id, email }, publicKey, privateKey)
-  //luu thay doi va luu refresh token key
-  await keyTokenService.createKeyToken({ publicKey: publicKey, userId: targetUser._id, refreshToken: tokens.refreshToken })
+  const tokens = await createTokenPair({ userId: targetUser._id, email }, env.SECRET_KEY);
   return {
     metaData: {
       user: {
@@ -68,7 +56,30 @@ const login = async ({ email, password, refreshToken = null }) => {
       tokens
     }
   }
+};
+
+const handlerRefreshToken = async ({ user, refreshToken }) => {
+  const { email, userId } = user
+  if (!refreshToken) throw new ForbiddenError("User is not login!");
+  //check email user exist ?
+  const targetUser = await userModel.findOne({ email: email });
+  if (!targetUser) throw new ForbiddenError("User is not register !");
+
+  const tokens = await createTokenPair({ userId: targetUser._id, email }, env.SECRET_KEY);
+  return {
+    user,
+    tokens
+  }
 }
+const getAllUsers = async () => {
+  //check email user exist ?
+  const targetUser = await userModel.find({}).sort({ createdAt: -1 }).lean();
+  return targetUser
+}
+
 module.exports = {
-  signUp
+  signUp,
+  login,
+  handlerRefreshToken,
+  getAllUsers
 }

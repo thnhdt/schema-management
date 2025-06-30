@@ -1,5 +1,5 @@
-import { StatusCode } from "../utils/statusCode.js"
-import { ReasonPhrase } from "../utils/reasonPhrase.js"
+const StatusCode = require("../utils/status-code.util.js");
+const ReasonPhrase = require('../utils/reason-phrase.util.js');
 
 const ReasonStatusCode = {
   FORBIDDEN: 'Bad request error',
@@ -13,30 +13,38 @@ class ErrorResponse extends Error {
   }
 }
 
-export class BadResponseError extends ErrorResponse {
+class BadResponseError extends ErrorResponse {
   constructor(message = ReasonStatusCode.FORBIDDEN, status = StatusCode.FORBIDDEN) {
     super(message, status)
   }
 }
-export class ConflictResponseError extends ErrorResponse {
+class ConflictResponseError extends ErrorResponse {
   constructor(message = ReasonStatusCode.CONFLICT, status = StatusCode.CONFLICT) {
     super(message, status)
   }
 }
 
-export class AuthFailureError extends ErrorResponse {
+class AuthFailureError extends ErrorResponse {
   constructor(message = ReasonPhrase.UNAUTHORIZED, status = StatusCode.UNAUTHORIZED) {
     super(message, status)
   }
 }
 
-export class NotFoundError extends ErrorResponse {
+class NotFoundError extends ErrorResponse {
   constructor(message = ReasonPhrase.NOT_FOUND, status = StatusCode.NOT_FOUND) {
     super(message, status)
   }
 }
-export class ForbiddenError extends ErrorResponse {
+class ForbiddenError extends ErrorResponse {
   constructor(message = ReasonPhrase.FORBIDDEN, status = StatusCode.FORBIDDEN) {
     super(message, status)
   }
+}
+
+module.exports = {
+  ForbiddenError,
+  NotFoundError,
+  AuthFailureError,
+  ConflictResponseError,
+  BadResponseError
 }

@@ -3,33 +3,34 @@ const mongoose = require("mongoose");
 
 const { Schema, model } = mongoose
 
-const DATABASE_NAME = 'User'
-const COLLECTION_NAME = 'Users'
+const DATABASE_NAME = 'Database'
+const COLLECTION_NAME = 'Databases'
 // Declare the Schema of the Mongo model
-const userSchema = new Schema({
+const databaseSchema = new Schema({
   name: {
     type: String,
     required: true,
     trim: true,
     maxLength: 150
   },
-  email: {
-    type: String,
+  nodeId: {
+    type: mongoose.Types.ObjectId,
     required: true,
     trim: true
   },
-  password: {
+  status: {
     type: String,
-    required: true,
+    default: 'inactive',
+    enum: ['active', 'inactive']
   },
-  roles: {
-    type: Array,
-    default: []
-  }
+  urlString: {
+    type: String,
+    required: true
+  },
 }, {
   collection: COLLECTION_NAME,
   timestamps: true
 });
 
 //Export the model
-module.exports = model(DATABASE_NAME, userSchema);
+module.exports = model(DATABASE_NAME, databaseSchema);

@@ -1,6 +1,7 @@
 import { Table, Space, Button, Typography, Flex, Spin, Row, Col, Modal } from 'antd';
+import '../App.css';
 export const TableComponent = (props) => {
-  const { customButton, columns, data, title, rowClassName = null, loading = null, size = null } = props
+  const { customButton, columns, data, title, rowClassName = () => 'no-hover', loading = null, size = null } = props
   return (
     <>
       <Table

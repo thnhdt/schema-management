@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Typography, message, Button, Modal, Form, Input, Card, Space, Tag, Table, Tooltip, Popconfirm, Badge } from 'antd';
-import { 
-  DatabaseOutlined, 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
+import {
+  DatabaseOutlined,
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
   EyeOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-
+import '../App.css';
 const { Title, Text } = Typography;
 
 // Dữ liệu mẫu cho PostgreSQL database nodes
@@ -92,8 +92,8 @@ const Node = () => {
 
   const handleConnectNode = (node) => {
     // Simulate connection
-    const updatedNodes = nodes.map(n => 
-      n.id === node.id 
+    const updatedNodes = nodes.map(n =>
+      n.id === node.id
         ? { ...n, status: 'connected', lastConnected: new Date().toLocaleString() }
         : n
     );
@@ -103,8 +103,8 @@ const Node = () => {
   };
 
   const handleDisconnectNode = (node) => {
-    const updatedNodes = nodes.map(n => 
-      n.id === node.id 
+    const updatedNodes = nodes.map(n =>
+      n.id === node.id
         ? { ...n, status: 'disconnected' }
         : n
     );
@@ -122,7 +122,7 @@ const Node = () => {
       tables: 0,
       schemas: 0
     };
-    
+
     const updatedNodes = [...nodes, newNode];
     setNodes(updatedNodes);
     localStorage.setItem('databaseNodes', JSON.stringify(updatedNodes));
@@ -146,20 +146,20 @@ const Node = () => {
   };
 
   const handleViewDatabase = (node) => {
-    navigate(`/database/${node.id}`, { 
-      state: { 
+    navigate(`/database/${node.id}`, {
+      state: {
         nodeData: node,
-        nodeName: node.name 
-      } 
+        nodeName: node.name
+      }
     });
   };
 
   const handleViewSchema = (node) => {
-    navigate(`/schema/${node.id}`, { 
-      state: { 
+    navigate(`/schema/${node.id}`, {
+      state: {
         nodeData: node,
-        nodeName: node.name 
-      } 
+        nodeName: node.name
+      }
     });
   };
 
@@ -213,9 +213,9 @@ const Node = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status) => (
-        <Badge 
-          status={getStatusColor(status)} 
-          text={getStatusText(status)} 
+        <Badge
+          status={getStatusColor(status)}
+          text={getStatusText(status)}
         />
       ),
     },
@@ -243,36 +243,36 @@ const Node = () => {
             />
           </Tooltip>
           <Tooltip title="Xem Schema">
-            <Button 
-              type="default" 
-              size="small" 
+            <Button
+              type="default"
+              size="small"
               icon={<DatabaseOutlined />}
               onClick={() => handleViewSchema(record)}
             />
           </Tooltip>
           {record.status === 'connected' ? (
             <Tooltip title="Ngắt kết nối">
-              <Button 
-                type="default" 
-                size="small" 
+              <Button
+                type="default"
+                size="small"
                 icon={<CloseCircleOutlined />}
                 onClick={() => handleDisconnectNode(record)}
               />
             </Tooltip>
           ) : (
             <Tooltip title="Kết nối">
-              <Button 
-                type="primary" 
-                size="small" 
+              <Button
+                type="primary"
+                size="small"
                 icon={<CheckCircleOutlined />}
                 onClick={() => handleConnectNode(record)}
               />
             </Tooltip>
           )}
           <Tooltip title="Chỉnh sửa">
-            <Button 
-              type="default" 
-              size="small" 
+            <Button
+              type="default"
+              size="small"
               icon={<EditOutlined />}
               onClick={() => handleEditNode(record)}
             />
@@ -284,10 +284,10 @@ const Node = () => {
             okText="Xóa"
             cancelText="Hủy"
           >
-            <Button 
-              type="primary" 
-              danger 
-              size="small" 
+            <Button
+              type="primary"
+              danger
+              size="small"
               icon={<DeleteOutlined />}
             />
           </Popconfirm>
@@ -299,7 +299,7 @@ const Node = () => {
   return (
     <div>
       {contextHolder}
-      
+
       <div style={{ marginBottom: 20 }}>
         <Title level={2}>
           <DatabaseOutlined /> PostgreSQL Database Nodes
@@ -312,8 +312,8 @@ const Node = () => {
       <Card
         title="Danh Sách PostgreSQL Nodes"
         extra={
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             icon={<PlusOutlined />}
             onClick={handleAddNode}
           >
@@ -326,6 +326,7 @@ const Node = () => {
           dataSource={nodes}
           loading={loading}
           rowKey="id"
+          rowClassName={() => 'no-hover'}
           pagination={{
             pageSize: 10,
             showSizeChanger: true,
@@ -349,7 +350,7 @@ const Node = () => {
           >
             <Input placeholder="Ví dụ: PostgreSQL Production" />
           </Form.Item>
-          
+
           <Form.Item
             name="host"
             label="Host"
@@ -357,7 +358,7 @@ const Node = () => {
           >
             <Input placeholder="localhost hoặc IP address" />
           </Form.Item>
-          
+
           <Form.Item
             name="port"
             label="Port"
@@ -365,7 +366,7 @@ const Node = () => {
           >
             <Input placeholder="5432" defaultValue="5432" />
           </Form.Item>
-          
+
           <Form.Item
             name="database"
             label="Database Name"
@@ -373,7 +374,7 @@ const Node = () => {
           >
             <Input placeholder="Tên database" />
           </Form.Item>
-          
+
           <Form.Item
             name="username"
             label="Username"
@@ -381,14 +382,14 @@ const Node = () => {
           >
             <Input placeholder="Username" />
           </Form.Item>
-          
+
           <Form.Item
             name="description"
             label="Mô Tả"
           >
             <Input.TextArea placeholder="Mô tả về database node này..." rows={3} />
           </Form.Item>
-          
+
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">
@@ -417,7 +418,7 @@ const Node = () => {
           >
             <Input placeholder="Ví dụ: PostgreSQL Production" />
           </Form.Item>
-          
+
           <Form.Item
             name="host"
             label="Host"
@@ -425,7 +426,7 @@ const Node = () => {
           >
             <Input placeholder="localhost hoặc IP address" />
           </Form.Item>
-          
+
           <Form.Item
             name="port"
             label="Port"
@@ -433,7 +434,7 @@ const Node = () => {
           >
             <Input placeholder="5432" />
           </Form.Item>
-          
+
           <Form.Item
             name="database"
             label="Database Name"
@@ -441,7 +442,7 @@ const Node = () => {
           >
             <Input placeholder="Tên database" />
           </Form.Item>
-          
+
           <Form.Item
             name="username"
             label="Username"
@@ -449,14 +450,14 @@ const Node = () => {
           >
             <Input placeholder="Username" />
           </Form.Item>
-          
+
           <Form.Item
             name="description"
             label="Mô Tả"
           >
             <Input.TextArea placeholder="Mô tả về database node này..." rows={3} />
           </Form.Item>
-          
+
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">

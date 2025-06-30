@@ -1,12 +1,13 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3051/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 // Interceptor để thêm token nếu có
@@ -23,6 +24,68 @@ api.interceptors.request.use(
   }
 );
 
+let isRefreshing = false;
+let queue = [];
+
+const processQueue = (error, token = null) => {
+  queue.forEach(prom => {
+    if (token) prom.resolve(token);
+    else prom.reject(error);
+  });
+  queue = [];
+};
+
+api.interceptors.response.use(
+  res => res,
+  async (error) => {
+    const original = error.config;
+
+    if (
+      error.response?.status === 401 &&
+      !original._retry &&
+      original.auth
+    ) {
+      original._retry = true;
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          queue.push({
+            resolve: (token) => {
+              original.headers.Authorization = token;
+              resolve(api(original));
+            },
+            reject,
+          });
+        });
+      }
+
+      isRefreshing = true;
+
+      try {
+        const res = await axios.post('/refresh-token', null, {
+          withCredentials: true,
+        });
+
+        const newToken = res.data.accessToken;
+        sessionStorage.setItem('accessToken', newToken);
+        processQueue(null, newToken);
+
+        original.headers.Authorization = newToken;
+        return api(original);
+      } catch (err) {
+        processQueue(err);
+        window.location.href = '/login';
+        return Promise.reject(err);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+
 export const testDatabaseConnection = async (connectionConfig) => {
   try {
     const response = await api.post('/schema/test-connection', connectionConfig);
@@ -34,13 +97,22 @@ export const testDatabaseConnection = async (connectionConfig) => {
 
 export const connectToDatabase = async (connectionConfig) => {
   try {
-    const response = await api.post('/schema/connect', connectionConfig);
+    const response = await api.post('/database/connect-database', connectionConfig);
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
   }
 };
 
+
+export const disconnectToDatabase = async (connectionConfig) => {
+  try {
+    const response = await api.post('/database/disconnect-database', connectionConfig);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
 // Schema operations
 export const getSchemas = async () => {
   try {
@@ -51,32 +123,36 @@ export const getSchemas = async () => {
   }
 };
 
-export const getTables = async (schemaName) => {
+export const getTables = async (schemaName, id) => {
   try {
-    const response = await api.get(`/schema/tables/${schemaName}`);
+    const response = await api.get(`/table/get-all-tables`, { params: { schema: schemaName, id } });
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
   }
 };
+export const getAllDdlText = async (schema, id) => {
+  const response = await api.get(`/table/get-ddl-text`, { params: { schema: schema, id } });
+  return response.data;
+}
 
-export const getTableColumns = async (schemaName, tableName) => {
-  try {
-    const response = await api.get(`/schema/columns/${schemaName}/${tableName}`);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
+// export const getTableColumns = async (schemaName, tableName) => {
+//   try {
+//     const response = await api.get(`/table//${schemaName}/${tableName}`);
+//     return response.data;
+//   } catch (error) {
+//     throw error.response?.data || error.message;
+//   }
+// };
 
-export const getTableRelationships = async (schemaName, tableName) => {
-  try {
-    const response = await api.get(`/schema/relationships/${schemaName}/${tableName}`);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
+// export const getTableRelationships = async (schemaName, tableName) => {
+//   try {
+//     const response = await api.get(`/schema/relationships/${schemaName}/${tableName}`);
+//     return response.data;
+//   } catch (error) {
+//     throw error.response?.data || error.message;
+//   }
+// };
 
 // Table operations
 export const createTable = async (schemaName, tableData) => {
@@ -175,5 +251,14 @@ export const importSchema = async (schemaData) => {
     throw error.response?.data || error.message;
   }
 };
+export const getAllUsers = async () => {
+  const response = await api.get('/user/get-all-users');
+  return response.data;
+}
+
+export const getAllDatabaseInHost = async (idHost) => {
+  const response = await api.get('/database/get-all-databases', { params: { idHost } });
+  return response.data;
+}
 
 export default api; 

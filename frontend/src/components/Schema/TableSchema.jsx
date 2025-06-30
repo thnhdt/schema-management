@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  Table, 
-  Button, 
-  Space, 
-  Modal, 
-  Form, 
-  Input, 
-  Select, 
-  Switch, 
-  message, 
+import {
+  Card,
+  Table,
+  Button,
+  Space,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Switch,
+  message,
   Typography,
   Tag,
   Tooltip,
   Popconfirm
 } from 'antd';
-import { 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
   KeyOutlined,
   LinkOutlined,
   InfoCircleOutlined
@@ -212,7 +212,7 @@ const TableSchema = ({ schemaName, tableName, onUpdate }) => {
   return (
     <div>
       {contextHolder}
-      
+
       <Card
         title={
           <Space>
@@ -222,8 +222,8 @@ const TableSchema = ({ schemaName, tableName, onUpdate }) => {
           </Space>
         }
         extra={
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             icon={<PlusOutlined />}
             onClick={handleAddColumn}
           >
@@ -237,6 +237,7 @@ const TableSchema = ({ schemaName, tableName, onUpdate }) => {
           loading={loading}
           rowKey="column_name"
           pagination={false}
+          rowClassName={() => { 'no-hover' }}
           size="small"
         />
       </Card>
@@ -256,7 +257,7 @@ const TableSchema = ({ schemaName, tableName, onUpdate }) => {
           >
             <Input placeholder="Nhập tên cột..." />
           </Form.Item>
-          
+
           <Form.Item
             name="columnType"
             label="Kiểu Dữ Liệu"
@@ -278,23 +279,23 @@ const TableSchema = ({ schemaName, tableName, onUpdate }) => {
               <Option value="UUID">UUID</Option>
             </Select>
           </Form.Item>
-          
+
           <Form.Item name="isNullable" valuePropName="checked" initialValue={true}>
             <Switch /> Cho phép NULL
           </Form.Item>
-          
+
           <Form.Item name="isPrimary" valuePropName="checked">
             <Switch /> Khóa chính (Primary Key)
           </Form.Item>
-          
+
           <Form.Item name="defaultValue" label="Giá Trị Mặc Định">
             <Input placeholder="Nhập giá trị mặc định..." />
           </Form.Item>
-          
+
           <Form.Item name="comment" label="Ghi Chú">
             <Input.TextArea placeholder="Nhập ghi chú cho cột..." rows={3} />
           </Form.Item>
-          
+
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">
@@ -322,7 +323,7 @@ const TableSchema = ({ schemaName, tableName, onUpdate }) => {
           >
             <Input disabled />
           </Form.Item>
-          
+
           <Form.Item
             name="columnType"
             label="Kiểu Dữ Liệu"
@@ -344,23 +345,23 @@ const TableSchema = ({ schemaName, tableName, onUpdate }) => {
               <Option value="UUID">UUID</Option>
             </Select>
           </Form.Item>
-          
+
           <Form.Item name="isNullable" valuePropName="checked">
             <Switch /> Cho phép NULL
           </Form.Item>
-          
+
           <Form.Item name="isPrimary" valuePropName="checked">
             <Switch /> Khóa chính (Primary Key)
           </Form.Item>
-          
+
           <Form.Item name="defaultValue" label="Giá Trị Mặc Định">
             <Input placeholder="Nhập giá trị mặc định..." />
           </Form.Item>
-          
+
           <Form.Item name="comment" label="Ghi Chú">
             <Input.TextArea placeholder="Nhập ghi chú cho cột..." rows={3} />
           </Form.Item>
-          
+
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">

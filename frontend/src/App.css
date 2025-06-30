@@ -6,6 +6,10 @@
   background-color: #f5f5f5;
 }
 
+.no-hover:hover>td {
+  background: transparent !important;
+}
+
 /* Schema Flow Table Styles */
 .schema-flow-container {
   width: 100%;
@@ -50,7 +54,7 @@
   flex-shrink: 0;
 }
 
-.schema-flow-table .ant-table-thead > tr > th {
+.schema-flow-table .ant-table-thead>tr>th {
   position: sticky;
   top: 0;
   z-index: 2;
@@ -58,7 +62,7 @@
   white-space: nowrap;
 }
 
-.schema-flow-table .ant-table-tbody > tr > td {
+.schema-flow-table .ant-table-tbody>tr>td {
   white-space: nowrap;
 }
 
@@ -272,11 +276,11 @@
     left: auto;
     margin: 20px;
   }
-  
+
   .control-buttons {
     flex-direction: column;
   }
-  
+
   .table-node {
     min-width: 150px;
     max-width: 250px;
@@ -293,6 +297,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -308,6 +313,7 @@
     transform: translateX(-20px);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -430,7 +436,7 @@
 }
 
 /* Form Styles */
-.custom-form .ant-form-item-label > label {
+.custom-form .ant-form-item-label>label {
   font-weight: 600;
   color: #262626;
 }
@@ -449,14 +455,14 @@
 }
 
 /* Table Styles */
-.custom-table .ant-table-thead > tr > th {
+.custom-table .ant-table-thead>tr>th {
   background: #fafafa;
   font-weight: 600;
   color: #262626;
   border-bottom: 2px solid #f0f0f0;
 }
 
-.custom-table .ant-table-tbody > tr:hover > td {
+.custom-table .ant-table-tbody>tr:hover>td {
   background: #f5f5f5;
 }
 
@@ -609,14 +615,15 @@
 
 .login-card {
   border-radius: 18px !important;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.08) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08) !important;
   padding: 32px 24px !important;
   background: #fff !important;
 }
 
-.ant-input:focus, .ant-input-focused {
+.ant-input:focus,
+.ant-input-focused {
   border-color: #1677ff;
-  box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
 }
 
 .logo {
@@ -659,13 +666,13 @@
 }
 
 /* Schema Management Table Styles */
-.schema-management-table .ant-table-thead > tr > th {
+.schema-management-table .ant-table-thead>tr>th {
   background: #fafafa;
   font-weight: 600;
   white-space: nowrap;
 }
 
-.schema-management-table .ant-table-tbody > tr > td {
+.schema-management-table .ant-table-tbody>tr>td {
   white-space: nowrap;
 }
 
@@ -679,11 +686,11 @@
 }
 
 /* Compact table styles */
-.ant-table.ant-table-small .ant-table-thead > tr > th {
+.ant-table.ant-table-small .ant-table-thead>tr>th {
   padding: 8px 12px;
 }
 
-.ant-table.ant-table-small .ant-table-tbody > tr > td {
+.ant-table.ant-table-small .ant-table-tbody>tr>td {
   padding: 8px 12px;
 }
 
@@ -744,7 +751,7 @@
     margin-left: 0;
     margin-top: 64px;
   }
-  
+
   .app-content.collapsed {
     margin-left: 0;
   }

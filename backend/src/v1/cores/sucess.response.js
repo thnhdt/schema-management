@@ -7,7 +7,7 @@ const ReasonStatusCode = {
   OK: 'OK response !'
 }
 
-export class SucessReponse {
+class SucessReponse {
   constructor({ message, statusCode = StatusCode.OK, reasonStatusCode = ReasonStatusCode.OK, metaData = {} }) {
     this.message = !message ? reasonStatusCode : message
     this.status = statusCode,
@@ -17,15 +17,18 @@ export class SucessReponse {
     return res.status(this.status).json(this)
   }
 }
-export class OKReponse extends SucessReponse {
+class OKReponse extends SucessReponse {
   constructor({ message, metaData }) {
     super({ message, metaData })
   }
 }
 
-export class CreatedResponse extends SucessReponse {
+class CreatedResponse extends SucessReponse {
   constructor({ message, statusCode = StatusCode.CREATED, reasonStatusCode = ReasonStatusCode.CREATED, metaData }) {
     super({ message, statusCode, reasonStatusCode, metaData })
   }
 }
 
+module.exports = {
+  SucessReponse, CreatedResponse, OKReponse
+}
