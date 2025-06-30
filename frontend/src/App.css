@@ -3,7 +3,7 @@
 .App {
   text-align: left;
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: #ffffff;
 }
 
 .no-hover:hover>td {
@@ -626,12 +626,12 @@
 
 /* Login styles */
 .login-container {
+  min-height: 100vh;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
-  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
 .login-card {

@@ -134,7 +134,7 @@ const AppLayout = () => {
             margin: '88px 16px 24px 16px',
             padding: 24,
             minHeight: 'calc(100vh - 112px)',
-            background: colorBgContainer,
+            background: '#ffffff',
             borderRadius: borderRadiusLG,
             transition: 'margin-left 0.2s'
           }}

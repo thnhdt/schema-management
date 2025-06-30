@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, Card, Space, Button, Typography, Alert, message, Badge, Table, Tooltip, Popconfirm, Switch, Segmented, Select } from 'antd';
+import { Tabs, Card, Space, Button, Typography, Alert, message, Badge, Tooltip, Popconfirm, Switch, Segmented, Select } from 'antd';
 import { 
   DatabaseOutlined, 
   TableOutlined, 
@@ -22,138 +22,54 @@ const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 
 // Dữ liệu mẫu cho schema
-const sampleSchemas = {
-  1: {
-    id: 1,
-    name: 'PostgreSQL Production',
-    type: 'postgresql',
-    status: 'connected',
-    schemas: [
+const sampleSchemas = [
+  {
+    name: 'public',
+    tables: [
       {
-        name: 'public',
-        tables: [
-          {
-            name: 'users',
-            columns: [
-              { name: 'id', type: 'SERIAL', nullable: false, primary: true },
-              { name: 'username', type: 'VARCHAR(50)', nullable: false },
-              { name: 'email', type: 'VARCHAR(100)', nullable: false },
-              { name: 'created_at', type: 'TIMESTAMP', nullable: false, default: 'NOW()' }
-            ],
-            foreignKeys: [
-              { column: 'role_id', references: 'roles(id)' }
-            ]
-          },
-          {
-            name: 'posts',
-            columns: [
-              { name: 'id', type: 'SERIAL', nullable: false, primary: true },
-              { name: 'title', type: 'VARCHAR(200)', nullable: false },
-              { name: 'content', type: 'TEXT', nullable: true },
-              { name: 'user_id', type: 'INTEGER', nullable: false },
-              { name: 'created_at', type: 'TIMESTAMP', nullable: false, default: 'NOW()' }
-            ],
-            foreignKeys: [
-              { column: 'user_id', references: 'users(id)' }
-            ]
-          },
-          {
-            name: 'categories',
-            columns: [
-              { name: 'id', type: 'SERIAL', nullable: false, primary: true },
-              { name: 'name', type: 'VARCHAR(100)', nullable: false },
-              { name: 'description', type: 'TEXT', nullable: true }
-            ],
-            foreignKeys: []
-          }
-        ]
-      },
-      {
-        name: 'auth',
-        tables: [
-          {
-            name: 'roles',
-            columns: [
-              { name: 'id', type: 'SERIAL', nullable: false, primary: true },
-              { name: 'name', type: 'VARCHAR(50)', nullable: false },
-              { name: 'permissions', type: 'JSONB', nullable: true }
-            ],
-            foreignKeys: []
-          }
+        name: 'users',
+        columns: [
+          { name: 'id', type: 'SERIAL' },
+          { name: 'username', type: 'VARCHAR(50)' },
+          { name: 'email', type: 'VARCHAR(100)' },
+          { name: 'created_at', type: 'TIMESTAMP' }
         ]
       }
-    ]
+    ],
+    functions: [],
+    sequences: []
   },
-  2: {
-    id: 2,
-    name: 'MySQL Development',
-    type: 'mysql',
-    status: 'connected',
-    schemas: [
+  {
+    name: 'auth',
+    tables: [
       {
-        name: 'dev',
-        tables: [
-          {
-            name: 'users',
-            columns: [
-              { name: 'id', type: 'INT AUTO_INCREMENT', nullable: false, primary: true },
-              { name: 'username', type: 'VARCHAR(50)', nullable: false },
-              { name: 'email', type: 'VARCHAR(100)', nullable: false },
-              { name: 'created_at', type: 'TIMESTAMP', nullable: false, default: 'CURRENT_TIMESTAMP' }
-            ],
-            foreignKeys: []
-          },
-          {
-            name: 'projects',
-            columns: [
-              { name: 'id', type: 'INT AUTO_INCREMENT', nullable: false, primary: true },
-              { name: 'name', type: 'VARCHAR(100)', nullable: false },
-              { name: 'description', type: 'TEXT', nullable: true },
-              { name: 'user_id', type: 'INT', nullable: false }
-            ],
-            foreignKeys: [
-              { column: 'user_id', references: 'users(id)' }
-            ]
-          }
+        name: 'roles',
+        columns: [
+          { name: 'id', type: 'SERIAL' },
+          { name: 'name', type: 'VARCHAR(50)' },
+          { name: 'permissions', type: 'JSONB' }
         ]
       }
-    ]
-  },
-  3: {
-    id: 3,
-    name: 'PostgreSQL Staging',
-    type: 'postgresql',
-    status: 'disconnected',
-    schemas: []
-  },
-  4: {
-    id: 4,
-    name: 'MongoDB Analytics',
-    type: 'mongodb',
-    status: 'connected',
-    collections: [
-      {
-        name: 'user_events',
-        fields: [
-          { name: '_id', type: 'ObjectId', required: true },
-          { name: 'user_id', type: 'ObjectId', required: true },
-          { name: 'event_type', type: 'String', required: true },
-          { name: 'timestamp', type: 'Date', required: true },
-          { name: 'metadata', type: 'Object', required: false }
-        ]
-      },
-      {
-        name: 'page_views',
-        fields: [
-          { name: '_id', type: 'ObjectId', required: true },
-          { name: 'page_url', type: 'String', required: true },
-          { name: 'user_agent', type: 'String', required: false },
-          { name: 'timestamp', type: 'Date', required: true }
-        ]
-      }
-    ]
+    ],
+    functions: [],
+    sequences: []
   }
-};
+];
+
+// Thêm hàm tiện ích để bổ sung columnCount cho tables
+function addColumnCountToTables(schemas) {
+  return schemas.map(schema => ({
+    ...schema,
+    tables: schema.tables
+      ? schema.tables.map(table => ({
+          ...table,
+          columnCount: table.columns ? table.columns.length : 0
+        }))
+      : [],
+    functions: schema.functions || [],
+    sequences: schema.sequences || []
+  }));
+}
 
 function SchemaComponent() {
   const [schemas, setSchemas] = useState([]);
@@ -171,12 +87,11 @@ function SchemaComponent() {
     if (id && sampleSchemas[id]) {
       const db = sampleSchemas[id];
       setDatabase(db);
-      
+      let schemaList = db.schemas && db.schemas.length > 0 ? db.schemas : [{ name: 'public', tables: [], functions: [], sequences: [] }];
+      schemaList = addColumnCountToTables(schemaList);
+      setSchemas(schemaList);
       if (db.status === 'connected') {
-        setSchemas(db.schemas || []);
-        if (db.schemas && db.schemas.length > 0) {
-          setSelectedSchema(db.schemas[0]);
-        }
+        setSelectedSchema(schemaList[0]);
       }
     } else if (nodeData) {
       // Fallback to node data
@@ -185,8 +100,10 @@ function SchemaComponent() {
         name: nodeData.name,
         type: nodeData.type,
         status: nodeData.status,
-        schemas: []
+        schemas: [{ name: 'public', tables: [], functions: [], sequences: [] }]
       });
+      setSchemas([{ name: 'public', tables: [], functions: [], sequences: [] }]);
+      setSelectedSchema({ name: 'public', tables: [], functions: [], sequences: [] });
     }
   }, [id, nodeData]);
 
@@ -260,175 +177,197 @@ function SchemaComponent() {
     }
   };
 
-  const tableColumns = [
-    {
-      title: 'Tên Bảng',
-      dataIndex: 'name',
-      key: 'name',
-      width: 200,
-      render: (text) => <Text code>{text}</Text>,
-    },
-    {
-      title: 'Số Cột',
-      dataIndex: 'columns',
-      key: 'columns',
-      width: 100,
-      align: 'center',
-      render: (columns) => columns?.length || 0,
-    },
-    {
-      title: 'Khóa Ngoại',
-      dataIndex: 'foreignKeys',
-      key: 'foreignKeys',
-      width: 120,
-      align: 'center',
-      render: (foreignKeys) => foreignKeys?.length || 0,
-    },
-    {
-      title: 'Thao Tác',
-      key: 'actions',
-      width: 150,
-      align: 'center',
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="Xem chi tiết">
-            <Button 
-              type="primary" 
-              size="small" 
-              icon={<EyeOutlined />}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xác nhận xóa"
-            description={`Bạn có chắc chắn muốn xóa bảng "${record.name}"?`}
-            onConfirm={() => handleDeleteTable(record.name)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Button 
-              type="primary" 
-              danger 
-              size="small" 
-              icon={<DeleteOutlined />}
-            />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  const renderTables = () => {
+    const columns = [
+      {
+        title: 'Tên Bảng',
+        dataIndex: 'name',
+        key: 'name',
+        render: (text) => <Text strong>{text}</Text>
+      },
+      {
+        title: 'Số Cột',
+        dataIndex: 'columnCount',
+        key: 'columnCount',
+        render: (count) => count || 0
+      },
+      {
+        title: 'Thao Tác',
+        key: 'actions',
+        render: (_, record) => (
+          <Space>
+            <Tooltip title="Xem chi tiết">
+              <Button
+                type="primary"
+                icon={<EyeOutlined />}
+                onClick={() => navigate(`/schema/${id}/table/${record.name}`)}
+              />
+            </Tooltip>
+            <Popconfirm
+              title="Xác nhận xóa"
+              description={`Bạn có chắc chắn muốn xóa bảng "${record.name}"?`}
+              onConfirm={() => handleDeleteTable(record.name)}
+              okText="Xóa"
+              cancelText="Hủy"
+            >
+              <Button type="primary" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Space>
+        )
+      }
+    ];
 
-  const functionColumns = [
-    {
-      title: 'Tên Function',
-      dataIndex: 'name',
-      key: 'name',
-      width: 250,
-      render: (text) => <Text code>{text}</Text>,
-    },
-    {
-      title: 'Tham Số',
-      dataIndex: 'parameters',
-      key: 'parameters',
-      width: 200,
-      ellipsis: true,
-      render: (parameters) => parameters?.join(', ') || 'Không có',
-    },
-    {
-      title: 'Kiểu Trả Về',
-      dataIndex: 'returnType',
-      key: 'returnType',
-      width: 120,
-      render: (text) => <Text type="secondary">{text}</Text>,
-    },
-    {
-      title: 'Thao Tác',
-      key: 'actions',
-      width: 150,
-      align: 'center',
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="Xem chi tiết">
-            <Button 
-              type="primary" 
-              size="small" 
-              icon={<EyeOutlined />}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xác nhận xóa"
-            description={`Bạn có chắc chắn muốn xóa function "${record.name}"?`}
-            onConfirm={() => handleDeleteFunction(record.name)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Button 
-              type="primary" 
-              danger 
-              size="small" 
-              icon={<DeleteOutlined />}
-            />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+    return (
+      <TableComponent
+        title="Danh Sách Bảng"
+        columns={columns}
+        data={selectedSchema?.tables || []}
+        loading={loading}
+        customButton={
+          <Space>
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={handleRefresh}
+            >
+              Làm Mới
+            </Button>
+          </Space>
+        }
+      />
+    );
+  };
 
-  const sequenceColumns = [
-    {
-      title: 'Tên Sequence',
-      dataIndex: 'name',
-      key: 'name',
-      width: 250,
-      render: (text) => <Text code>{text}</Text>,
-    },
-    {
-      title: 'Giá Trị Hiện Tại',
-      dataIndex: 'currentValue',
-      key: 'currentValue',
-      width: 150,
-      align: 'center',
-      render: (text) => text?.toLocaleString() || '0',
-    },
-    {
-      title: 'Giá Trị Tối Đa',
-      dataIndex: 'maxValue',
-      key: 'maxValue',
-      width: 150,
-      align: 'center',
-      render: (text) => text?.toLocaleString() || 'N/A',
-    },
-    {
-      title: 'Thao Tác',
-      key: 'actions',
-      width: 150,
-      align: 'center',
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="Xem chi tiết">
-            <Button 
-              type="primary" 
-              size="small" 
-              icon={<EyeOutlined />}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xác nhận xóa"
-            description={`Bạn có chắc chắn muốn xóa sequence "${record.name}"?`}
-            onConfirm={() => handleDeleteSequence(record.name)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Button 
-              type="primary" 
-              danger 
-              size="small" 
-              icon={<DeleteOutlined />}
-            />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  const renderFunctions = () => {
+    const columns = [
+      {
+        title: 'Tên Function',
+        dataIndex: 'name',
+        key: 'name',
+        render: (text) => <Text strong>{text}</Text>
+      },
+      {
+        title: 'Tham Số',
+        dataIndex: 'parameters',
+        key: 'parameters',
+        render: (params) => params?.join(', ') || '-'
+      },
+      {
+        title: 'Definition',
+        dataIndex: 'definition',
+        key: 'definition'
+      },
+      {
+        title: 'Thao Tác',
+        key: 'actions',
+        render: (_, record) => (
+          <Space>
+            <Tooltip title="Xem chi tiết">
+              <Button
+                type="primary"
+                icon={<EyeOutlined />}
+                onClick={() => navigate(`/schema/${id}/function/${record.name}`)}
+              />
+            </Tooltip>
+            <Popconfirm
+              title="Xác nhận xóa"
+              description={`Bạn có chắc chắn muốn xóa function "${record.name}"?`}
+              onConfirm={() => handleDeleteFunction(record.name)}
+              okText="Xóa"
+              cancelText="Hủy"
+            >
+              <Button type="primary" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Space>
+        )
+      }
+    ];
+
+    return (
+      <TableComponent
+        title="Danh Sách Function"
+        columns={columns}
+        data={selectedSchema?.functions || []}
+        loading={loading}
+        customButton={
+          <Space>
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={handleRefresh}
+            >
+              Làm Mới
+            </Button>
+          </Space>
+        }
+      />
+    );
+  };
+
+  const renderSequences = () => {
+    const columns = [
+      {
+        title: 'Tên Sequence',
+        dataIndex: 'name',
+        key: 'name',
+        render: (text) => <Text strong>{text}</Text>
+      },
+      {
+        title: 'Start Value',
+        dataIndex: 'startValue',
+        key: 'startValue'
+      },
+      {
+        title: 'Bước Nhảy',
+        dataIndex: 'increment',
+        key: 'increment'
+      },
+      {
+        title: 'Thao Tác',
+        key: 'actions',
+        render: (_, record) => (
+          <Space>
+            <Tooltip title="Xem chi tiết">
+              <Button
+                type="primary"
+                icon={<EyeOutlined />}
+                onClick={() => navigate(`/schema/${id}/sequence/${record.name}`)}
+              />
+            </Tooltip>
+            <Popconfirm
+              title="Xác nhận xóa"
+              description={`Bạn có chắc chắn muốn xóa sequence "${record.name}"?`}
+              onConfirm={() => handleDeleteSequence(record.name)}
+              okText="Xóa"
+              cancelText="Hủy"
+            >
+              <Button type="primary" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Space>
+        )
+      }
+    ];
+
+    return (
+      <TableComponent
+        title="Danh Sách Sequence"
+        columns={columns}
+        data={selectedSchema?.sequences || []}
+        loading={loading}
+        customButton={
+          <Space>
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={handleRefresh}
+            >
+              Làm Mới
+            </Button>
+          </Space>
+        }
+      />
+    );
+  };
 
   if (!database) {
     return (
@@ -482,22 +421,23 @@ function SchemaComponent() {
               <Space wrap>
                 <Text strong>Schema hiện tại: </Text>
                 <Text code>{selectedSchema?.name || 'public'}</Text>
-                {schemas.length > 0 && (
-                  <Select
-                    value={selectedSchema?.name || 'public'}
-                    onChange={(value) => {
-                      const schema = schemas.find(s => s.name === value);
-                      setSelectedSchema(schema);
-                    }}
-                    style={{ minWidth: 120 }}
-                  >
-                    {schemas.map(schema => (
-                      <Select.Option key={schema.name} value={schema.name}>
-                        {schema.name}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                )}
+                <Select
+                  value={selectedSchema?.name || 'public'}
+                  onChange={(value) => {
+                    const schema = schemas.find(s => s.name === value) || { name: value, tables: [], functions: [], sequences: [] };
+                    setSelectedSchema(schema);
+                  }}
+                  style={{ minWidth: 120 }}
+                >
+                  {schemas.length > 0
+                    ? schemas.map(schema => (
+                        <Select.Option key={schema.name} value={schema.name}>
+                          {schema.name}
+                        </Select.Option>
+                      ))
+                    : <Select.Option value="public">public</Select.Option>
+                  }
+                </Select>
                 <Button 
                   icon={<ReloadOutlined />} 
                   onClick={handleRefresh}
@@ -568,22 +508,9 @@ function SchemaComponent() {
             style={{ flex: 1, display: 'flex', flexDirection: 'column', marginBottom: 0 }}
             bodyStyle={{ flex: 1, padding: 0, display: 'flex', flexDirection: 'column' }}
           >
-            <TableComponent
-              className="schema-management-table"
-              columns={
-                schemaType === 'table' ? tableColumns :
-                schemaType === 'function' ? functionColumns :
-                sequenceColumns
-              }
-              data={
-                schemaType === 'table' ? (selectedSchema?.tables || []) :
-                schemaType === 'function' ? (selectedSchema?.functions || []) :
-                (selectedSchema?.sequences || [])
-              }
-              loading={loading}
-              rowClassName={() => ''}
-              size="middle"
-            />
+            {schemaType === 'table' ? renderTables() :
+             schemaType === 'function' ? renderFunctions() :
+             renderSequences()}
           </Card>
         </div>
       ) : (

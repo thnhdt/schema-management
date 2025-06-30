@@ -146,7 +146,7 @@ const Node = () => {
   };
 
   const handleViewDatabase = (node) => {
-    navigate(`/database/${node.id}`, {
+    navigate(`/database?id=${node.id}`, {
       state: {
         nodeData: node,
         nodeName: node.name
@@ -155,7 +155,7 @@ const Node = () => {
   };
 
   const handleViewSchema = (node) => {
-    navigate(`/schema/${node.id}`, {
+    navigate(`/schema?id=${node.id}`, {
       state: {
         nodeData: node,
         nodeName: node.name
@@ -195,29 +195,22 @@ const Node = () => {
       ),
     },
     {
-      title: 'Kết Nối',
+      title: 'Host',
       dataIndex: 'host',
       key: 'host',
-      render: (text, record) => (
-        <Text code>{text}:{record.port}</Text>
-      ),
-    },
-    {
-      title: 'Database',
-      dataIndex: 'database',
-      key: 'database',
       render: (text) => <Text code>{text}</Text>,
     },
     {
-      title: 'Trạng Thái',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Badge
-          status={getStatusColor(status)}
-          text={getStatusText(status)}
-        />
-      ),
+      title: 'Port',
+      dataIndex: 'port',
+      key: 'port',
+      render: (text) => <Text code>{text}</Text>,
+    },
+    {
+      title: 'User',
+      dataIndex: 'username',
+      key: 'username',
+      render: (text) => <Text code>{text}</Text>,
     },
     {
       title: 'Thống Kê',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, message, Button, Card, Space, Badge, Row, Col, Statistic, Tabs, Alert, Tag } from 'antd';
+import { Typography, message, Button, Card, Space, Badge, Row, Col, Statistic, Tabs, Alert, Tag, Select } from 'antd';
 import { 
   DatabaseOutlined, 
   ReloadOutlined,
@@ -20,6 +20,11 @@ const sampleDatabases = {
     name: 'PostgreSQL Production',
     type: 'postgresql',
     status: 'connected',
+    dbStatus: [
+      { name: 'production_db', status: 'active' },
+      { name: 'analytics_db', status: 'active' },
+      { name: 'archive_db', status: 'inactive' },
+    ],
     tables: [
       { name: 'users', rows: 1250, size: '2.5 MB', lastModified: '2024-01-15 10:30:00' },
       { name: 'posts', rows: 3450, size: '8.2 MB', lastModified: '2024-01-15 11:15:00' },
@@ -38,6 +43,7 @@ const sampleDatabases = {
     name: 'PostgreSQL Staging',
     type: 'postgresql',
     status: 'disconnected',
+    dbStatus: [],
     tables: [],
     schemas: [],
     totalSize: '0 MB',
@@ -51,6 +57,7 @@ const Database = () => {
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [activeTab, setActiveTab] = useState('1');
+  const [selectStatus, setselectStatus] = useState(null);
   const [messageApi, contextHolder] = message.useMessage();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -65,14 +72,22 @@ const Database = () => {
       
       if (db.status === 'connected') {
         setActiveTab('2');
+        const firstActiveDb = db.dbStatus?.find(ldb => ldb.status === 'active');
+        if (firstActiveDb) {
+          setselectStatus(firstActiveDb.name);
+        }
       }
     } else if (nodeData) {
-      // Fallback to node data if no specific database found
       const db = {
         id: nodeData.id,
         name: nodeData.name,
         type: nodeData.type,
         status: nodeData.status,
+        dbStatus: [
+          { name: 'Database_1', status: 'active' },
+          { name: 'Database_2', status: 'active' },
+          { name: 'sample_db_2', status: 'inactive' },
+        ],
         tables: [],
         schemas: [],
         totalSize: '0 MB',
@@ -295,6 +310,21 @@ const Database = () => {
                     >
                       Xem Schema
                     </Button>
+                    <Select
+                      value={selectStatus}
+                      onChange={setselectStatus}
+                      style={{ width: 200 }}
+                      placeholder="Chọn database"
+                    >
+                      {(database.dbStatus || [])
+                        .filter(db => db.status === 'active')
+                        .map(db => (
+                          <Select.Option key={db.name} value={db.name}>
+                            {db.name}
+                          </Select.Option>
+                        ))
+                      }
+                    </Select>
                   </Space>
                 </Card>
 

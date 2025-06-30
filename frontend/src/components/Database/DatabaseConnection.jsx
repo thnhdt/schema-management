@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Form, Input, Button, Space, message, Typography, Divider, Alert, Switch, InputNumber } from 'antd';
+import { Card, Form, Input, Button, Space, message, Typography, Divider, Alert, Switch, InputNumber, Select } from 'antd';
 import { 
   DatabaseOutlined, 
   CheckCircleOutlined, 
@@ -12,12 +12,17 @@ import { testDatabaseConnection, connectToDatabase } from '../../api/index';
 const { Title, Text } = Typography;
 const { Password } = Input;
 
-const DatabaseConnection = ({ onConnectionSuccess }) => {
+const DatabaseConnection = ({ onConnectionSuccess, databases = [] }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+
+  // Lọc database có status 'Active' (hoặc 'connected')
+  const activeDatabases = Array.isArray(databases)
+    ? databases.filter(db => db.status === 'Active' || db.status === 'connected')
+    : [];
 
   const handleTestConnection = async () => {
     try {
@@ -142,7 +147,7 @@ const DatabaseConnection = ({ onConnectionSuccess }) => {
         initialValues={{
           host: 'localhost',
           port: 5432,
-          database: 'postgres',
+          database: activeDatabases.length > 0 ? activeDatabases[0].name : 'postgres',
           username: 'postgres',
           ssl: false,
           schema: 'public',
@@ -175,9 +180,17 @@ const DatabaseConnection = ({ onConnectionSuccess }) => {
         <Form.Item
           name="database"
           label="Database Name"
-          rules={[{ required: true, message: 'Vui lòng nhập tên database!' }]}
+          rules={[{ required: true, message: 'Vui lòng nhập/chọn tên database!' }]}
         >
-          <Input placeholder="postgres" />
+          {activeDatabases.length > 0 ? (
+            <Select placeholder="Chọn database">
+              {activeDatabases.map(db => (
+                <Select.Option key={db.name} value={db.name}>{db.name}</Select.Option>
+              ))}
+            </Select>
+          ) : (
+            <Input placeholder="postgres" />
+          )}
         </Form.Item>
 
         <Form.Item
