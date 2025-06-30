@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, message, Button, Card, Space, Tag, Table, Tooltip, Popconfirm, Badge, Row, Col, Statistic} from 'antd';
+import { Typography, message, Button, Card, Space, Badge, Row, Col, Statistic, Tabs, Alert, Tag } from 'antd';
 import { 
   DatabaseOutlined, 
-  TableOutlined, 
-  EyeOutlined, 
-  DeleteOutlined,
   ReloadOutlined,
-  ExportOutlined,
-  ImportOutlined,
-  SettingOutlined
+  SettingOutlined,
+  TableOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
+import DatabaseConnection from './DatabaseConnection';
+
 const { Title, Text } = Typography;
+const { TabPane } = Tabs;
 
 // Dữ liệu mẫu cho database
 const sampleDatabases = {
@@ -50,6 +49,8 @@ const sampleDatabases = {
 const Database = () => {
   const [database, setDatabase] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [activeTab, setActiveTab] = useState('1');
   const [messageApi, contextHolder] = message.useMessage();
   const navigate = useNavigate();
   const { id } = useParams();
@@ -58,10 +59,16 @@ const Database = () => {
 
   useEffect(() => {
     if (id && sampleDatabases[id]) {
-      setDatabase(sampleDatabases[id]);
+      const db = sampleDatabases[id];
+      setDatabase(db);
+      setIsConnected(db.status === 'connected');
+      
+      if (db.status === 'connected') {
+        setActiveTab('2');
+      }
     } else if (nodeData) {
       // Fallback to node data if no specific database found
-      setDatabase({
+      const db = {
         id: nodeData.id,
         name: nodeData.name,
         type: nodeData.type,
@@ -71,9 +78,41 @@ const Database = () => {
         totalSize: '0 MB',
         connections: 0,
         uptime: '0 days'
-      });
+      };
+      setDatabase(db);
+      setIsConnected(nodeData.status === 'connected');
+      
+      if (nodeData.status === 'connected') {
+        setActiveTab('2');
+      }
     }
   }, [id, nodeData]);
+
+  const handleConnectionSuccess = (connectionConfig) => {
+    setIsConnected(true);
+    setActiveTab('2');
+    // Update database status
+    if (database) {
+      setDatabase({
+        ...database,
+        status: 'connected'
+      });
+    }
+    messageApi.success('Đã kết nối thành công đến database!');
+  };
+
+  const handleDisconnect = () => {
+    setIsConnected(false);
+    setActiveTab('1');
+    // Update database status
+    if (database) {
+      setDatabase({
+        ...database,
+        status: 'disconnected'
+      });
+    }
+    messageApi.info('Đã ngắt kết nối database');
+  };
 
   const handleRefresh = () => {
     setLoading(true);
@@ -98,10 +137,6 @@ const Database = () => {
         nodeName: database?.name 
       } 
     });
-  };
-
-  const handleDeleteTable = (tableName) => {
-    messageApi.success(`Đã xóa bảng ${tableName}!`);
   };
 
   const getStatusColor = (status) => {
@@ -129,118 +164,6 @@ const Database = () => {
     }
   };
 
-  const tableColumns = [
-    {
-      title: 'Tên Bảng',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text) => <Text code>{text}</Text>,
-    },
-    {
-      title: 'Số Dòng',
-      dataIndex: 'rows',
-      key: 'rows',
-      render: (text) => text?.toLocaleString() || '0',
-    },
-    {
-      title: 'Kích Thước',
-      dataIndex: 'size',
-      key: 'size',
-      render: (text) => <Text type="secondary">{text}</Text>,
-    },
-    {
-      title: 'Cập Nhật Cuối',
-      dataIndex: 'lastModified',
-      key: 'lastModified',
-      render: (text) => <Text type="secondary">{text}</Text>,
-    },
-    {
-      title: 'Thao Tác',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Tooltip title="Xem chi tiết">
-            <Button 
-              type="primary" 
-              size="small" 
-              icon={<EyeOutlined />}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xác nhận xóa"
-            description={`Bạn có chắc chắn muốn xóa bảng "${record.name}"?`}
-            onConfirm={() => handleDeleteTable(record.name)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Button 
-              type="primary" 
-              danger 
-              size="small" 
-              icon={<DeleteOutlined />}
-            />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
-
-  const collectionColumns = [
-    {
-      title: 'Tên Collection',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text) => <Text code>{text}</Text>,
-    },
-    {
-      title: 'Số Document',
-      dataIndex: 'documents',
-      key: 'documents',
-      render: (text) => text?.toLocaleString() || '0',
-    },
-    {
-      title: 'Kích Thước',
-      dataIndex: 'size',
-      key: 'size',
-      render: (text) => <Text type="secondary">{text}</Text>,
-    },
-    {
-      title: 'Cập Nhật Cuối',
-      dataIndex: 'lastModified',
-      key: 'lastModified',
-      render: (text) => <Text type="secondary">{text}</Text>,
-    },
-    {
-      title: 'Thao Tác',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Tooltip title="Xem chi tiết">
-            <Button 
-              type="primary" 
-              size="small" 
-              icon={<EyeOutlined />}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xác nhận xóa"
-            description={`Bạn có chắc chắn muốn xóa collection "${record.name}"?`}
-            onConfirm={() => handleDeleteTable(record.name)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Button 
-              type="primary" 
-              danger 
-              size="small" 
-              icon={<DeleteOutlined />}
-            />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
-
   if (!database) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
@@ -253,7 +176,7 @@ const Database = () => {
   }
 
   return (
-    <div>
+    <div style={{ padding: '20px', height: '100vh', overflow: 'hidden' }}>
       {contextHolder}
       
       <div style={{ marginBottom: 20 }}>
@@ -265,8 +188,8 @@ const Database = () => {
           >
             ← Quay lại Nodes
           </Button>
-          <Title level={2} style={{ margin: 0 }}>
-            {getTypeIcon(database.type)} {database.name}
+          <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
+            {getTypeIcon(database.type)} Database Manager - {database.name}
           </Title>
           <Badge 
             status={getStatusColor(database.status)} 
@@ -275,120 +198,125 @@ const Database = () => {
         </Space>
       </div>
 
-      {/* Database Statistics
-      <Row gutter={16} style={{ marginBottom: 24 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Tổng Kích Thước"
-              value={database.totalSize}
-              prefix={<DatabaseOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Kết Nối Hiện Tại"
-              value={database.connections}
-              prefix={<DatabaseOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Uptime"
-              value={database.uptime}
-              prefix={<DatabaseOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title={database.type === 'mongodb' ? 'Collections' : 'Tables'}
-              value={database.type === 'mongodb' ? database.collections?.length || 0 : database.tables?.length || 0}
-              prefix={<TableOutlined />}
-            />
-          </Card>
-        </Col>
-      </Row> */}
-
-      {/* Action Buttons */}
-      <Card style={{ marginBottom: 24 }}>
-        <Space>
-          <Button 
-            type="primary" 
-            icon={<ReloadOutlined />}
-            onClick={handleRefresh}
-            loading={loading}
-          >
-            Làm Mới
-          </Button>
-          {/* <Button 
-            icon={<ExportOutlined />}
-            onClick={handleExport}
-          >
-            Export
-          </Button>
-          <Button 
-            icon={<ImportOutlined />}
-            onClick={handleImport}
-          >
-            Import
-          </Button> */}
-          <Button 
-            icon={<SettingOutlined />}
-            onClick={handleViewSchema}
-          >
-            Xem Schema
-          </Button>
-        </Space>
-      </Card>
-
-      {/* Schemas (for PostgreSQL/MySQL) */}
-      {database.type !== 'mongodb' && database.schemas && database.schemas.length > 0 && (
-        <Card title="Schemas" style={{ marginBottom: 24 }}>
-          <Space wrap>
-            {database.schemas.map(schema => (
-              <Tag key={schema} color="blue">{schema}</Tag>
-            ))}
-          </Space>
-        </Card>
+      {!isConnected && (
+        <Alert
+          message="Chưa kết nối database"
+          description="Vui lòng kết nối đến database để bắt đầu quản lý"
+          type="warning"
+          showIcon
+          style={{ marginBottom: 20 }}
+        />
       )}
 
-      {/* Tables/Collections */}
-      <Card 
-        title={database.type === 'mongodb' ? 'Collections' : 'Tables'}
-        extra={
-          <Button 
-            type="primary" 
-            icon={<TableOutlined />}
-            size="small"
-          >
-            Thêm {database.type === 'mongodb' ? 'Collection' : 'Table'}
-          </Button>
-        }
-      >
-        {database.type === 'mongodb' ? (
-          <Table
-            columns={collectionColumns}
-            dataSource={database.collections || []}
-            loading={loading}
-            rowKey="name"
-            pagination={false}
-          />
-        ) : (
-          <Table
-            columns={tableColumns}
-            dataSource={database.tables || []}
-            loading={loading}
-            rowKey="name"
-            pagination={false}
-          />
-        )}
-      </Card>
+      <Tabs 
+        activeKey={activeTab} 
+        onChange={setActiveTab}
+        type="card"
+        items={[
+          {
+            key: '1',
+            label: (
+              <Space>
+                <DatabaseOutlined />
+                Kết Nối Database
+              </Space>
+            ),
+            children: (
+              <DatabaseConnection 
+                onConnectionSuccess={handleConnectionSuccess}
+                onDisconnect={handleDisconnect}
+              />
+            ),
+          },
+          {
+            key: '2',
+            label: (
+              <Space>
+                <DatabaseOutlined />
+                Thông Tin Database
+              </Space>
+            ),
+            children: isConnected ? (
+              <div>
+                {/* Database Statistics */}
+                <Row gutter={16} style={{ marginBottom: 24 }}>
+                  <Col span={6}>
+                    <Card>
+                      <Statistic
+                        title="Tổng Kích Thước"
+                        value={database.totalSize}
+                        prefix={<DatabaseOutlined />}
+                      />
+                    </Card>
+                  </Col>
+                  <Col span={6}>
+                    <Card>
+                      <Statistic
+                        title="Kết Nối Hiện Tại"
+                        value={database.connections}
+                        prefix={<DatabaseOutlined />}
+                      />
+                    </Card>
+                  </Col>
+                  <Col span={6}>
+                    <Card>
+                      <Statistic
+                        title="Uptime"
+                        value={database.uptime}
+                        prefix={<DatabaseOutlined />}
+                      />
+                    </Card>
+                  </Col>
+                  <Col span={6}>
+                    <Card>
+                      <Statistic
+                        title="Schemas"
+                        value={database.schemas?.length || 0}
+                        prefix={<DatabaseOutlined />}
+                      />
+                    </Card>
+                  </Col>
+                </Row>
+
+                {/* Action Buttons */}
+                <Card style={{ marginBottom: 24 }}>
+                  <Space>
+                    <Button 
+                      type="primary" 
+                      icon={<ReloadOutlined />}
+                      onClick={handleRefresh}
+                      loading={loading}
+                    >
+                      Làm Mới
+                    </Button>
+                    <Button 
+                      icon={<SettingOutlined />}
+                      onClick={handleViewSchema}
+                    >
+                      Xem Schema
+                    </Button>
+                  </Space>
+                </Card>
+
+                {/* Schemas (for PostgreSQL/MySQL) */}
+                {database.type !== 'mongodb' && database.schemas && database.schemas.length > 0 && (
+                  <Card title="Schemas" style={{ marginBottom: 24 }}>
+                    <Space wrap>
+                      {database.schemas.map(schema => (
+                        <Tag key={schema} color="blue">{schema}</Tag>
+                      ))}
+                    </Space>
+                  </Card>
+                )}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '50px' }}>
+                <Text type="secondary">Vui lòng kết nối database trước</Text>
+              </div>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 };

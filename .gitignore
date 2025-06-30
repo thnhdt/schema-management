@@ -4,3 +4,4 @@ node_modules/
 mongo_data/
 **/package-lock.json
 example.js
+backend/
