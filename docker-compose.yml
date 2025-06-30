@@ -1,12 +1,28 @@
 
 services:
 
-  mongo:
-    image: mongo:latest
+  # mongo:
+  #   image: mongo:latest
+  #   ports:
+  #     - "27017:27017"
+  #   volumes:
+  #     - ./mongo_data:/data/db
+  #   env_file:
+  #     - ./Backend/.env
+
+  postgres:
+    image: postgres:16
+    container_name: mypg
+    restart: always
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
     ports:
-      - "27017:27017"
+      - "5432:5432"
     volumes:
-      - ./mongo_data:/data/db
-    env_file:
-      - ./Backend/.env
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
 

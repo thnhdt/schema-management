@@ -29,7 +29,6 @@ export const TableComponent = (props) => {
 };
 
 export const ModalComponent = ({ onCancel, onOk = null, open = null, title, Component, okText = null, footer = undefined, width = undefined }) => {
-
   return (
     <Modal
       width={width}

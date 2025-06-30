@@ -1,5 +1,13 @@
+<<<<<<< HEAD
 node_modules/
 # .env
 mongo_data/
 **/package-lock.json
 example.js
+=======
+# .gitignore
+node_modules/
+# .env
+mongo_data/
+**/package-lock.json
+>>>>>>> d345abb (init frontend)
