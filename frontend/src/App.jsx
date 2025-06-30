@@ -5,15 +5,11 @@ import Main from './components/Main'
 import AppLayout from './Layout';
 import SheetComponent from './components/Sheet/Sheet';
 import Node from './components/Node';
-<<<<<<< HEAD
 import Database from './components/Database/Database';
 import SchemaComponent from './components/Schema/Schema';
 import SchemaFlow from './components/Schema/SchemaFlow';
 import ReactFlowTest from './components/Schema/ReactFlowTest';
 import SQLToERD from './components/Schema/SQLToERD';
-=======
-import SchemaComponent from './components/Schema/Schema';
->>>>>>> d345abb (init frontend)
 // import { RequireUsername, AlreadyLogined } from './Authentication';
 
 function App() {
@@ -31,7 +27,6 @@ function App() {
             {/* <Route element={<RequireUsername />}> */}
               <Route element={<AppLayout />}>
                 <Route path='/sheet' element={<Node />} />
-<<<<<<< HEAD
                 <Route path='/database' element={<Database />} />
                 <Route path='/database/:id' element={<Database />} />
                 <Route path='/schema' element={<SchemaComponent />} />
@@ -40,11 +35,6 @@ function App() {
                 <Route path='/schema/flow' element={<SchemaFlow />} />
                 <Route path='/schema/test' element={<ReactFlowTest />} />
                 <Route path='/schema/sql-to-erd' element={<SQLToERD />} />
-=======
-                <Route path='/database' element={<SheetComponent />} />
-                <Route path='/schema' element={<SchemaComponent />} />
-                <Route path='/schema/table' element={<SchemaComponent />} />
->>>>>>> d345abb (init frontend)
                 <Route path='/user' element={<SheetComponent />} />
               </Route>
             {/* </Route> */}
@@ -56,8 +46,4 @@ function App() {
   )
 }
 
-<<<<<<< HEAD
-=======
-
->>>>>>> d345abb (init frontend)
 export default App
