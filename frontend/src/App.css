@@ -685,3 +685,95 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Schema Management Table Styles */
+.schema-management-table .ant-table-thead > tr > th {
+  background: #fafafa;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.schema-management-table .ant-table-tbody > tr > td {
+  white-space: nowrap;
+}
+
+.schema-management-table .ant-table-cell {
+  padding: 8px 12px;
+}
+
+.schema-management-table .ant-table-pagination {
+  margin: 16px 0;
+  text-align: center;
+}
+
+/* Compact table styles */
+.ant-table.ant-table-small .ant-table-thead > tr > th {
+  padding: 8px 12px;
+}
+
+.ant-table.ant-table-small .ant-table-tbody > tr > td {
+  padding: 8px 12px;
+}
+
+/* Horizontal scroll styles */
+.ant-table-body::-webkit-scrollbar {
+  height: 8px;
+}
+
+.ant-table-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.ant-table-body::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Layout and Navigation Styles */
+.app-layout {
+  min-height: 100vh;
+}
+
+.app-sider {
+  position: fixed;
+  height: 100vh;
+  left: 0;
+  top: 0;
+  z-index: 1000;
+}
+
+.app-header {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 999;
+  transition: all 0.2s;
+}
+
+.app-content {
+  margin-left: 200px;
+  margin-top: 64px;
+  transition: all 0.2s;
+  min-height: calc(100vh - 64px);
+}
+
+.app-content.collapsed {
+  margin-left: 80px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .app-content {
+    margin-left: 0;
+    margin-top: 64px;
+  }
+  
+  .app-content.collapsed {
+    margin-left: 0;
+  }
+}

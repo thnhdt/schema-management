@@ -30,22 +30,14 @@ const AppLayout = () => {
     window.location = '/';
   }
   return (
-<<<<<<< HEAD
     <Layout className="app-layout" style={{ minHeight: '100vh' }}>
-
       <Sider 
         className="app-sider"
         trigger={null}
-=======
-    <Layout style={{ minHeight: '97vh' }}>
-
-      <Sider trigger={null}
->>>>>>> d345abb (init frontend)
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
         breakpoint="md"
-<<<<<<< HEAD
         onBreakpoint={(broken) => setCollapsed(broken)}
         style={{
           position: 'fixed',
@@ -55,9 +47,6 @@ const AppLayout = () => {
           zIndex: 1000,
         }}
       >
-=======
-        onBreakpoint={(broken) => setCollapsed(broken)}>
->>>>>>> d345abb (init frontend)
         <div
           style={{
             color: 'white',
@@ -84,24 +73,20 @@ const AppLayout = () => {
           onClick={({ key }) => navigate(key)}
           items={[
             {
-                key: '/sheet',
-                icon: <FileExcelOutlined />,
-<<<<<<< HEAD
-                label: 'Nodes',
-=======
-                label: 'Node',
->>>>>>> d345abb (init frontend)
-              },
+              key: '/sheet',
+              icon: <FileExcelOutlined />,
+              label: 'Nodes',
+            },
             {
               key: '/database',
               icon: <UnorderedListOutlined />,
               label: 'Database',
             },
             {
-                key: '/schema',
-                icon: <TableOutlined />,
-                label: 'Schema',
-              },
+              key: '/schema',
+              icon: <TableOutlined />,
+              label: 'Schema',
+            },
             {
               key: '/user',
               icon: <UserOutlined />,
@@ -111,7 +96,6 @@ const AppLayout = () => {
         />
       </Sider>
 
-<<<<<<< HEAD
       <Layout style={{ 
         width: '100%',
         marginLeft: collapsed ? '80px' : '200px',
@@ -132,10 +116,6 @@ const AppLayout = () => {
             transition: 'left 0.2s'
           }}
         >
-=======
-      <Layout style={{ width: '100%' }}>
-        <Header style={{ padding: 0, background: colorBgContainer, display: 'flex', justifyContent: 'space-between' }}>
->>>>>>> d345abb (init frontend)
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -149,7 +129,6 @@ const AppLayout = () => {
         </Header>
 
         <Content
-<<<<<<< HEAD
           className={`app-content ${collapsed ? 'collapsed' : ''}`}
           style={{
             margin: '88px 16px 24px 16px',
@@ -158,14 +137,6 @@ const AppLayout = () => {
             background: colorBgContainer,
             borderRadius: borderRadiusLG,
             transition: 'margin-left 0.2s'
-=======
-          style={{
-            margin: '24px 16px',
-            padding: 24,
-            minHeight: 280,
-            background: colorBgContainer,
-            borderRadius: borderRadiusLG,
->>>>>>> d345abb (init frontend)
           }}
         >
           <Outlet />

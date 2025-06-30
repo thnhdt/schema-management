@@ -474,8 +474,4 @@ const Node = () => {
   );
 };
 
-<<<<<<< HEAD
 export default Node;
-=======
-export default Node;
->>>>>>> d345abb (init frontend)
