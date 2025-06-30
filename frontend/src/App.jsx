@@ -7,7 +7,9 @@ import SheetComponent from './components/Sheet/Sheet';
 import Node from './components/Node';
 import Database from './components/Database/Database';
 import SchemaComponent from './components/Schema/Schema';
+import SchemaFlow from './components/Schema/SchemaFlow';
 import ReactFlowTest from './components/Schema/ReactFlowTest';
+import SQLToERD from './components/Schema/SQLToERD';
 // import { RequireUsername, AlreadyLogined } from './Authentication';
 
 function App() {
@@ -30,7 +32,9 @@ function App() {
                 <Route path='/schema' element={<SchemaComponent />} />
                 <Route path='/schema/:id' element={<SchemaComponent />} />
                 <Route path='/schema/table' element={<SchemaComponent />} />
+                <Route path='/schema/flow' element={<SchemaFlow />} />
                 <Route path='/schema/test' element={<ReactFlowTest />} />
+                <Route path='/schema/sql-to-erd' element={<SQLToERD />} />
                 <Route path='/user' element={<SheetComponent />} />
               </Route>
             {/* </Route> */}

@@ -234,6 +234,14 @@ const Node = () => {
       key: 'actions',
       render: (_, record) => (
         <Space>
+          <Tooltip title="Xem Database">
+            <Button 
+              type="primary" 
+              size="small" 
+              icon={<EyeOutlined />}
+              onClick={() => handleViewDatabase(record)}
+            />
+          </Tooltip>
           <Tooltip title="Xem Schema">
             <Button 
               type="default" 
