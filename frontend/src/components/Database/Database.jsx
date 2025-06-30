@@ -4,7 +4,7 @@ import {
   DatabaseOutlined, 
   ReloadOutlined,
   SettingOutlined,
-  TableOutlined
+  ArrowLeftOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
@@ -183,10 +183,10 @@ const Database = () => {
         <Space align="center">
           <Button 
             type="text" 
-            icon={<DatabaseOutlined />} 
+            icon={<ArrowLeftOutlined />} 
             onClick={() => navigate('/sheet')}
           >
-            ← Quay lại Nodes
+            Quay lại Nodes
           </Button>
           <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
             {getTypeIcon(database.type)} Database Manager - {database.name}

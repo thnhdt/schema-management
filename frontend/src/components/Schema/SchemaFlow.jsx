@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Button, Card, Space, Typography, Modal, Form, Input, Select, message, Table, Tag, Tooltip } from 'antd';
+import { Button, Card, Space, Typography, Modal, Form, Input, Select, message, Tag, Tooltip } from 'antd';
 import { PlusOutlined, DatabaseOutlined, TableOutlined, ReloadOutlined, InfoCircleOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { TableComponent } from '../../util/helper';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -321,7 +322,7 @@ const SchemaFlow = () => {
               icon={<ArrowLeftOutlined />} 
               onClick={handleGoBack}
             >
-              ← Quay lại Schema
+              Quay lại Schema
             </Button>
             <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
               <DatabaseOutlined /> Schema Flow Visualization
@@ -370,25 +371,13 @@ const SchemaFlow = () => {
             </Card>
 
             <div className="schema-flow-table" style={{ flex: 1, height: 'calc(100vh - 400px)' }}>
-              <Table
+              <TableComponent
                 columns={tableColumns}
-                dataSource={schemaTables}
-                rowKey="key"
-                pagination={{
-                  position: ['bottomCenter'],
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bảng`,
-                  pageSizeOptions: ['5', '10', '20', '50'],
-                  defaultPageSize: 20,
-                  style: { marginTop: 16 }
-                }}
+                data={schemaTables}
+                rowClassName={() => ''}
                 size="middle"
-                onRow={(record) => ({
-                  onClick: () => handleTableSelect(record),
-                  style: { cursor: 'pointer' }
-                })}
-                scroll={{ x: 1200, y: 'calc(100vh - 500px)' }}
+                title={'Danh sách bảng'}
+                customButton={null}
               />
             </div>
           </Space>

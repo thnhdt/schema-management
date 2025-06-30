@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, Card, Space, Button, Typography, Alert, message, Badge, Table, Tooltip, Popconfirm, Switch, Segmented } from 'antd';
+import { Tabs, Card, Space, Button, Typography, Alert, message, Badge, Table, Tooltip, Popconfirm, Switch, Segmented, Select } from 'antd';
 import { 
   DatabaseOutlined, 
   TableOutlined, 
@@ -10,11 +10,13 @@ import {
   EyeOutlined,
   DeleteOutlined,
   FunctionOutlined,
-  OrderedListOutlined
+  OrderedListOutlined,
+  ArrowLeftOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
 import { getSchemas, getTables, exportSchema, importSchema } from '../../api/index';
+import { TableComponent } from '../../util/helper';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -447,10 +449,10 @@ function SchemaComponent() {
         <Space align="center">
           <Button 
             type="text" 
-            icon={<DatabaseOutlined />} 
+            icon={<ArrowLeftOutlined />} 
             onClick={() => navigate('/sheet')}
           >
-            ← Quay lại Nodes
+            Quay lại Nodes
           </Button>
           <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
             {getTypeIcon(database.type)} Schema Manager - {database.name}
@@ -481,20 +483,20 @@ function SchemaComponent() {
                 <Text strong>Schema hiện tại: </Text>
                 <Text code>{selectedSchema?.name || 'public'}</Text>
                 {schemas.length > 0 && (
-                  <select 
+                  <Select
                     value={selectedSchema?.name || 'public'}
-                    onChange={(e) => {
-                      const schema = schemas.find(s => s.name === e.target.value);
+                    onChange={(value) => {
+                      const schema = schemas.find(s => s.name === value);
                       setSelectedSchema(schema);
                     }}
-                    style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #d9d9d9' }}
+                    style={{ minWidth: 120 }}
                   >
                     {schemas.map(schema => (
-                      <option key={schema.name} value={schema.name}>
+                      <Select.Option key={schema.name} value={schema.name}>
                         {schema.name}
-                      </option>
+                      </Select.Option>
                     ))}
-                  </select>
+                  </Select>
                 )}
                 <Button 
                   icon={<ReloadOutlined />} 
@@ -566,30 +568,20 @@ function SchemaComponent() {
             style={{ flex: 1, display: 'flex', flexDirection: 'column', marginBottom: 0 }}
             bodyStyle={{ flex: 1, padding: 0, display: 'flex', flexDirection: 'column' }}
           >
-            <Table
+            <TableComponent
               className="schema-management-table"
               columns={
                 schemaType === 'table' ? tableColumns :
                 schemaType === 'function' ? functionColumns :
                 sequenceColumns
               }
-              dataSource={
+              data={
                 schemaType === 'table' ? (selectedSchema?.tables || []) :
                 schemaType === 'function' ? (selectedSchema?.functions || []) :
                 (selectedSchema?.sequences || [])
               }
               loading={loading}
-              rowKey="name"
-              pagination={{
-                position: ['bottomCenter'],
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} ${schemaType === 'table' ? 'bảng' : schemaType === 'function' ? 'function' : 'sequence'}`,
-                pageSizeOptions: ['10', '20', '50', '100'],
-                defaultPageSize: 20,
-              }}
-              scroll={{ x: 'max-content', y: 'calc(100vh - 450px)' }}
-              style={{ flex: 1 }}
+              rowClassName={() => ''}
               size="middle"
             />
           </Card>

@@ -777,3 +777,17 @@
     margin-left: 0;
   }
 }
+
+.custom-table-spacing .ant-table-thead > tr > th {
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+  background: #fafbfc;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.custom-table-spacing .ant-table-tbody > tr > td {
+  padding-left: 18px !important;
+  padding-right: 18px !important;
+  font-size: 14px;
+}

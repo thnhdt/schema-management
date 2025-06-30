@@ -1,6 +1,7 @@
 import React from 'react';
-import { Card, Table, Tag } from 'antd';
+import { Card, Tag } from 'antd';
 import { Handle, Position } from '@xyflow/react';
+import { TableComponent } from '../../util/helper';
 
 const ERDNode = ({ data }) => {
   const { label, columns, tableName } = data;
@@ -111,13 +112,12 @@ const ERDNode = ({ data }) => {
         }}
         bodyStyle={{ padding: '8px' }}
       >
-        <Table
+        <TableComponent
           columns={tableColumns}
-          dataSource={columns?.map((col, index) => ({ ...col, key: index })) || []}
-          pagination={false}
+          data={columns?.map((col, index) => ({ ...col, key: index })) || []}
           size="small"
-          showHeader={false}
-          style={{ fontSize: '12px' }}
+          title={null}
+          customButton={null}
         />
       </Card>
     </div>

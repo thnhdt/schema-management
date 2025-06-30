@@ -24,6 +24,7 @@ import {
   InfoCircleOutlined
 } from '@ant-design/icons';
 import { getTableColumns, addColumn, updateColumn, deleteColumn } from '../../api/index';
+import { TableComponent } from '../../util/helper';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -231,14 +232,16 @@ const TableSchema = ({ schemaName, tableName, onUpdate }) => {
           </Button>
         }
       >
-        <Table
+        <TableComponent
           columns={tableColumns}
-          dataSource={columns}
+          data={columns}
           loading={loading}
           rowKey="column_name"
           pagination={false}
           rowClassName={() => { 'no-hover' }}
           size="small"
+          title={'Danh sách cột'}
+          customButton={null}
         />
       </Card>
 
