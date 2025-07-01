@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs, Card, Space, Button, Typography, Alert, message, Badge, Tooltip, Popconfirm, Switch, Segmented, Select } from 'antd';
-import { 
-  DatabaseOutlined, 
-  TableOutlined, 
+import {
+  DatabaseOutlined,
+  TableOutlined,
   SettingOutlined,
   ExportOutlined,
   ImportOutlined,
@@ -15,46 +15,12 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
-import { getSchemas, getTables, exportSchema, importSchema } from '../../api/index';
 import { TableComponent } from '../../util/helper';
+import { getAllFunctions, getTables, getAllSequences } from '../../api';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 
-// Dữ liệu mẫu cho schema
-const sampleSchemas = [
-  {
-    name: 'public',
-    tables: [
-      {
-        name: 'users',
-        columns: [
-          { name: 'id', type: 'SERIAL' },
-          { name: 'username', type: 'VARCHAR(50)' },
-          { name: 'email', type: 'VARCHAR(100)' },
-          { name: 'created_at', type: 'TIMESTAMP' }
-        ]
-      }
-    ],
-    functions: [],
-    sequences: []
-  },
-  {
-    name: 'auth',
-    tables: [
-      {
-        name: 'roles',
-        columns: [
-          { name: 'id', type: 'SERIAL' },
-          { name: 'name', type: 'VARCHAR(50)' },
-          { name: 'permissions', type: 'JSONB' }
-        ]
-      }
-    ],
-    functions: [],
-    sequences: []
-  }
-];
 
 // Thêm hàm tiện ích để bổ sung columnCount cho tables
 function addColumnCountToTables(schemas) {
@@ -62,9 +28,9 @@ function addColumnCountToTables(schemas) {
     ...schema,
     tables: schema.tables
       ? schema.tables.map(table => ({
-          ...table,
-          columnCount: table.columns ? table.columns.length : 0
-        }))
+        ...table,
+        columnCount: table.columns ? table.columns.length : 0
+      }))
       : [],
     functions: schema.functions || [],
     sequences: schema.sequences || []
@@ -72,7 +38,7 @@ function addColumnCountToTables(schemas) {
 }
 
 function SchemaComponent() {
-  const [schemas, setSchemas] = useState([]);
+  const [schemas, setSchemas] = useState('public');
   const [selectedSchema, setSelectedSchema] = useState(null);
   const [loading, setLoading] = useState(false);
   const [database, setDatabase] = useState(null);
@@ -80,33 +46,32 @@ function SchemaComponent() {
   const navigate = useNavigate();
   const { id } = useParams();
   const location = useLocation();
-  const nodeData = location.state?.nodeData;
   const [messageApi, contextHolder] = message.useMessage();
+  const [tables, setTables] = useState([]);
+  const [functions, setFunctions] = useState([]);
+  const [sequences, setSequences] = useState([]);
 
   useEffect(() => {
-    if (id && sampleSchemas[id]) {
-      const db = sampleSchemas[id];
-      setDatabase(db);
-      let schemaList = db.schemas && db.schemas.length > 0 ? db.schemas : [{ name: 'public', tables: [], functions: [], sequences: [] }];
-      schemaList = addColumnCountToTables(schemaList);
-      setSchemas(schemaList);
-      if (db.status === 'connected') {
-        setSelectedSchema(schemaList[0]);
-      }
-    } else if (nodeData) {
-      // Fallback to node data
-      setDatabase({
-        id: nodeData.id,
-        name: nodeData.name,
-        type: nodeData.type,
-        status: nodeData.status,
-        schemas: [{ name: 'public', tables: [], functions: [], sequences: [] }]
-      });
-      setSchemas([{ name: 'public', tables: [], functions: [], sequences: [] }]);
-      setSelectedSchema({ name: 'public', tables: [], functions: [], sequences: [] });
-    }
-  }, [id, nodeData]);
+    fetchAll()
+  }, [id]);
 
+  const fetchAll = async () => {
+    setLoading(true);
+    try {
+      const [tableResponse, functionResponse, sequenceResponse] = await Promise.all([
+        getTables(schemas, id),
+        getAllFunctions(schemas, id),
+        getAllSequences(schemas, id),
+      ]);
+      setTables(tableResponse.metaData.metaData.data);
+      setFunctions(functionResponse.metaData.metaData.data);
+      setSequences(sequenceResponse.metaData.metaData.data);
+    } catch (error) {
+      console.error('Error fetching databases:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
   const handleExportSchema = async () => {
     if (!selectedSchema) {
       messageApi.warning('Vui lòng chọn một schema để export');
@@ -181,13 +146,13 @@ function SchemaComponent() {
     const columns = [
       {
         title: 'Tên Bảng',
-        dataIndex: 'name',
+        dataIndex: 'table_name',
         key: 'name',
         render: (text) => <Text strong>{text}</Text>
       },
       {
         title: 'Số Cột',
-        dataIndex: 'columnCount',
+        dataIndex: 'columns',
         key: 'columnCount',
         render: (count) => count || 0
       },
@@ -221,7 +186,7 @@ function SchemaComponent() {
       <TableComponent
         title="Danh Sách Bảng"
         columns={columns}
-        data={selectedSchema?.tables || []}
+        data={tables || []}
         loading={loading}
         customButton={
           <Space>
@@ -242,15 +207,15 @@ function SchemaComponent() {
     const columns = [
       {
         title: 'Tên Function',
-        dataIndex: 'name',
-        key: 'name',
+        dataIndex: 'functionName',
+        key: 'functionName',
         render: (text) => <Text strong>{text}</Text>
       },
       {
         title: 'Tham Số',
-        dataIndex: 'parameters',
-        key: 'parameters',
-        render: (params) => params?.join(', ') || '-'
+        dataIndex: 'functionArguments',
+        key: 'functionArguments',
+        render: (text) => <Text strong>{text}</Text>
       },
       {
         title: 'Definition',
@@ -287,7 +252,7 @@ function SchemaComponent() {
       <TableComponent
         title="Danh Sách Function"
         columns={columns}
-        data={selectedSchema?.functions || []}
+        data={functions || []}
         loading={loading}
         customButton={
           <Space>
@@ -308,14 +273,20 @@ function SchemaComponent() {
     const columns = [
       {
         title: 'Tên Sequence',
-        dataIndex: 'name',
-        key: 'name',
+        dataIndex: 'sequence_name',
+        key: 'sequence_name',
+        render: (text) => <Text strong>{text}</Text>
+      },
+      {
+        title: 'Loại dữ liệu',
+        dataIndex: 'data_type',
+        key: 'data_type',
         render: (text) => <Text strong>{text}</Text>
       },
       {
         title: 'Start Value',
-        dataIndex: 'startValue',
-        key: 'startValue'
+        dataIndex: 'start_value',
+        key: 'start_value'
       },
       {
         title: 'Bước Nhảy',
@@ -352,7 +323,7 @@ function SchemaComponent() {
       <TableComponent
         title="Danh Sách Sequence"
         columns={columns}
-        data={selectedSchema?.sequences || []}
+        data={sequences || []}
         loading={loading}
         customButton={
           <Space>
@@ -369,41 +340,30 @@ function SchemaComponent() {
     );
   };
 
-  if (!database) {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <Title level={3}>Không tìm thấy database</Title>
-        <Button type="primary" onClick={() => navigate('/sheet')}>
-          Quay lại Nodes
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ padding: '0', height: 'calc(100vh - 112px)', overflow: 'hidden' }}>
+    <div style={{ padding: '0', height: 'calc(100vh - 112px)' }}>
       {contextHolder}
-      
+
       <div style={{ marginBottom: 20 }}>
         <Space align="center">
-          <Button 
-            type="text" 
-            icon={<ArrowLeftOutlined />} 
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined />}
             onClick={() => navigate('/sheet')}
           >
             Quay lại Nodes
           </Button>
-          <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
+          {/* <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
             {getTypeIcon(database.type)} Schema Manager - {database.name}
           </Title>
-          <Badge 
-            status={getStatusColor(database.status)} 
-            text={getStatusText(database.status)} 
-          />
+          <Badge
+            status={getStatusColor(database.status)}
+            text={getStatusText(database.status)}
+          /> */}
         </Space>
       </div>
 
-      {database.status !== 'connected' && (
+      {/* {database.status !== 'connected' && (
         <Alert
           message="Database chưa được kết nối"
           description="Vui lòng kết nối database trước khi quản lý schema"
@@ -411,113 +371,106 @@ function SchemaComponent() {
           showIcon
           style={{ marginBottom: 20 }}
         />
-      )}
+      )} */}
 
-      {database.status === 'connected' ? (
-        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)', overflow: 'hidden' }}>
-          {/* Schema Selection and Controls */}
-          <Card style={{ marginBottom: 16 }}>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Space wrap>
-                <Text strong>Schema hiện tại: </Text>
-                <Text code>{selectedSchema?.name || 'public'}</Text>
-                <Select
-                  value={selectedSchema?.name || 'public'}
-                  onChange={(value) => {
-                    const schema = schemas.find(s => s.name === value) || { name: value, tables: [], functions: [], sequences: [] };
-                    setSelectedSchema(schema);
-                  }}
-                  style={{ minWidth: 120 }}
-                >
-                  {schemas.length > 0
-                    ? schemas.map(schema => (
-                        <Select.Option key={schema.name} value={schema.name}>
-                          {schema.name}
-                        </Select.Option>
-                      ))
-                    : <Select.Option value="public">public</Select.Option>
-                  }
-                </Select>
-                <Button 
-                  icon={<ReloadOutlined />} 
-                  onClick={handleRefresh}
-                  loading={loading}
-                >
-                  Làm mới
-                </Button>
-                <Button 
-                  icon={<ExportOutlined />} 
-                  onClick={handleExportSchema}
-                  disabled={!selectedSchema}
-                >
-                  Export
-                </Button>
-                <Button 
-                  icon={<ImportOutlined />} 
-                  onClick={handleImportSchema}
-                >
-                  Import
-                </Button>
-                <Button 
-                  type="primary"
-                  icon={<DatabaseOutlined />} 
-                  onClick={() => navigate('/schema/flow')}
-                >
-                  Schema Flow
-                </Button>
-              </Space>
-              {/* Schema Type Segmented Control */}
-              <Segmented
-                options={[
-                  { label: <><TableOutlined /> Table</>, value: 'table' },
-                  { label: <><FunctionOutlined /> Function</>, value: 'function' },
-                  { label: <><OrderedListOutlined /> Sequence</>, value: 'sequence' },
-                ]}
-                value={schemaType}
-                onChange={setSchemaType}
-                block
-                style={{ maxWidth: 400 }}
-              />
-            </Space>
-          </Card>
-
-          {/* Schema Management */}
-          <Card 
-            title={
-              schemaType === 'table' ? 'Quản Lý Bảng' :
-              schemaType === 'function' ? 'Quản Lý Functions' :
-              'Quản Lý Sequences'
-            }
-            extra={
-              <Button 
-                type="primary" 
-                icon={
-                  schemaType === 'table' ? <TableOutlined /> :
-                  schemaType === 'function' ? <FunctionOutlined /> :
-                  <OrderedListOutlined />
-                }
-                size="small"
+      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)', overflow: 'hidden' }}>
+        {/* Schema Selection and Controls */}
+        <Card style={{ marginBottom: 16 }}>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Space wrap>
+              <Text strong>Schema hiện tại: </Text>
+              <Text code>{selectedSchema?.name || 'public'}</Text>
+              {/* <Select
+                value={selectedSchema?.name || 'public'}
+                onChange={(value) => {
+                  const schema = schemas.find(s => s.name === value) || { name: value, tables: [], functions: [], sequences: [] };
+                  setSelectedSchema(schema);
+                }}
+                style={{ minWidth: 120 }}
               >
-                Thêm {
-                  schemaType === 'table' ? 'Bảng' :
-                  schemaType === 'function' ? 'Function' :
-                  'Sequence'
+                {schemas.length > 0
+                  ? schemas.map(schema => (
+                    <Select.Option key={schema.name} value={schema.name}>
+                      {schema.name}
+                    </Select.Option>
+                  ))
+                  : <Select.Option value="public">public</Select.Option>
                 }
+              </Select> */}
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={handleRefresh}
+                loading={loading}
+              >
+                Làm mới
               </Button>
-            }
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', marginBottom: 0 }}
-            bodyStyle={{ flex: 1, padding: 0, display: 'flex', flexDirection: 'column' }}
-          >
-            {schemaType === 'table' ? renderTables() :
-             schemaType === 'function' ? renderFunctions() :
-             renderSequences()}
-          </Card>
-        </div>
-      ) : (
-        <div style={{ textAlign: 'center', padding: '50px' }}>
-          <Text type="secondary">Vui lòng kết nối database trước</Text>
-        </div>
-      )}
+              <Button
+                icon={<ExportOutlined />}
+                onClick={handleExportSchema}
+                disabled={!selectedSchema}
+              >
+                Export
+              </Button>
+              <Button
+                icon={<ImportOutlined />}
+                onClick={handleImportSchema}
+              >
+                Import
+              </Button>
+              <Button
+                type="primary"
+                icon={<DatabaseOutlined />}
+                onClick={() => navigate('/schema/flow')}
+              >
+                Schema Flow
+              </Button>
+            </Space>
+            {/* Schema Type Segmented Control */}
+            <Segmented
+              options={[
+                { label: <><TableOutlined /> Table</>, value: 'table' },
+                { label: <><FunctionOutlined /> Function</>, value: 'function' },
+                { label: <><OrderedListOutlined /> Sequence</>, value: 'sequence' },
+              ]}
+              value={schemaType}
+              onChange={setSchemaType}
+              block
+              style={{ maxWidth: 400 }}
+            />
+          </Space>
+        </Card>
+
+        {/* Schema Management */}
+        <Card
+          title={
+            schemaType === 'table' ? 'Quản Lý Bảng' :
+              schemaType === 'function' ? 'Quản Lý Functions' :
+                'Quản Lý Sequences'
+          }
+          extra={
+            <Button
+              type="primary"
+              icon={
+                schemaType === 'table' ? <TableOutlined /> :
+                  schemaType === 'function' ? <FunctionOutlined /> :
+                    <OrderedListOutlined />
+              }
+              size="small"
+            >
+              Thêm {
+                schemaType === 'table' ? 'Bảng' :
+                  schemaType === 'function' ? 'Function' :
+                    'Sequence'
+              }
+            </Button>
+          }
+          style={{ flex: 1, display: 'flex', flexDirection: 'column', marginBottom: 0, overflow: 'hidden' }}
+        >
+          {schemaType === 'table' ? renderTables() :
+            schemaType === 'function' ? renderFunctions() :
+              renderSequences()}
+        </Card>
+      </div>
     </div>
   );
 }

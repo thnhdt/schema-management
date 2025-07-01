@@ -13,50 +13,11 @@ import DatabaseConnection from './DatabaseConnection';
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 
-// Dữ liệu mẫu cho database
-const sampleDatabases = {
-  1: {
-    id: 1,
-    name: 'PostgreSQL Production',
-    type: 'postgresql',
-    status: 'connected',
-    dbStatus: [
-      { name: 'production_db', status: 'active' },
-      { name: 'analytics_db', status: 'active' },
-      { name: 'archive_db', status: 'inactive' },
-    ],
-    tables: [
-      { name: 'users', rows: 1250, size: '2.5 MB', lastModified: '2024-01-15 10:30:00' },
-      { name: 'posts', rows: 3450, size: '8.2 MB', lastModified: '2024-01-15 11:15:00' },
-      { name: 'categories', rows: 45, size: '0.1 MB', lastModified: '2024-01-14 16:20:00' },
-      { name: 'comments', rows: 8900, size: '15.7 MB', lastModified: '2024-01-15 12:45:00' },
-      { name: 'orders', rows: 2340, size: '5.8 MB', lastModified: '2024-01-15 09:30:00' },
-      { name: 'products', rows: 567, size: '3.2 MB', lastModified: '2024-01-15 08:15:00' }
-    ],
-    schemas: ['public', 'auth', 'analytics', 'reports'],
-    totalSize: '35.5 MB',
-    connections: 12,
-    uptime: '15 days'
-  },
-  2: {
-    id: 2,
-    name: 'PostgreSQL Staging',
-    type: 'postgresql',
-    status: 'disconnected',
-    dbStatus: [],
-    tables: [],
-    schemas: [],
-    totalSize: '0 MB',
-    connections: 0,
-    uptime: '0 days'
-  },
-};
-
 const Database = () => {
   const [databases, setDatabases] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [activeTab, setActiveTab] = useState('1');
+  const [activeTab, setActiveTab] = useState('2');
   const [messageApi, contextHolder] = message.useMessage();
   const navigate = useNavigate();
   const location = useLocation();
@@ -71,7 +32,7 @@ const Database = () => {
   const fetchDatabases = async () => {
     setLoading(true);
     try {
-      const response = await getAllDatabaseInHost(id);
+      const response = await getAllDatabaseInHost(id, 'active');
       setDatabases(response.metaData.metaData.database);
       //  sampleDatabases
       // setDatabases(Object.values(sampleDatabases));
@@ -89,7 +50,7 @@ const Database = () => {
   };
 
   const handleViewSchema = (record) => {
-    navigate(`/schema/${record.id}`, {
+    navigate(`/schema/${record._id}`, {
       state: {
         nodeData: nodeData,
         nodeName: record.name
@@ -241,4 +202,4 @@ const Database = () => {
   );
 };
 
-export default Database; 
+export default Database;

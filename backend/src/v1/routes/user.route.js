@@ -12,9 +12,9 @@ userRouter.route('/signup')
 userRouter.route('/login')
   .post(handlerError(UserController.login));
 
-
+userRouter.use(authentication);
 userRouter.route('/get-all-users')
-  .get(authentication, handlerError(UserController.getAllUsers));
+  .get(handlerError(UserController.getAllUsers));
 
 userRouter.route('/check-auth')
   .post(handlerError(UserController.checkAuth));

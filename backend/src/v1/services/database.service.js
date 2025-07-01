@@ -17,15 +17,15 @@ const createDatabase = async (dataCreated) => {
   }
 };
 const getAllDatabaseInHost = async (reqQuery) => {
-  const { idHost } = reqQuery;
-  const allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost), status: 'active' }).lean();
+  const { idHost, status } = reqQuery;
+  const allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost), status: status }).lean();
   return {
     code: 200,
     metaData: {
       database: allDatabase
     }
   }
-}
+};
 
 const connectToDatabase = async (reqBody) => {
   const { id } = reqBody;

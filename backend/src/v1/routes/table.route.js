@@ -4,7 +4,7 @@ const tableRouter = express.Router();
 const { handlerError } = require('../utils/handle-error.util.js');
 const { authentication } = require('../utils/auth.utils.js');
 
-
+tableRouter.use(authentication)
 tableRouter.route('/get-all-tables')
   .get(handlerError(tableController.getAllTables))
 tableRouter.route('/get-ddl-text')

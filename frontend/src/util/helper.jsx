@@ -24,7 +24,7 @@ export const TableComponent = (props) => {
         rowClassName={rowClassName}
         size={size}
         style={{ minWidth: 600 }}
-        className="custom-table-spacing"
+      // className="custom-table-spacing"
       />
     </>
   )

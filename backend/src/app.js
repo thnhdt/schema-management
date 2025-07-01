@@ -44,6 +44,9 @@ app.use('/api/user', require('./v1/routes/user.route'));
 app.use('/api/node', require('./v1/routes/node.route'));
 app.use('/api/database', require('./v1/routes/database.route'));
 app.use('/api/table', require('./v1/routes/table.route'));
+app.use('/api/function', require('./v1/routes/function.route'));
+app.use('/api/sequence', require('./v1/routes/sequence.route'));
+
 app.post('/api/diagram', async (req, res) => {
     const ddl = (req.body.sql || '').trim();
     if (!ddl) return res.status(400).json({ error: 'SQL text required' });

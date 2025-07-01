@@ -1,9 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3051/api';
-
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -67,7 +65,7 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const res = await axios.post('http://localhost:3051/api/user/refresh-token', null, { withCredentials: true });
+        const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/user/refresh-token`, null, { withCredentials: true });
         const newToken = res.data.metaData.tokens.accessToken;
         sessionStorage.setItem('token', newToken);
         processQueue(null, newToken);
@@ -85,14 +83,6 @@ api.interceptors.response.use(
         isRefreshing = false;
       }
     }
-    else if (error.response?.status === 403) {
-      setTimeout(() => {
-        sessionStorage.removeItem('username');
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('userId');
-        window.location.replace('/');
-      }, 2000);
-    }
     return Promise.reject(error);
   }
 );
@@ -109,7 +99,7 @@ export const testDatabaseConnection = async (connectionConfig) => {
 
 export const connectToDatabase = async (connectionConfig) => {
   try {
-    const response = await api.post('/database/connect-database', connectionConfig, { auth: true });
+    const response = await api.post('/database/connect-database', connectionConfig, { requiresAuth: true });
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
@@ -119,7 +109,7 @@ export const connectToDatabase = async (connectionConfig) => {
 
 export const disconnectToDatabase = async (connectionConfig) => {
   try {
-    const response = await api.post('/database/disconnect-database', connectionConfig);
+    const response = await api.post('/database/disconnect-database', connectionConfig, { requiresAuth: true });
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
@@ -135,16 +125,16 @@ export const getSchemas = async () => {
   }
 };
 
-export const getTables = async (schemaName, id) => {
+export const getTables = async (schema, id) => {
   try {
-    const response = await api.get(`/table/get-all-tables`, { params: { schema: schemaName, id } });
+    const response = await api.get(`/table/get-all-tables`, { params: { schema, id }, requiresAuth: true });
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
   }
 };
 export const getAllDdlText = async (schema, id) => {
-  const response = await api.get(`/table/get-ddl-text`, { params: { schema: schema, id } });
+  const response = await api.get(`/table/get-ddl-text`, { params: { schema: schema, id }, requiresAuth: true });
   return response.data;
 }
 
@@ -268,10 +258,9 @@ export const getAllUsers = async () => {
   return response.data;
 }
 
-export const getAllDatabaseInHost = async (idHost) => {
-  console.log("idHost", idHost);
+export const getAllDatabaseInHost = async (idHost, status) => {
   const response = await api.get('/database/get-all-databases', {
-    params: { idHost },      // query string
+    params: { idHost, status },      // query string
     requiresAuth: true       // flag cho interceptor
   });
   return response.data;
@@ -282,11 +271,19 @@ export const login = async (email, password) => {
   return response.data
 }
 export const logout = async () => {
-  const response = await api.post('/user/logout', null, { requiresAuth: true });
+  const response = await api.post('/user/logout', undefined, { requiresAuth: true });
   return response.data;
 }
 export const getAllNodes = async () => {
   const response = await api.get('/node/get-all-nodes', { requiresAuth: true });
+  return response.data;
+}
+export const getAllFunctions = async (schema, id) => {
+  const response = await api.get('/function/get-all-functions', { params: { schema, id }, requiresAuth: true });
+  return response.data;
+}
+export const getAllSequences = async (schema, id) => {
+  const response = await api.get('/sequence/get-all-sequences', { params: { schema, id }, requiresAuth: true });
   return response.data;
 }
 export default api; 
