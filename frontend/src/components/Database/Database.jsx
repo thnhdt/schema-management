@@ -105,12 +105,6 @@ const Database = () => {
       render: (text, record) => <span>{getTypeIcon(record.type)} {text}</span>
     },
     {
-      title: 'Loại',
-      dataIndex: 'type',
-      key: 'type',
-      render: (type) => <Tag color="blue">{type}</Tag>
-    },
-    {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
@@ -145,6 +139,7 @@ const Database = () => {
   ];
 
   const activeDatabases = databases.filter(db => db.status === 'active');
+  const inactiveDatabases = databases.filter(db => db.status === 'inactive');
 
   const getStatusColor = (status) => {
     switch (status) {
