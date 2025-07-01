@@ -86,16 +86,6 @@ const AppLayout = () => {
               label: 'Nodes',
             },
             {
-              key: '/database',
-              icon: <UnorderedListOutlined />,
-              label: 'Database',
-            },
-            {
-              key: '/schema',
-              icon: <TableOutlined />,
-              label: 'Schema',
-            },
-            {
               key: '/user',
               icon: <UserOutlined />,
               label: 'User',

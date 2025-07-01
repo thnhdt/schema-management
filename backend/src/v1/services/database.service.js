@@ -37,8 +37,8 @@ const connectToDatabase = async (reqBody) => {
     logging: false,
   });
   await sequelize.authenticate();
-  const updateDatabase = await databaseModel.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, { status: 'active' }, { new: true });
   await POOLMAP.set(id, { sequelize, lastUsed: Date.now() });
+  const updateDatabase = await databaseModel.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, { status: 'active' }, { new: true });
   return {
     code: 200,
     metaData: {
@@ -51,8 +51,8 @@ const disconnectDb = async (reqBody) => {
   const { id } = reqBody;
   if (!POOLMAP.has(id)) throw new BadResponseError("Seqencelize chưa được kết nối !")
   await POOLMAP.get(id).sequelize.close();
+  await POOLMAP.delete(id);
   const updateTarget = await databaseModel.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, { status: 'inactive' }, { new: true });
-  POOLMAP.delete(id);
   return {
     code: 200,
     metaData: {

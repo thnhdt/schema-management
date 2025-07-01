@@ -15,8 +15,6 @@ import { getAllNodes } from '../api';
 
 const { Title, Text } = Typography;
 
-// Dữ liệu mẫu cho PostgreSQL database nodes
-
 
 const Node = () => {
   const [nodes, setNodes] = useState([]);

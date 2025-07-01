@@ -286,4 +286,13 @@ export const getAllSequences = async (schema, id) => {
   const response = await api.get('/sequence/get-all-sequences', { params: { schema, id }, requiresAuth: true });
   return response.data;
 }
+
+export const createNode = async (nodeData) => {
+  const response = await api.post('/node/create-node', nodeData, { 
+    requiresAuth: true,
+    withCredentials: true 
+  });
+  return response.data;
+}
+
 export default api; 
