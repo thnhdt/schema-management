@@ -48,6 +48,9 @@ function SchemaComponent() {
   const [functions, setFunctions] = useState([]);
   const [sequences, setSequences] = useState([]);
   const [selectedFunction, setSelectedFunction] = useState(null);
+  const [selectedTable, setSelectedTable] = useState(null);
+  const [selectedSequence, setSelectedSequence] = useState(null);
+  const [activeTab, setActiveTab] = useState('table');
 
   useEffect(() => {
     fetchAll()
@@ -131,13 +134,6 @@ function SchemaComponent() {
         key: 'actions',
         render: (_, record) => (
           <Space>
-            <Tooltip title="Xem chi tiết">
-              <Button
-                type="primary"
-                icon={<EyeOutlined />}
-                onClick={() => navigate(`/schema/${id}/table/${record.name}`)}
-              />
-            </Tooltip>
             <Popconfirm
               title="Xác nhận xóa"
               description={`Bạn có chắc chắn muốn xóa bảng "${record.name}"?`}
@@ -151,7 +147,6 @@ function SchemaComponent() {
         )
       }
     ];
-
     return (
       <TableComponent
         title="Danh Sách Bảng"
@@ -169,6 +164,10 @@ function SchemaComponent() {
             </Button>
           </Space>
         }
+        rowKey={record => record.name}
+        onRow={record => ({
+          onClick: () => setSelectedTable(record)
+        })}
       />
     );
   };
@@ -188,45 +187,28 @@ function SchemaComponent() {
         render: (text) => <Text strong>{text}</Text>
       }
     ];
-
     return (
-      <div style={{ display: 'flex', width: '100%', height: '100%' }}>
-        <div style={{ flex: 3, marginRight: 16 }}>
-          <TableComponent
-            title="Danh Sách Function"
-            columns={columns}
-            data={functions || []}
-            loading={loading}
-            rowKey={record => record.name}
-            onRow={record => ({
-              onClick: () => setSelectedFunction(record)
-            })}
-            rowClassName={record => selectedFunction && selectedFunction.name === record.name ? 'ant-table-row-selected' : ''}
-            customButton={
-              <Space>
-                <Button
-                  type="primary"
-                  icon={<ReloadOutlined />}
-                  onClick={handleRefresh}
-                >
-                  Làm Mới
-                </Button>
-              </Space>
-            }
-          />
-        </div>
-        <div style={{ flex: 2, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <Text strong>Definition:</Text>
-          <Input.TextArea
-            style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0 }}
-            value={selectedFunction ? selectedFunction.definition : ''}
-            readOnly
-            autoSize={false}
-            rows={10}
-            placeholder="Chọn một function để xem definition"
-          />
-        </div>
-      </div>
+      <TableComponent
+        title="Danh Sách Function"
+        columns={columns}
+        data={functions || []}
+        loading={loading}
+        rowKey={record => record.name}
+        onRow={record => ({
+          onClick: () => setSelectedFunction(record)
+        })}
+        customButton={
+          <Space>
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={handleRefresh}
+            >
+              Làm Mới
+            </Button>
+          </Space>
+        }
+      />
     );
   };
 
@@ -259,13 +241,6 @@ function SchemaComponent() {
         key: 'actions',
         render: (_, record) => (
           <Space>
-            <Tooltip title="Xem chi tiết">
-              <Button
-                type="primary"
-                icon={<EyeOutlined />}
-                onClick={() => navigate(`/schema/${id}/sequence/${record.name}`)}
-              />
-            </Tooltip>
             <Popconfirm
               title="Xác nhận xóa"
               description={`Bạn có chắc chắn muốn xóa sequence "${record.name}"?`}
@@ -279,7 +254,6 @@ function SchemaComponent() {
         )
       }
     ];
-
     return (
       <TableComponent
         title="Danh Sách Sequence"
@@ -297,6 +271,10 @@ function SchemaComponent() {
             </Button>
           </Space>
         }
+        rowKey={record => record.name}
+        onRow={record => ({
+          onClick: () => setSelectedSequence(record)
+        })}
       />
     );
   };
@@ -318,7 +296,6 @@ function SchemaComponent() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)', overflow: 'hidden' }}>
-        {/* Schema Selection and Controls */}
         <Card style={{ marginBottom: 16 }}>
           <Space direction="vertical" style={{ width: '100%' }}>
             <Space wrap>
@@ -354,32 +331,72 @@ function SchemaComponent() {
             </Space>
           </Space>
         </Card>
-
-        {/* Tabs for Table, Function, Sequence */}
-        <Card
-          style={{ flex: 1, display: 'flex', flexDirection: 'column', marginBottom: 0, overflow: 'hidden' }}
-        >
-          <Tabs defaultActiveKey="table" style={{ height: '100%' }}>
-            <Tabs.TabPane
-              tab={<span><TableOutlined /> Table</span>}
-              key="table"
+        <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #f0f1f2', padding: 8 }}>
+          <div style={{ flex: 3, minWidth: 0, minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Tabs
+              activeKey={activeTab}
+              onChange={key => {
+                setActiveTab(key);
+                setSelectedFunction(null);
+                setSelectedTable(null);
+                setSelectedSequence(null);
+              }}
+              style={{ height: '100%' }}
+              tabBarStyle={{ marginBottom: 0 }}
             >
-              {renderTables()}
-            </Tabs.TabPane>
-            <Tabs.TabPane
-              tab={<span><FunctionOutlined /> Function</span>}
-              key="function"
-            >
-              {renderFunctions()}
-            </Tabs.TabPane>
-            <Tabs.TabPane
-              tab={<span><OrderedListOutlined /> Sequence</span>}
-              key="sequence"
-            >
-              {renderSequences()}
-            </Tabs.TabPane>
-          </Tabs>
-        </Card>
+              <Tabs.TabPane tab={<span><TableOutlined /> Table</span>} key="table">
+                {renderTables()}
+              </Tabs.TabPane>
+              <Tabs.TabPane tab={<span><FunctionOutlined /> Function</span>} key="function">
+                {renderFunctions()}
+              </Tabs.TabPane>
+              <Tabs.TabPane tab={<span><OrderedListOutlined /> Sequence</span>} key="sequence">
+                {renderSequences()}
+              </Tabs.TabPane>
+            </Tabs>
+          </div>
+          <div style={{ flex: 2, minWidth: 0, minHeight: 0, height: '100%', paddingLeft: 16, display: 'flex', flexDirection: 'column' }}>
+            {activeTab === 'function' && (
+              <>
+                <Text strong>Definition:</Text>
+                <Input.TextArea
+                  style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0 }}
+                  value={selectedFunction ? selectedFunction.definition : ''}
+                  readOnly
+                  autoSize={false}
+                  rows={30}
+                  placeholder="Chọn một function để xem definition"
+                />
+              </>
+            )}
+            {activeTab === 'table' && (
+              <>
+                <Text strong>Table Info:</Text>
+                <Input.TextArea
+                  style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0 }}
+                  value={selectedTable ? (selectedTable.text || 'Chưa có thông tin chi tiết cho bảng này') : ''}
+                  readOnly
+                  autoSize={false}
+                  rows={30}
+                  placeholder="Chọn một bảng để xem chi tiết"
+                />
+              </>
+            )}
+            {activeTab === 'sequence' && (
+              <>
+                <Text strong>Sequence Info:</Text>
+                <Input.TextArea
+                  style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0 }}
+                  value={selectedSequence ? (selectedSequence.text || 'Chưa có thông tin chi tiết cho sequence này') : ''}
+                  readOnly
+                  autoSize={false}
+                  rows={30}
+                  placeholder="Chọn một sequence để xem chi tiết"
+                />
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

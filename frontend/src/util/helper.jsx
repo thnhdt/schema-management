@@ -1,7 +1,7 @@
 import { Table, Space, Button, Typography, Flex, Spin, Row, Col, Modal } from 'antd';
 import '../App.css';
 export const TableComponent = (props) => {
-  const { customButton, columns, data, title, rowClassName = () => 'no-hover', loading = null, size = null, onRow = undefined } = props
+  const { customButton, columns, data, title, rowClassName = () => 'no-hover', loading = null, size = null, onRow = undefined, scroll = undefined } = props
   return (
     <>
       <Table
@@ -18,7 +18,7 @@ export const TableComponent = (props) => {
         columns={columns}
         dataSource={data}
         pagination={false}
-        scroll={{ x: 'max-content' }}
+        scroll={scroll}
         loading={loading}
         bordered
         rowClassName={rowClassName}

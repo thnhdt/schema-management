@@ -520,7 +520,6 @@
   background: #f0f8ff;
 }
 
-/* Utility Classes */
 .text-center {
   text-align: center;
 }
@@ -602,7 +601,6 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
-/* Schema Management Table Styles */
 .schema-management-table .ant-table-thead>tr>th {
   background: #fafafa;
   font-weight: 600;
@@ -615,7 +613,6 @@
   padding: 12px 20px;
 }
 
-/* Compact table styles */
 .ant-table.ant-table-small .ant-table-thead>tr>th {
   padding: 8px 12px;
 }
@@ -624,7 +621,6 @@
   padding: 8px 12px;
 }
 
-/* Login styles */
 .login-container {
   min-height: 100vh;
   display: flex;
@@ -686,7 +682,6 @@
   color: #888;
 }
 
-/* Schema Management Table Styles */
 .schema-management-table .ant-table-thead > tr > th {
   background: #fafafa;
   font-weight: 600;
@@ -706,7 +701,6 @@
   text-align: center;
 }
 
-/* Compact table styles */
 .ant-table.ant-table-small .ant-table-thead > tr > th {
   padding: 8px 12px;
 }
@@ -715,7 +709,6 @@
   padding: 8px 12px;
 }
 
-/* Horizontal scroll styles */
 .ant-table-body::-webkit-scrollbar {
   height: 8px;
 }
@@ -734,7 +727,6 @@
   background: #a8a8a8;
 }
 
-/* Layout and Navigation Styles */
 .app-layout {
   min-height: 100vh;
 }
@@ -790,4 +782,58 @@
   padding-left: 18px !important;
   padding-right: 18px !important;
   font-size: 14px;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: #e6f7ff !important;
+  transition: background 0.2s;
+}
+
+/* Responsive for schema management flex layout */
+.schema-flex-container {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.schema-detail-panel {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+}
+@media (max-width: 900px) {
+  .schema-flex-container {
+    flex-direction: column;
+  }
+  .schema-detail-panel {
+    width: 100%;
+    margin-top: 16px;
+    padding-left: 0;
+    min-height: 200px;
+  }
+}
+
+/* Table scroll fix for flex layout */
+.schema-flex-container .ant-tabs-content-holder,
+.schema-flex-container .ant-tabs-content,
+.schema-flex-container .ant-tabs-tabpane {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.schema-flex-container .ant-table-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.schema-flex-container .ant-table {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }

@@ -46,12 +46,12 @@ const getAllTables = async (reqBody) => {
       type: QueryTypes.SELECT
     }
   );
-  // const allSqlSchema = await Promise.all(allTables.map(async table => ({ tableName: table, text: await ddl("public", table.tableName, client) })));
+  const allSqlSchema = await Promise.all(allTables.map(async table => ({ ...table, text: await ddl("public", table.table_name, client) })));
   // const allSqlSchema = await Promise.all(allTables.map(async table => ({ tableName: table, columns: await getCountColumns({ schema: 'public', tableName: table, id }) })));
   return {
     code: 200,
     metaData: {
-      data: allTables
+      data: allSqlSchema
     }
   }
 };
