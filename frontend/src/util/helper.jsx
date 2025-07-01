@@ -1,7 +1,7 @@
 import { Table, Space, Button, Typography, Flex, Spin, Row, Col, Modal } from 'antd';
 import '../App.css';
 export const TableComponent = (props) => {
-  const { customButton, columns, data, title, rowClassName = () => 'no-hover', loading = null, size = null } = props
+  const { customButton, columns, data, title, rowClassName = () => 'no-hover', loading = null, size = null, onRow = undefined } = props
   return (
     <>
       <Table
@@ -24,6 +24,7 @@ export const TableComponent = (props) => {
         rowClassName={rowClassName}
         size={size}
         style={{ minWidth: 600 }}
+        onRow={onRow}
       // className="custom-table-spacing"
       />
     </>
