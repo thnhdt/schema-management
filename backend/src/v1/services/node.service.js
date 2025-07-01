@@ -6,12 +6,21 @@ const createNode = async (dataCreated) => {
   const newNode = await nodeModel.create(dataCreated);
   return {
     code: 201,
-    metadata: {
+    metaData: {
       node: newNode
     }
   }
 }
-
+const getAllNode = async () => {
+  const allNodes = await nodeModel.find({}).sort({ createdAt: -1 }).lean();
+  return {
+    code: 200,
+    metaData: {
+      node: allNodes
+    }
+  }
+}
 module.exports = {
-  createNode
+  createNode,
+  getAllNode
 }

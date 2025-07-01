@@ -49,7 +49,7 @@ const login = async ({ email, password, refreshToken = null }) => {
   return {
     metaData: {
       user: {
-        _id: targetUser._id,
+        userId: targetUser._id,
         name: targetUser.name,
         email: targetUser.email
       },
@@ -59,13 +59,13 @@ const login = async ({ email, password, refreshToken = null }) => {
 };
 
 const handlerRefreshToken = async ({ user, refreshToken }) => {
-  const { email, userId } = user
+  const { userId } = user
   if (!refreshToken) throw new ForbiddenError("User is not login!");
   //check email user exist ?
-  const targetUser = await userModel.findOne({ email: email });
+  const targetUser = await userModel.findById(userId);
   if (!targetUser) throw new ForbiddenError("User is not register !");
 
-  const tokens = await createTokenPair({ userId: targetUser._id, email }, env.SECRET_KEY);
+  const tokens = await createTokenPair({ userId: targetUser._id, name: targetUser.name, roles: targetUser.roles }, env.SECRET_KEY);
   return {
     user,
     tokens
@@ -73,7 +73,7 @@ const handlerRefreshToken = async ({ user, refreshToken }) => {
 }
 const getAllUsers = async () => {
   //check email user exist ?
-  const targetUser = await userModel.find({}).sort({ createdAt: -1 }).lean();
+  const targetUser = await userModel.find({}, '_id name roles').sort({ createdAt: -1 }).lean();
   return targetUser
 }
 

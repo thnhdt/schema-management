@@ -18,9 +18,7 @@ const createDatabase = async (dataCreated) => {
 };
 const getAllDatabaseInHost = async (reqQuery) => {
   const { idHost } = reqQuery;
-  const targetHost = await nodeModel.findById(idHost);
-  if (!targetHost) throw new NotFoundError("Chưa đăng ký host!");
-  const allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost) }).lean();
+  const allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost), status: 'active' }).lean();
   return {
     code: 200,
     metaData: {

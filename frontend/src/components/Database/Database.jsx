@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Typography, message, Button, Card, Space, Badge, Row, Col, Statistic, Tabs, Alert, Tag, Select } from 'antd';
-import { 
-  DatabaseOutlined, 
+import {
+  DatabaseOutlined,
   ReloadOutlined,
   SettingOutlined,
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-
+import { getAllDatabaseInHost } from '../../api';
 import DatabaseConnection from './DatabaseConnection';
 
 const { Title, Text } = Typography;
@@ -60,48 +60,24 @@ const Database = () => {
   const [selectStatus, setselectStatus] = useState(null);
   const [messageApi, contextHolder] = message.useMessage();
   const navigate = useNavigate();
-  const { id } = useParams();
   const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const id = searchParams.get('id');
   const nodeData = location.state?.nodeData;
 
   useEffect(() => {
-    if (id && sampleDatabases[id]) {
-      const db = sampleDatabases[id];
-      setDatabase(db);
-      setIsConnected(db.status === 'connected');
-      
-      if (db.status === 'connected') {
-        setActiveTab('2');
-        const firstActiveDb = db.dbStatus?.find(ldb => ldb.status === 'active');
-        if (firstActiveDb) {
-          setselectStatus(firstActiveDb.name);
-        }
-      }
-    } else if (nodeData) {
-      const db = {
-        id: nodeData.id,
-        name: nodeData.name,
-        type: nodeData.type,
-        status: nodeData.status,
-        dbStatus: [
-          { name: 'Database_1', status: 'active' },
-          { name: 'Database_2', status: 'active' },
-          { name: 'sample_db_2', status: 'inactive' },
-        ],
-        tables: [],
-        schemas: [],
-        totalSize: '0 MB',
-        connections: 0,
-        uptime: '0 days'
-      };
-      setDatabase(db);
-      setIsConnected(nodeData.status === 'connected');
-      
-      if (nodeData.status === 'connected') {
-        setActiveTab('2');
-      }
-    }
+    fetchDatabase();
   }, [id, nodeData]);
+  const fetchDatabase = async () => {
+    try {
+      const response = await getAllDatabaseInHost(id);
+      setDatabase(response.metaData.metaData.database);
+    } catch (error) {
+      console.error('Error fetching Sheets:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleConnectionSuccess = (connectionConfig) => {
     setIsConnected(true);
@@ -110,7 +86,7 @@ const Database = () => {
     if (database) {
       setDatabase({
         ...database,
-        status: 'connected'
+        status: 'active'
       });
     }
     messageApi.success('Đã kết nối thành công đến database!');
@@ -123,7 +99,7 @@ const Database = () => {
     if (database) {
       setDatabase({
         ...database,
-        status: 'disconnected'
+        status: 'inactive'
       });
     }
     messageApi.info('Đã ngắt kết nối database');
@@ -146,18 +122,18 @@ const Database = () => {
   };
 
   const handleViewSchema = () => {
-    navigate(`/schema/${database?.id}`, { 
-      state: { 
+    navigate(`/schema/${database?.id}`, {
+      state: {
         nodeData: nodeData,
-        nodeName: database?.name 
-      } 
+        nodeName: database?.name
+      }
     });
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'connected': return 'success';
-      case 'disconnected': return 'error';
+      case 'active': return 'success';
+      case 'inactive': return 'error';
       case 'connecting': return 'processing';
       default: return 'default';
     }
@@ -165,8 +141,8 @@ const Database = () => {
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'connected': return 'Đã kết nối';
-      case 'disconnected': return 'Chưa kết nối';
+      case 'active': return 'Đã kết nối';
+      case 'inactive': return 'Chưa kết nối';
       case 'connecting': return 'Đang kết nối';
       default: return 'Không xác định';
     }
@@ -193,12 +169,12 @@ const Database = () => {
   return (
     <div style={{ padding: '20px', height: '100vh', overflow: 'hidden' }}>
       {contextHolder}
-      
+
       <div style={{ marginBottom: 20 }}>
         <Space align="center">
-          <Button 
-            type="text" 
-            icon={<ArrowLeftOutlined />} 
+          <Button
+            type="text"
+            icon={<ArrowLeftOutlined />}
             onClick={() => navigate('/sheet')}
           >
             Quay lại Nodes
@@ -206,9 +182,9 @@ const Database = () => {
           <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
             {getTypeIcon(database.type)} Database Manager - {database.name}
           </Title>
-          <Badge 
-            status={getStatusColor(database.status)} 
-            text={getStatusText(database.status)} 
+          <Badge
+            status={getStatusColor(database.status)}
+            text={getStatusText(database.status)}
           />
         </Space>
       </div>
@@ -223,8 +199,8 @@ const Database = () => {
         />
       )}
 
-      <Tabs 
-        activeKey={activeTab} 
+      <Tabs
+        activeKey={activeTab}
         onChange={setActiveTab}
         type="card"
         items={[
@@ -237,7 +213,7 @@ const Database = () => {
               </Space>
             ),
             children: (
-              <DatabaseConnection 
+              <DatabaseConnection
                 onConnectionSuccess={handleConnectionSuccess}
                 onDisconnect={handleDisconnect}
               />
@@ -296,15 +272,15 @@ const Database = () => {
                 {/* Action Buttons */}
                 <Card style={{ marginBottom: 24 }}>
                   <Space>
-                    <Button 
-                      type="primary" 
+                    <Button
+                      type="primary"
                       icon={<ReloadOutlined />}
                       onClick={handleRefresh}
                       loading={loading}
                     >
                       Làm Mới
                     </Button>
-                    <Button 
+                    <Button
                       icon={<SettingOutlined />}
                       onClick={handleViewSchema}
                     >

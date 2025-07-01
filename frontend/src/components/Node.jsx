@@ -10,41 +10,16 @@ import {
   CloseCircleOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import '../App.css';
+import { getAllNodes } from '../api';
+// import '../App.css';
+
 const { Title, Text } = Typography;
 
 // Dữ liệu mẫu cho PostgreSQL database nodes
-const sampleNodes = [
-  {
-    id: 1,
-    name: 'PostgreSQL Production',
-    host: '192.168.1.100',
-    port: 5432,
-    database: 'production_db',
-    username: 'admin',
-    status: 'connected',
-    description: 'Database sản xuất chính',
-    lastConnected: '2024-01-15 10:30:00',
-    tables: 45,
-    schemas: 8
-  },
-  {
-    id: 2,
-    name: 'PostgreSQL Staging',
-    host: '192.168.1.102',
-    port: 5432,
-    database: 'staging_db',
-    username: 'staging_user',
-    status: 'disconnected',
-    description: 'Database staging cho testing',
-    lastConnected: '2024-01-14 16:45:00',
-    tables: 38,
-    schemas: 6
-  },
-];
+
 
 const Node = () => {
-  const [nodes, setNodes] = useState(sampleNodes);
+  const [nodes, setNodes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -54,16 +29,18 @@ const Node = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Load nodes from localStorage or API
-    const savedNodes = localStorage.getItem('databaseNodes');
-    if (savedNodes) {
-      setNodes(JSON.parse(savedNodes));
-    } else {
-      setNodes(sampleNodes);
-      localStorage.setItem('databaseNodes', JSON.stringify(sampleNodes));
-    }
+    fetchNode()
   }, []);
-
+  const fetchNode = async () => {
+    try {
+      const response = await getAllNodes();
+      setNodes(response.metaData.metaData.node);
+    } catch (error) {
+      console.error('Error fetching Sheets:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleAddNode = () => {
     setEditingNode(null);
     form.resetFields();
@@ -76,9 +53,7 @@ const Node = () => {
       name: node.name,
       host: node.host,
       port: node.port,
-      database: node.database,
       username: node.username,
-      description: node.description
     });
     setIsEditModalVisible(true);
   };
@@ -146,7 +121,7 @@ const Node = () => {
   };
 
   const handleViewDatabase = (node) => {
-    navigate(`/database?id=${node.id}`, {
+    navigate(`/database?id=${node._id}`, {
       state: {
         nodeData: node,
         nodeName: node.name
@@ -163,23 +138,6 @@ const Node = () => {
     });
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'connected': return 'success';
-      case 'disconnected': return 'error';
-      case 'connecting': return 'processing';
-      default: return 'default';
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'connected': return 'Đã kết nối';
-      case 'disconnected': return 'Chưa kết nối';
-      case 'connecting': return 'Đang kết nối';
-      default: return 'Không xác định';
-    }
-  };
 
   const columns = [
     {
@@ -213,24 +171,14 @@ const Node = () => {
       render: (text) => <Text code>{text}</Text>,
     },
     {
-      title: 'Thống Kê',
-      key: 'stats',
-      render: (_, record) => (
-        <Space direction="vertical" size="small">
-          <Text type="secondary">Tables: {record.tables || 0}</Text>
-          <Text type="secondary">Schemas: {record.schemas || 0}</Text>
-        </Space>
-      ),
-    },
-    {
       title: 'Thao Tác',
       key: 'actions',
       render: (_, record) => (
-        <Space>
+        <Space.Compact block size='large'>
           <Tooltip title="Xem Database">
-            <Button 
-              type="primary" 
-              size="small" 
+            <Button
+              type="primary"
+
               icon={<EyeOutlined />}
               onClick={() => handleViewDatabase(record)}
             />
@@ -238,16 +186,16 @@ const Node = () => {
           <Tooltip title="Xem Schema">
             <Button
               type="default"
-              size="small"
+
               icon={<DatabaseOutlined />}
               onClick={() => handleViewSchema(record)}
             />
           </Tooltip>
-          {record.status === 'connected' ? (
+          {/* {record.status === 'connected' ? (
             <Tooltip title="Ngắt kết nối">
               <Button
                 type="default"
-                size="small"
+            
                 icon={<CloseCircleOutlined />}
                 onClick={() => handleDisconnectNode(record)}
               />
@@ -256,16 +204,16 @@ const Node = () => {
             <Tooltip title="Kết nối">
               <Button
                 type="primary"
-                size="small"
+            
                 icon={<CheckCircleOutlined />}
                 onClick={() => handleConnectNode(record)}
               />
             </Tooltip>
-          )}
+          )} */}
           <Tooltip title="Chỉnh sửa">
             <Button
               type="default"
-              size="small"
+
               icon={<EditOutlined />}
               onClick={() => handleEditNode(record)}
             />
@@ -280,11 +228,11 @@ const Node = () => {
             <Button
               type="primary"
               danger
-              size="small"
+
               icon={<DeleteOutlined />}
             />
           </Popconfirm>
-        </Space>
+        </Space.Compact>
       ),
     },
   ];

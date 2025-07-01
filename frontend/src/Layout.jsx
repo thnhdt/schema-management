@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -10,6 +10,8 @@ import {
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Flex, Divider, Typography } from 'antd';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { logout } from './api';
+
 const { Header, Sider, Content } = Layout;
 
 const AppLayout = () => {
@@ -21,17 +23,23 @@ const AppLayout = () => {
   const navigate = useNavigate();
   const currentPath = location.pathname;
   const username = sessionStorage.getItem("username");
-  const handleLogOut = () => {
+  const handleLogOut = async () => {
+    try {
+      await logout();
+      sessionStorage.removeItem('username');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('userId');
+      window.location = '/';
+    } catch (error) {
+      console.error("Logout ko thành công!", error.message);
+    }
     //Reset
-    sessionStorage.removeItem('username');
-    sessionStorage.removeItem('user_id');
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('admin');
-    window.location = '/';
+
+
   }
   return (
     <Layout className="app-layout" style={{ minHeight: '100vh' }}>
-      <Sider 
+      <Sider
         className="app-sider"
         trigger={null}
         collapsible
@@ -96,17 +104,17 @@ const AppLayout = () => {
         />
       </Sider>
 
-      <Layout style={{ 
+      <Layout style={{
         width: '100%',
         marginLeft: collapsed ? '80px' : '200px',
         transition: 'margin-left 0.2s'
       }}>
-        <Header 
+        <Header
           className="app-header"
-          style={{ 
-            padding: 0, 
-            background: colorBgContainer, 
-            display: 'flex', 
+          style={{
+            padding: 0,
+            background: colorBgContainer,
+            display: 'flex',
             justifyContent: 'space-between',
             position: 'fixed',
             top: 0,

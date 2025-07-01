@@ -1,13 +1,14 @@
 const userService = require('../services/user.service');
 const { SucessReponse, CreatedResponse } = require('../cores/sucess.response');
-
+const jwt = require('jsonwebtoken');
+const env = require('../config/environment');
 const login = async (req, res, next) => {
   const loginUser = await userService.login(req.body)
   res.cookie("refreshToken", loginUser.metaData.tokens.refreshToken, {
     httpOnly: true,                      // chống XSS
     secure: false, // HTTPS only ở production
     sameSite: "Strict",          // cookie chỉ gửi tới endpoint này
-    maxAge: 2 * 60 * 1000,
+    maxAge: 24 * 60 * 60 * 1000,
   });
   new SucessReponse({
     metaData: loginUser
@@ -21,21 +22,42 @@ const signUp = async (req, res, next) => {
   }).send(res)
 };
 const handlerRefreshToken = async (req, res, next) => {
-  const resetTokentUser = await userService.handlerRefreshToken({ refreshToken: req.refreshToken, user: req.user });
-  res.cookie("refreshToken", resetTokentUser.refreshToken, {
-    httpOnly: true,
-    secure: false,
-    sameSite: "Strict",
-    // path: "/api/refresh-token",          
-    maxAge: 24 * 60 * 60 * 1000,
-  });
+  const refreshToken = req.cookies.refreshToken;
+  const decoder = jwt.verify(refreshToken, env.SECRET_KEY);
+  const resetTokentUser = await userService.handlerRefreshToken({ refreshToken: req.cookies.refreshToken, user: decoder });
   new SucessReponse({
     message: "reset token successfully !",
     metaData: resetTokentUser
   }).send(res)
 }
+const getAllUsers = async (req, res, next) => {
+  const allUsers = await userService.getAllUsers();
+  new SucessReponse({
+    message: "Get all users done !",
+    metaData: allUsers
+  }).send(res)
+};
+const checkAuth = async (req, res, next) => {
+  new SucessReponse({
+    message: "Check auth thành công !",
+  }).send(res)
+};
+const logout = async (req, res, next) => {
+  res.cookie("refreshToken", "", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none",
+    expires: new Date(1)
+  });
+  new SucessReponse({
+    message: "Log out thành công !",
+  }).send(res)
+};
 module.exports = {
   login,
   signUp,
-  handlerRefreshToken
+  handlerRefreshToken,
+  getAllUsers,
+  logout,
+  checkAuth
 }

@@ -29,7 +29,7 @@ app.use(
         origin: process.env.FRONTEND_URL || '*',
         credentials: true,
         methods: 'GET, POST, PUT,PATCH, DELETE',
-        allowedHeaders: 'Content-Type, Authorization, x-requested-with'
+        allowedHeaders: 'Content-Type, Authorization, x-requested-with, userid'
     }))
 // add body-parser
 app.use(express.json())
@@ -41,6 +41,7 @@ app.use(express.urlencoded({
 //router
 app.use(require('./v1/routes/index.router'));
 app.use('/api/user', require('./v1/routes/user.route'));
+app.use('/api/node', require('./v1/routes/node.route'));
 app.use('/api/database', require('./v1/routes/database.route'));
 app.use('/api/table', require('./v1/routes/table.route'));
 app.post('/api/diagram', async (req, res) => {

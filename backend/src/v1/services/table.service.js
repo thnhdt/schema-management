@@ -31,21 +31,27 @@ const getAllTables = async (reqBody) => {
   const { schema, id } = reqBody;
   const client = POOLMAP.get(id).sequelize;
   if (!client) throw new BadResponseError("Chưa kết nối với database!");
+
+  // kết quả sẽ là {table_name, columns}
   const allTables = await POOLMAP.get(id).sequelize.query(
-    `SELECT table_name as \"tableName\"
-                     FROM information_schema.columns
-                     WHERE table_schema NOT IN (\'pg_catalog\', \'information_schema\') AND  table_schema = :schema
-                     GROUP BY table_name;`,
+    `SELECT
+  table_name,         
+  COUNT(column_name) AS columns
+  FROM information_schema.columns
+  WHERE table_schema NOT IN ('pg_catalog', 'information_schema') AND  table_schema = :schema
+  GROUP BY table_name
+  ORDER BY table_name;`,
     {
       replacements: { schema },
       type: QueryTypes.SELECT
     }
   );
-  const allSqlSchema = await Promise.all(allTables.map(async table => ({ tableName: table, text: await ddl("public", table.tableName, client) })));
+  // const allSqlSchema = await Promise.all(allTables.map(async table => ({ tableName: table, text: await ddl("public", table.tableName, client) })));
+  // const allSqlSchema = await Promise.all(allTables.map(async table => ({ tableName: table, columns: await getCountColumns({ schema: 'public', tableName: table, id }) })));
   return {
     code: 200,
     metaData: {
-      data: allSqlSchema
+      data: allTables
     }
   }
 };
@@ -89,12 +95,7 @@ const getCountColumns = async (reqBody) => {
       type: QueryTypes.SELECT
     }
   );
-  return {
-    code: 200,
-    metaData: {
-      data: countColumns
-    }
-  }
+  return countColumns[0];
 };
 module.exports = {
   test,

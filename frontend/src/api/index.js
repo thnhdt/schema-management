@@ -4,18 +4,23 @@ const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3051/
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
+
 });
 
 // Add token to requests if available
 api.interceptors.request.use(
   (config) => {
     const token = sessionStorage.getItem('token');
+    const userId = sessionStorage.getItem('userId');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    if (userId) {
+      config.headers['userid'] = userId;
     }
     return config;
   },
@@ -43,7 +48,7 @@ api.interceptors.response.use(
     if (
       error.response?.status === 401 &&
       !original._retry &&
-      original.auth
+      original.requiresAuth
     ) {
       original._retry = true;
 
@@ -62,25 +67,32 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const res = await axios.post('/refresh-token', null, {
-          withCredentials: true,
-        });
-
-        const newToken = res.data.accessToken;
-        sessionStorage.setItem('accessToken', newToken);
+        const res = await axios.post('http://localhost:3051/api/user/refresh-token', null, { withCredentials: true });
+        const newToken = res.data.metaData.tokens.accessToken;
+        sessionStorage.setItem('token', newToken);
         processQueue(null, newToken);
 
-        original.headers.Authorization = newToken;
+        original.headers.Authorization = `Bearer ${newToken}`;
         return api(original);
       } catch (err) {
         processQueue(err);
-        window.location.href = '/login';
+        sessionStorage.removeItem('username');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('userId');
+        window.location.replace('/');
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
       }
     }
-
+    else if (error.response?.status === 403) {
+      setTimeout(() => {
+        sessionStorage.removeItem('username');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('userId');
+        window.location.replace('/');
+      }, 2000);
+    }
     return Promise.reject(error);
   }
 );
@@ -97,7 +109,7 @@ export const testDatabaseConnection = async (connectionConfig) => {
 
 export const connectToDatabase = async (connectionConfig) => {
   try {
-    const response = await api.post('/database/connect-database', connectionConfig);
+    const response = await api.post('/database/connect-database', connectionConfig, { auth: true });
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
@@ -252,13 +264,29 @@ export const importSchema = async (schemaData) => {
   }
 };
 export const getAllUsers = async () => {
-  const response = await api.get('/user/get-all-users');
+  const response = await api.get('/user/get-all-users', { requiresAuth: true });
   return response.data;
 }
 
 export const getAllDatabaseInHost = async (idHost) => {
-  const response = await api.get('/database/get-all-databases', { params: { idHost } });
+  console.log("idHost", idHost);
+  const response = await api.get('/database/get-all-databases', {
+    params: { idHost },      // query string
+    requiresAuth: true       // flag cho interceptor
+  });
   return response.data;
 }
 
-export default api;
+export const login = async (email, password) => {
+  const response = await api.post('/user/login', { email, password });
+  return response.data
+}
+export const logout = async () => {
+  const response = await api.post('/user/logout', null, { requiresAuth: true });
+  return response.data;
+}
+export const getAllNodes = async () => {
+  const response = await api.get('/node/get-all-nodes', { requiresAuth: true });
+  return response.data;
+}
+export default api; 

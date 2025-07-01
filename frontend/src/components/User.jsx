@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { message, Button, Popconfirm, Space, Form, Input } from 'antd';
 import { DeleteOutlined, UserOutlined, PlusOutlined } from '@ant-design/icons';
-// import { getAllUser, addUser, deleteUser } from '../api';
+import { getAllUsers } from '../api';
 import { TableComponent } from '../util/helper';
 
 const User = () => {
@@ -12,23 +13,27 @@ const User = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [addingRow, setAddingRow] = useState(null);
   const [editingKey, setEditingKey] = useState('');
-
   useEffect(() => {
-    const adminStatus = sessionStorage.getItem('admin');
+    const adminStatus = 'true';
     setIsAdmin(adminStatus === 'true');
   }, []);
 
   useEffect(() => {
     fetchUsers();
   }, []);
-
   const fetchUsers = async () => {
     try {
-      const response = await getAllUser();
-      setUsers(response);
+      const response = await getAllUsers();
+      setUsers(response.metaData);
     } catch (error) {
+      if (error.status === 403) {
+        messageApi.open({
+          key: 'expired',
+          type: 'error',
+          content: 'Hết phiên đăng nhập. Vui lòng đăng nhập lại!'
+        });
+      }
       console.error('Error fetching users:', error);
-      message.error('Không thể tải danh sách người dùng');
     } finally {
       setLoading(false);
     }
@@ -49,10 +54,10 @@ const User = () => {
   const saveNew = async () => {
     try {
       const values = await form.validateFields();
-      await addUser({ user: values.user });
+      // await addUser({ user: values.user });
       setAddingRow(null);
       setEditingKey('');
-      fetchUsers();
+      // fetchUsers();
       message.success('Thêm người dùng mới thành công');
     } catch (error) {
       console.error('Error adding new user:', error);
@@ -62,8 +67,8 @@ const User = () => {
 
   const handleDelete = async (id) => {
     try {
-      await deleteUser(id);
-      fetchUsers();
+      // await deleteUser(id);
+      // fetchUsers();
       message.success('Xóa người dùng thành công');
     } catch (error) {
       messageApi.open({
@@ -79,7 +84,7 @@ const User = () => {
   const columns = [
     {
       title: 'Tên người dùng',
-      dataIndex: 'user',
+      dataIndex: 'name',
       key: 'user',
       width: '85%',
       render: (text, record) => {
