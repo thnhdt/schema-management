@@ -148,27 +148,30 @@ function SchemaComponent() {
       }
     ];
     return (
-      <TableComponent
-        title="Danh Sách Bảng"
-        columns={columns}
-        data={tables || []}
-        loading={loading}
-        customButton={
-          <Space>
-            <Button
-              type="primary"
-              icon={<ReloadOutlined />}
-              onClick={handleRefresh}
-            >
-              Làm Mới
-            </Button>
-          </Space>
-        }
-        rowKey={record => record.name}
-        onRow={record => ({
-          onClick: () => setSelectedTable(record)
-        })}
-      />
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <TableComponent
+          title="Danh Sách Bảng"
+          columns={columns}
+          data={tables || []}
+          loading={loading}
+          customButton={
+            <Space>
+              <Button
+                type="primary"
+                icon={<ReloadOutlined />}
+                onClick={handleRefresh}
+              >
+                Làm Mới
+              </Button>
+            </Space>
+          }
+          rowKey={record => record.name}
+          onRow={record => ({
+            onClick: () => setSelectedTable(record)
+          })}
+          scroll={{ y: 'calc(100vh - 350px)' }}
+        />
+      </div>
     );
   };
 
@@ -188,27 +191,30 @@ function SchemaComponent() {
       }
     ];
     return (
-      <TableComponent
-        title="Danh Sách Function"
-        columns={columns}
-        data={functions || []}
-        loading={loading}
-        rowKey={record => record.name}
-        onRow={record => ({
-          onClick: () => setSelectedFunction(record)
-        })}
-        customButton={
-          <Space>
-            <Button
-              type="primary"
-              icon={<ReloadOutlined />}
-              onClick={handleRefresh}
-            >
-              Làm Mới
-            </Button>
-          </Space>
-        }
-      />
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <TableComponent
+          title="Danh Sách Function"
+          columns={columns}
+          data={functions || []}
+          loading={loading}
+          rowKey={record => record.name}
+          onRow={record => ({
+            onClick: () => setSelectedFunction(record)
+          })}
+          customButton={
+            <Space>
+              <Button
+                type="primary"
+                icon={<ReloadOutlined />}
+                onClick={handleRefresh}
+              >
+                Làm Mới
+              </Button>
+            </Space>
+          }
+          scroll={{ y: 'calc(100vh - 350px)' }}
+        />
+      </div>
     );
   };
 
@@ -255,27 +261,30 @@ function SchemaComponent() {
       }
     ];
     return (
-      <TableComponent
-        title="Danh Sách Sequence"
-        columns={columns}
-        data={sequences || []}
-        loading={loading}
-        customButton={
-          <Space>
-            <Button
-              type="primary"
-              icon={<ReloadOutlined />}
-              onClick={handleRefresh}
-            >
-              Làm Mới
-            </Button>
-          </Space>
-        }
-        rowKey={record => record.name}
-        onRow={record => ({
-          onClick: () => setSelectedSequence(record)
-        })}
-      />
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <TableComponent
+          title="Danh Sách Sequence"
+          columns={columns}
+          data={sequences || []}
+          loading={loading}
+          customButton={
+            <Space>
+              <Button
+                type="primary"
+                icon={<ReloadOutlined />}
+                onClick={handleRefresh}
+              >
+                Làm Mới
+              </Button>
+            </Space>
+          }
+          rowKey={record => record.name}
+          onRow={record => ({
+            onClick: () => setSelectedSequence(record)
+          })}
+          scroll={{ y: 'calc(100vh - 350px)' }}
+        />
+      </div>
     );
   };
 
@@ -345,55 +354,61 @@ function SchemaComponent() {
               tabBarStyle={{ marginBottom: 0 }}
             >
               <Tabs.TabPane tab={<span><TableOutlined /> Table</span>} key="table">
-                {renderTables()}
+                <div style={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%' }}>
+                  {renderTables()}
+                </div>
               </Tabs.TabPane>
               <Tabs.TabPane tab={<span><FunctionOutlined /> Function</span>} key="function">
-                {renderFunctions()}
+                <div style={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%' }}>
+                  {renderFunctions()}
+                </div>
               </Tabs.TabPane>
               <Tabs.TabPane tab={<span><OrderedListOutlined /> Sequence</span>} key="sequence">
-                {renderSequences()}
+                <div style={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%' }}>
+                  {renderSequences()}
+                </div>
               </Tabs.TabPane>
             </Tabs>
           </div>
           <div style={{ flex: 2, minWidth: 0, minHeight: 0, height: '100%', paddingLeft: 16, display: 'flex', flexDirection: 'column' }}>
             {activeTab === 'function' && (
-              <>
+              <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
                 <Text strong>Definition:</Text>
                 <Input.TextArea
-                  style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0 }}
+                  style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0, resize: 'none' }}
                   value={selectedFunction ? selectedFunction.definition : ''}
                   readOnly
                   autoSize={false}
                   rows={30}
                   placeholder="Chọn một function để xem definition"
                 />
-              </>
+              </div>
             )}
             {activeTab === 'table' && (
-              <>
+              <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
                 <Text strong>Table Info:</Text>
                 <Input.TextArea
-                  style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0 }}
+                  style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0, resize: 'none' }}
                   value={selectedTable ? (selectedTable.text || 'Chưa có thông tin chi tiết cho bảng này') : ''}
                   readOnly
                   autoSize={false}
                   rows={30}
                   placeholder="Chọn một bảng để xem chi tiết"
                 />
-              </>
+              </div>
             )}
             {activeTab === 'sequence' && (
-              <>
+              <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
                 <Text strong>Sequence Info:</Text>
                 <Input.TextArea
-                  style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0 }}
+                  style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0, resize: 'none' }}
                   value={selectedSequence ? (selectedSequence.text || 'Chưa có thông tin chi tiết cho sequence này') : ''}
                   readOnly
                   autoSize={false}
                   rows={30}
                   placeholder="Chọn một sequence để xem chi tiết"
                 />
-              </>
+              </div>
             )}
           </div>
         </div>
