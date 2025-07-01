@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, message, Button, Card, Space, Badge, Row, Col, Statistic, Tabs, Alert, Tag, Select } from 'antd';
+import { Typography, message, Button, Card, Space, Badge, Row, Col, Statistic, Tabs, Alert, Tag, Select, Table } from 'antd';
 import {
   DatabaseOutlined,
   ReloadOutlined,
@@ -53,11 +53,10 @@ const sampleDatabases = {
 };
 
 const Database = () => {
-  const [database, setDatabase] = useState(null);
+  const [databases, setDatabases] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [activeTab, setActiveTab] = useState('1');
-  const [selectStatus, setselectStatus] = useState(null);
   const [messageApi, contextHolder] = message.useMessage();
   const navigate = useNavigate();
   const location = useLocation();
@@ -66,69 +65,86 @@ const Database = () => {
   const nodeData = location.state?.nodeData;
 
   useEffect(() => {
-    fetchDatabase();
+    fetchDatabases();
   }, [id, nodeData]);
-  const fetchDatabase = async () => {
+
+  const fetchDatabases = async () => {
+    setLoading(true);
     try {
       const response = await getAllDatabaseInHost(id);
-      setDatabase(response.metaData.metaData.database);
+      setDatabases(response.metaData.metaData.database);
+      //  sampleDatabases
+      // setDatabases(Object.values(sampleDatabases));
     } catch (error) {
-      console.error('Error fetching Sheets:', error.message);
+      console.error('Error fetching databases:', error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleConnectionSuccess = (connectionConfig) => {
+  const handleConnect = (record) => {
     setIsConnected(true);
-    setActiveTab('2');
-    // Update database status
-    if (database) {
-      setDatabase({
-        ...database,
-        status: 'active'
-      });
-    }
-    messageApi.success('Đã kết nối thành công đến database!');
+    messageApi.success(`Đã kết nối đến database ${record.name}`);
+    // Có thể gọi API kết nối ở đây
   };
 
-  const handleDisconnect = () => {
-    setIsConnected(false);
-    setActiveTab('1');
-    // Update database status
-    if (database) {
-      setDatabase({
-        ...database,
-        status: 'inactive'
-      });
-    }
-    messageApi.info('Đã ngắt kết nối database');
-  };
-
-  const handleRefresh = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      messageApi.success('Đã làm mới dữ liệu!');
-    }, 1000);
-  };
-
-  const handleExport = () => {
-    messageApi.info('Tính năng export sẽ được phát triển sau');
-  };
-
-  const handleImport = () => {
-    messageApi.info('Tính năng import sẽ được phát triển sau');
-  };
-
-  const handleViewSchema = () => {
-    navigate(`/schema/${database?.id}`, {
+  const handleViewSchema = (record) => {
+    navigate(`/schema/${record.id}`, {
       state: {
         nodeData: nodeData,
-        nodeName: database?.name
+        nodeName: record.name
       }
     });
   };
+
+  const columns = [
+    {
+      title: 'Tên Database',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text, record) => <span>{getTypeIcon(record.type)} {text}</span>
+    },
+    {
+      title: 'Loại',
+      dataIndex: 'type',
+      key: 'type',
+      render: (type) => <Tag color="blue">{type}</Tag>
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => <Badge status={getStatusColor(status)} text={getStatusText(status)} />
+    },
+  ];
+
+  const connectColumns = [
+    ...columns,
+    {
+      title: 'Hành động',
+      key: 'action',
+      render: (_, record) => (
+        <Button type="primary" onClick={() => handleConnect(record)} disabled={isConnected}>
+          Kết nối
+        </Button>
+      )
+    }
+  ];
+
+  const infoColumns = [
+    ...columns,
+    {
+      title: 'Hành động',
+      key: 'action',
+      render: (_, record) => (
+        <Button onClick={() => handleViewSchema(record)}>
+          Xem chi tiết
+        </Button>
+      )
+    }
+  ];
+
+  const activeDatabases = databases.filter(db => db.status === 'active');
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -155,7 +171,7 @@ const Database = () => {
     }
   };
 
-  if (!database) {
+  if (!databases.length) {
     return (
       <div style={{ textAlign: 'center', padding: '50px' }}>
         <Title level={3}>Không tìm thấy database</Title>
@@ -169,7 +185,6 @@ const Database = () => {
   return (
     <div style={{ padding: '20px', height: '100vh', overflow: 'hidden' }}>
       {contextHolder}
-
       <div style={{ marginBottom: 20 }}>
         <Space align="center">
           <Button
@@ -180,25 +195,10 @@ const Database = () => {
             Quay lại Nodes
           </Button>
           <Title level={2} style={{ margin: 0, color: '#1890ff' }}>
-            {getTypeIcon(database.type)} Database Manager - {database.name}
+            <DatabaseOutlined /> Database Manager
           </Title>
-          <Badge
-            status={getStatusColor(database.status)}
-            text={getStatusText(database.status)}
-          />
         </Space>
       </div>
-
-      {!isConnected && (
-        <Alert
-          message="Chưa kết nối database"
-          description="Vui lòng kết nối đến database để bắt đầu quản lý"
-          type="warning"
-          showIcon
-          style={{ marginBottom: 20 }}
-        />
-      )}
-
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
@@ -213,9 +213,12 @@ const Database = () => {
               </Space>
             ),
             children: (
-              <DatabaseConnection
-                onConnectionSuccess={handleConnectionSuccess}
-                onDisconnect={handleDisconnect}
+              <Table
+                columns={connectColumns}
+                dataSource={activeDatabases}
+                rowKey="id"
+                loading={loading}
+                pagination={false}
               />
             ),
           },
@@ -227,98 +230,14 @@ const Database = () => {
                 Thông Tin Database
               </Space>
             ),
-            children: isConnected ? (
-              <div>
-                {/* Database Statistics */}
-                <Row gutter={16} style={{ marginBottom: 24 }}>
-                  <Col span={6}>
-                    <Card>
-                      <Statistic
-                        title="Tổng Kích Thước"
-                        value={database.totalSize}
-                        prefix={<DatabaseOutlined />}
-                      />
-                    </Card>
-                  </Col>
-                  <Col span={6}>
-                    <Card>
-                      <Statistic
-                        title="Kết Nối Hiện Tại"
-                        value={database.connections}
-                        prefix={<DatabaseOutlined />}
-                      />
-                    </Card>
-                  </Col>
-                  <Col span={6}>
-                    <Card>
-                      <Statistic
-                        title="Uptime"
-                        value={database.uptime}
-                        prefix={<DatabaseOutlined />}
-                      />
-                    </Card>
-                  </Col>
-                  <Col span={6}>
-                    <Card>
-                      <Statistic
-                        title="Schemas"
-                        value={database.schemas?.length || 0}
-                        prefix={<DatabaseOutlined />}
-                      />
-                    </Card>
-                  </Col>
-                </Row>
-
-                {/* Action Buttons */}
-                <Card style={{ marginBottom: 24 }}>
-                  <Space>
-                    <Button
-                      type="primary"
-                      icon={<ReloadOutlined />}
-                      onClick={handleRefresh}
-                      loading={loading}
-                    >
-                      Làm Mới
-                    </Button>
-                    <Button
-                      icon={<SettingOutlined />}
-                      onClick={handleViewSchema}
-                    >
-                      Xem Schema
-                    </Button>
-                    <Select
-                      value={selectStatus}
-                      onChange={setselectStatus}
-                      style={{ width: 200 }}
-                      placeholder="Chọn database"
-                    >
-                      {(database.dbStatus || [])
-                        .filter(db => db.status === 'active')
-                        .map(db => (
-                          <Select.Option key={db.name} value={db.name}>
-                            {db.name}
-                          </Select.Option>
-                        ))
-                      }
-                    </Select>
-                  </Space>
-                </Card>
-
-                {/* Schemas (for PostgreSQL/MySQL) */}
-                {database.type !== 'mongodb' && database.schemas && database.schemas.length > 0 && (
-                  <Card title="Schemas" style={{ marginBottom: 24 }}>
-                    <Space wrap>
-                      {database.schemas.map(schema => (
-                        <Tag key={schema} color="blue">{schema}</Tag>
-                      ))}
-                    </Space>
-                  </Card>
-                )}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '50px' }}>
-                <Text type="secondary">Vui lòng kết nối database trước</Text>
-              </div>
+            children: (
+              <Table
+                columns={infoColumns}
+                dataSource={activeDatabases}
+                rowKey="id"
+                loading={loading}
+                pagination={false}
+              />
             ),
           },
         ]}
