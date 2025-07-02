@@ -121,13 +121,16 @@ function SchemaComponent() {
         title: 'Tên Bảng',
         dataIndex: 'table_name',
         key: 'name',
-        render: (text) => <Text strong>{text}</Text>
+        render: (text) => <Text strong>{text}</Text>,
+        ellipsis: true,
+        width: 200
       },
       {
         title: 'Số Cột',
         dataIndex: 'columns',
         key: 'columnCount',
-        render: (count) => count || 0
+        render: (count) => count || 0,
+        width: 100
       },
       {
         title: 'Thao Tác',
@@ -144,7 +147,8 @@ function SchemaComponent() {
               <Button type="primary" danger icon={<DeleteOutlined />} />
             </Popconfirm>
           </Space>
-        )
+        ),
+        width: 120
       }
     ];
     return (
@@ -169,7 +173,8 @@ function SchemaComponent() {
           onRow={record => ({
             onClick: () => setSelectedTable(record)
           })}
-          scroll={{ y: 'calc(100vh - 350px)' }}
+          rowClassName={record => selectedTable && record.table_name === selectedTable.table_name ? 'selected-row' : ''}
+          scroll={{ x: 'max-content', y: 'calc(100vh - 350px)' }}
         />
       </div>
     );
@@ -181,13 +186,17 @@ function SchemaComponent() {
         title: 'Tên Function',
         dataIndex: 'functionName',
         key: 'functionName',
-        render: (text) => <Text strong>{text}</Text>
+        render: (text) => <Text strong>{text}</Text>,
+        ellipsis: true,
+        width: 200
       },
       {
         title: 'Tham Số',
         dataIndex: 'functionArguments',
         key: 'functionArguments',
-        render: (text) => <Text strong>{text}</Text>
+        render: (text) => <Text strong>{text}</Text>,
+        ellipsis: true,
+        width: 200
       }
     ];
     return (
@@ -201,6 +210,7 @@ function SchemaComponent() {
           onRow={record => ({
             onClick: () => setSelectedFunction(record)
           })}
+          rowClassName={record => selectedFunction && record.functionName === selectedFunction.functionName ? 'selected-row' : ''}
           customButton={
             <Space>
               <Button
@@ -212,7 +222,7 @@ function SchemaComponent() {
               </Button>
             </Space>
           }
-          scroll={{ y: 'calc(100vh - 350px)' }}
+          scroll={{ x: 'max-content', y: 'calc(100vh - 350px)' }}
         />
       </div>
     );
@@ -224,23 +234,29 @@ function SchemaComponent() {
         title: 'Tên Sequence',
         dataIndex: 'sequence_name',
         key: 'sequence_name',
-        render: (text) => <Text strong>{text}</Text>
+        render: (text) => <Text strong>{text}</Text>,
+        ellipsis: true,
+        width: 200
       },
       {
         title: 'Loại dữ liệu',
         dataIndex: 'data_type',
         key: 'data_type',
-        render: (text) => <Text strong>{text}</Text>
+        render: (text) => <Text strong>{text}</Text>,
+        ellipsis: true,
+        width: 150
       },
       {
         title: 'Start Value',
         dataIndex: 'start_value',
-        key: 'start_value'
+        key: 'start_value',
+        width: 120
       },
       {
         title: 'Bước Nhảy',
         dataIndex: 'increment',
-        key: 'increment'
+        key: 'increment',
+        width: 120
       },
       {
         title: 'Thao Tác',
@@ -257,7 +273,8 @@ function SchemaComponent() {
               <Button type="primary" danger icon={<DeleteOutlined />} />
             </Popconfirm>
           </Space>
-        )
+        ),
+        width: 120
       }
     ];
     return (
@@ -282,14 +299,15 @@ function SchemaComponent() {
           onRow={record => ({
             onClick: () => setSelectedSequence(record)
           })}
-          scroll={{ y: 'calc(100vh - 350px)' }}
+          rowClassName={record => selectedSequence && record.sequence_name === selectedSequence.sequence_name ? 'selected-row' : ''}
+          scroll={{ x: 'max-content', y: 'calc(100vh - 350px)' }}
         />
       </div>
     );
   };
 
   return (
-    <div style={{ padding: '0', height: 'calc(100vh - 112px)' }}>
+    <div style={{ padding: '0', height: '100vh' }}>
       {contextHolder}
 
       <div style={{ marginBottom: 20 }}>
@@ -304,7 +322,7 @@ function SchemaComponent() {
         </Space>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
         <Card style={{ marginBottom: 16 }}>
           <Space direction="vertical" style={{ width: '100%' }}>
             <Space wrap>
