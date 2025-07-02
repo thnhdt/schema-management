@@ -15,8 +15,6 @@ const AddDatabaseInNode = (props) => {
     try {
       await deleteDatabase(id);
       await fetchNode(idNode);
-      // socket.emit('update-menu-page');
-      // socket.emit('update-menu-add-in-sheet', { sheetId: idDate });
       message.success('Xóa món thành công');
     } catch (error) {
       console.error('Error deleting item:', error);
@@ -100,7 +98,7 @@ const AddDatabaseInNode = (props) => {
               <Form.Item
                 name="name"
                 style={{ margin: 0 }}
-                rules={[{ required: true, message: 'Vui lòng nhập tên món' }]}
+                rules={[{ required: true, message: 'Vui lòng nhập tên database' }]}
               >
                 <Input />
               </Form.Item>

@@ -161,6 +161,13 @@ function SchemaComponent() {
       setFunctions(functionResponse.metaData.metaData.data);
       setSequences(sequenceResponse.metaData.metaData.data);
     } catch (error) {
+      if (error.status === 403) {
+        messageApi.open({
+          key: 'expired',
+          type: 'error',
+          content: 'Hết phiên đăng nhập. Vui lòng đăng nhập lại!'
+        });
+      }
       console.error('Error fetching databases:', error.message);
     } finally {
       setLoading(false);
@@ -227,24 +234,24 @@ function SchemaComponent() {
         render: (count) => count || 0,
         width: 100
       },
-      {
-        title: 'Thao Tác',
-        key: 'actions',
-        render: (_, record) => (
-          <Space>
-            <Popconfirm
-              title="Xác nhận xóa"
-              description={`Bạn có chắc chắn muốn xóa bảng "${record.name}"?`}
-              onConfirm={() => handleDeleteTable(record.name)}
-              okText="Xóa"
-              cancelText="Hủy"
-            >
-              <Button type="primary" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-          </Space>
-        ),
-        width: 120
-      }
+      // {
+      //   title: 'Thao Tác',
+      //   key: 'actions',
+      //   render: (_, record) => (
+      //     <Space>
+      //       <Popconfirm
+      //         title="Xác nhận xóa"
+      //         description={`Bạn có chắc chắn muốn xóa bảng "${record.name}"?`}
+      //         onConfirm={() => handleDeleteTable(record.name)}
+      //         okText="Xóa"
+      //         cancelText="Hủy"
+      //       >
+      //         <Button type="primary" danger icon={<DeleteOutlined />} />
+      //       </Popconfirm>
+      //     </Space>
+      //   ),
+      //   width: 120
+      // }
     ];
     return (
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
@@ -356,24 +363,24 @@ function SchemaComponent() {
         key: 'increment',
         width: 120
       },
-      {
-        title: 'Thao Tác',
-        key: 'actions',
-        render: (_, record) => (
-          <Space>
-            <Popconfirm
-              title="Xác nhận xóa"
-              description={`Bạn có chắc chắn muốn xóa sequence "${record.name}"?`}
-              onConfirm={() => handleDeleteSequence(record.name)}
-              okText="Xóa"
-              cancelText="Hủy"
-            >
-              <Button type="primary" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-          </Space>
-        ),
-        width: 120
-      }
+      // {
+      //   title: 'Thao Tác',
+      //   key: 'actions',
+      //   render: (_, record) => (
+      //     <Space>
+      //       <Popconfirm
+      //         title="Xác nhận xóa"
+      //         description={`Bạn có chắc chắn muốn xóa sequence "${record.name}"?`}
+      //         onConfirm={() => handleDeleteSequence(record.name)}
+      //         okText="Xóa"
+      //         cancelText="Hủy"
+      //       >
+      //         <Button type="primary" danger icon={<DeleteOutlined />} />
+      //       </Popconfirm>
+      //     </Space>
+      //   ),
+      //   width: 120
+      // }
     ];
     return (
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
@@ -501,9 +508,9 @@ function SchemaComponent() {
         </Row>
       </div>
 
-      <div style={{display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden'}}>
-        <div style={{display: 'flex', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #f0f1f2', padding: 8, maxWidth: '100%', height: '100%'}}>
-          <div style={{flex: 3, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #f0f1f2', padding: 8, maxWidth: '100%', height: '100%' }}>
+          <div style={{ flex: 3, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <Tabs
               activeKey={activeTab}
               onChange={key => {
@@ -525,12 +532,12 @@ function SchemaComponent() {
               </Tabs.TabPane>
             </Tabs>
           </div>
-          <div style={{flex: 2, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingLeft: 16}}>
+          <div style={{ flex: 2, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingLeft: 16 }}>
             {activeTab === 'function' && (
               <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
                 <Text strong>Definition: {selectedFunction?.functionName || ''}</Text>
                 <Input.TextArea
-                  style={{width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, resize: 'none', overflow: 'auto'}}
+                  style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, resize: 'none', overflow: 'auto' }}
                   value={selectedFunction ? selectedFunction.definition : ''}
                   readOnly
                   autoSize={false}
@@ -541,7 +548,7 @@ function SchemaComponent() {
             )}
             {activeTab === 'table' && (
               <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-                <Text strong>Table Info: {selectedFunction?.table_name || ''}</Text>
+                <Text strong>Table Info: {selectedTable?.table_name || ''}</Text>
                 <Input.TextArea
                   style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0, resize: 'none' }}
                   value={selectedTable ? (selectedTable.text || 'Chưa có thông tin chi tiết cho bảng này') : ''}
@@ -554,7 +561,7 @@ function SchemaComponent() {
             )}
             {activeTab === 'sequence' && (
               <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-                <Text strong>Sequence Info: {selectedFunction?.sequence_name || ''}</Text>
+                <Text strong>Sequence Info: {selectedSequence?.sequence_name || ''}</Text>
                 <Input.TextArea
                   style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0, resize: 'none' }}
                   value={selectedSequence ? (selectedSequence.text || 'Chưa có thông tin chi tiết cho sequence này') : ''}

@@ -3,6 +3,7 @@ import React from 'react';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from './api'; // axios instance của bạn
+import { logout } from './api';
 import { message } from 'antd';
 export default function AxiosInterceptor({ children }) {
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ export default function AxiosInterceptor({ children }) {
   useEffect(() => {
     const interceptorId = api.interceptors.response.use(
       (response) => response,
-      (error) => {
+      async (error) => {
         const status = error?.response?.status;
         if (status === 403) {
           messageApi.open({
@@ -18,6 +19,7 @@ export default function AxiosInterceptor({ children }) {
             type: 'error',
             content: 'Hết phiên đăng nhập. Sẽ quay lại trang đăng nhập!',
           });
+          // await logout();
           setTimeout(() => {
             sessionStorage.removeItem('username');
             sessionStorage.removeItem('token');
@@ -32,7 +34,7 @@ export default function AxiosInterceptor({ children }) {
     return () => {
       api.interceptors.response.eject(interceptorId);
     };
-  }, [navigate]);
+  }, [messageApi, navigate]);
 
   return (<>
     {contextHolder}

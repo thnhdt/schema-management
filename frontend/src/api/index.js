@@ -1,5 +1,5 @@
 import axios from 'axios';
-
+import { message, Alert } from 'antd';
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
   withCredentials: true,
@@ -63,7 +63,6 @@ api.interceptors.response.use(
       }
 
       isRefreshing = true;
-
       try {
         const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/user/refresh-token`, null, { withCredentials: true });
         const newToken = res.data.metaData.tokens.accessToken;
@@ -77,11 +76,22 @@ api.interceptors.response.use(
         sessionStorage.removeItem('username');
         sessionStorage.removeItem('token');
         sessionStorage.removeItem('userId');
+        await logout();
         window.location.replace('/');
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
       }
+    }
+    else if (error.response?.status === 403) {
+      // window.alert('Phiên đăng nhập đã hết hạn. Đang chuyển hướng...');
+      setTimeout(() => {
+        sessionStorage.removeItem('username');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('userId');
+        window.location.replace('/');
+      }, 1000);
+
     }
     return Promise.reject(error);
   }

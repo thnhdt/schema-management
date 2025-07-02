@@ -37,6 +37,13 @@ const Database = () => {
       setActiveDatabases(r1.metaData.metaData.database);
       setInactiveDatabases(r2.metaData.metaData.database);
     } catch (error) {
+      if (error.status === 403) {
+        messageApi.open({
+          key: 'expired',
+          type: 'error',
+          content: 'Hết phiên đăng nhập. Vui lòng đăng nhập lại!'
+        });
+      }
       console.error('Error fetching databases:', error.message);
       messageApi.error('Lỗi khi tải danh sách database');
     } finally {

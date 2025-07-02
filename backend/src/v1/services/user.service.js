@@ -53,7 +53,8 @@ const login = async ({ email, password, refreshToken = null }) => {
       user: {
         userId: targetUser._id,
         name: targetUser.name,
-        email: targetUser.email
+        email: targetUser.email,
+        roles: targetUser.roles
       },
       tokens
     }

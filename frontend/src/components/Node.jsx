@@ -48,9 +48,15 @@ const Node = () => {
         setDatabases(targetNode[0].databases);
       }
     } catch (error) {
+      if (error.status === 403) {
+        messageApi.open({
+          key: 'expired',
+          type: 'error',
+          content: 'Hết phiên đăng nhập. Vui lòng đăng nhập lại!'
+        });
+      }
       console.error('Error fetching Sheets:', error.message);
     } finally {
-
       setLoading(false);
     }
   };
@@ -279,7 +285,7 @@ const Node = () => {
             label="Port"
             rules={[{ required: true, message: 'Vui lòng nhập port!' }]}
           >
-            <Input placeholder="5432" defaultValue="5432" />
+            <Input placeholder="5432" />
           </Form.Item>
 
           <Form.Item

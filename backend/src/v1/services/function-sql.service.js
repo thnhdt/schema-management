@@ -31,7 +31,7 @@ const getAllFunctions = async (reqBody) => {
       data: allFunction
     }
   }
-}
+};
 
 module.exports = {
   getAllFunctions
