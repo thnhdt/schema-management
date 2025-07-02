@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Tabs, Card, Space, Button, Typography, message, Tooltip, Popconfirm, Input } from 'antd';
+import { Tabs, Card, Space, Button, Typography, message, Tooltip, Popconfirm, Input, Row, Col, Statistic } from 'antd';
 import Highlighter from 'react-highlight-words';
 import {
   DatabaseOutlined,
@@ -405,7 +405,7 @@ function SchemaComponent() {
   };
 
   return (
-    <div style={{ padding: '0', height: '120vh' }}>
+    <div style={{ padding: '0', height: '100%' }}>
       {contextHolder}
 
       <div style={{ marginBottom: 40 }}>
@@ -463,8 +463,8 @@ function SchemaComponent() {
               <Col span={6}>
                 <Card style={{ height: '100%' }}>
                   <Statistic
-                    title="Số Schema"
-                    value={1}
+                    title="Schema"
+                    value={selectedSchema?.name || 'public'}
                     prefix={<DatabaseOutlined />}
                   />
                 </Card>
@@ -473,7 +473,7 @@ function SchemaComponent() {
                 <Card style={{ height: '100%' }}>
                   <Statistic
                     title="Số Table"
-                    value={2}
+                    value={tables.length}
                     prefix={<DatabaseOutlined />}
                   />
                 </Card>
@@ -482,7 +482,7 @@ function SchemaComponent() {
                 <Card style={{ height: '100%' }}>
                   <Statistic
                     title="Số Function"
-                    value={3}
+                    value={functions.length}
                     prefix={<DatabaseOutlined />}
                   />
                 </Card>
@@ -491,7 +491,7 @@ function SchemaComponent() {
                 <Card style={{ height: '100%' }}>
                   <Statistic
                     title="Số Sequence"
-                    value={4}
+                    value={sequences.length}
                     prefix={<DatabaseOutlined />}
                   />
                 </Card>
@@ -501,9 +501,9 @@ function SchemaComponent() {
         </Row>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', height: '80%', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #f0f1f2', padding: 8 }}>
-          <div style={{ flex: 3, minWidth: 0, minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden'}}>
+        <div style={{display: 'flex', flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #f0f1f2', padding: 8, maxWidth: '100%', height: '100%'}}>
+          <div style={{flex: 3, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
             <Tabs
               activeKey={activeTab}
               onChange={key => {
@@ -515,28 +515,22 @@ function SchemaComponent() {
               tabBarStyle={{ marginBottom: 0 }}
             >
               <Tabs.TabPane tab={<span><TableOutlined /> Table</span>} key="table">
-                <div style={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%' }}>
-                  {renderTables()}
-                </div>
+                {renderTables()}
               </Tabs.TabPane>
               <Tabs.TabPane tab={<span><FunctionOutlined /> Function</span>} key="function">
-                <div style={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%' }}>
-                  {renderFunctions()}
-                </div>
+                {renderFunctions()}
               </Tabs.TabPane>
               <Tabs.TabPane tab={<span><OrderedListOutlined /> Sequence</span>} key="sequence">
-                <div style={{ flex: 1, minHeight: 0, minWidth: 0, height: '100%' }}>
-                  {renderSequences()}
-                </div>
+                {renderSequences()}
               </Tabs.TabPane>
             </Tabs>
           </div>
-          <div style={{ flex: 2, minWidth: 0, minHeight: 0, height: '100%', paddingLeft: 16, display: 'flex', flexDirection: 'column' }}>
+          <div style={{flex: 2, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingLeft: 16}}>
             {activeTab === 'function' && (
               <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
                 <Text strong>Definition: {selectedFunction?.functionName || ''}</Text>
                 <Input.TextArea
-                  style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0, resize: 'none' }}
+                  style={{width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, resize: 'none', overflow: 'auto'}}
                   value={selectedFunction ? selectedFunction.definition : ''}
                   readOnly
                   autoSize={false}
