@@ -9,6 +9,7 @@ function Main() {
   const passwordRef = useRef(null);
   const emailRef = useRef(null);
   const [messageApi, contextHolder] = message.useMessage();
+  const { _ , setUser } = useGlobalUser();
   const handleSubmit = async () => {
     try {
       const data = await login(emailRef.current.input.value, passwordRef.current.input.value);
@@ -16,8 +17,7 @@ function Main() {
       sessionStorage.setItem('token', data.metaData.metaData.tokens.accessToken);
       sessionStorage.setItem('username', data.metaData.metaData.user.name);
       sessionStorage.setItem('userId', data.metaData.metaData.user.userId);
-      sessionStorage.setItem('roles', JSON.stringify(data.metaData.metaData.user.roles));
-      navigate('/sheet');
+      navigate('/sheet', { replace: true });
     } catch (error) {
       messageApi.open({
         type: 'error',
