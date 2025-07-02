@@ -36,7 +36,7 @@ const signUp = async (dataCreated) => {
 }
 
 const login = async ({ email, password, refreshToken = null }) => {
-  //kiem tra email co ton tai
+
   const targetUser = await userModel.findOne({ email }).lean()
   if (!targetUser) {
     throw new AuthFailureError("Error: Email is not Exist !")
@@ -97,11 +97,19 @@ const updateUser = async (dataUpdate) => {
   return updated;
 }
 
+const deleteUser = async (_id) => {
+  if (!_id) throw new BadResponseError('Missing user id');
+  const deleted = await userModel.findByIdAndDelete(_id, { projection: '_id name roles email' }).lean();
+  if (!deleted) throw new BadResponseError('User not found');
+  return deleted;
+}
+
 module.exports = {
   signUp,
   login,
   handlerRefreshToken,
   getAllUsers,
   getUser,
-  updateUser
+  updateUser,
+  deleteUser
 }

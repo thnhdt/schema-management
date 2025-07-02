@@ -16,7 +16,7 @@ import {
 
 } from '@ant-design/icons';
 import '../../App.css';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { TableComponent } from '../../util/helper';
 import { getAllFunctions, getTables, getAllSequences } from '../../api';
@@ -24,29 +24,12 @@ import { getAllFunctions, getTables, getAllSequences } from '../../api';
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 
-
-// Thêm hàm tiện ích để bổ sung columnCount cho tables
-function addColumnCountToTables(schemas) {
-  return schemas.map(schema => ({
-    ...schema,
-    tables: schema.tables
-      ? schema.tables.map(table => ({
-        ...table,
-        columnCount: table.columns ? table.columns.length : 0
-      }))
-      : [],
-    functions: schema.functions || [],
-    sequences: schema.sequences || []
-  }));
-}
-
 function SchemaComponent() {
-  const [schemas, setSchemas] = useState('public');
-  const [selectedSchema, setSelectedSchema] = useState(null);
+  const [schemas, ] = useState('public');
+  const [selectedSchema, ] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { id } = useParams();
-  const location = useLocation();
   const [messageApi, contextHolder] = message.useMessage();
   const [tables, setTables] = useState([]);
   const [functions, setFunctions] = useState([]);
@@ -173,27 +156,27 @@ function SchemaComponent() {
       setLoading(false);
     }
   }
-  const handleExportSchema = async () => {
-    if (!selectedSchema) {
-      messageApi.warning('Vui lòng chọn một schema để export');
-      return;
-    }
+  // const handleExportSchema = async () => {
+  //   if (!selectedSchema) {
+  //     messageApi.warning('Vui lòng chọn một schema để export');
+  //     return;
+  //   }
 
-    try {
-      setLoading(true);
-      setTimeout(() => {
-        messageApi.success('Export schema thành công!');
-        setLoading(false);
-      }, 1000);
-    } catch (error) {
-      messageApi.error('Export schema thất bại: ' + error.message);
-      setLoading(false);
-    }
-  };
+  //   try {
+  //     setLoading(true);
+  //     setTimeout(() => {
+  //       messageApi.success('Export schema thành công!');
+  //       setLoading(false);
+  //     }, 1000);
+  //   } catch (error) {
+  //     messageApi.error('Export schema thất bại: ' + error.message);
+  //     setLoading(false);
+  //   }
+  // };
 
-  const handleImportSchema = () => {
-    messageApi.info('Tính năng import schema sẽ được phát triển sau');
-  };
+  // const handleImportSchema = () => {
+  //   messageApi.info('Tính năng import schema sẽ được phát triển sau');
+  // };
 
   const handleRefresh = () => {
     setLoading(true);
@@ -202,17 +185,17 @@ function SchemaComponent() {
       messageApi.success('Đã làm mới dữ liệu!');
     }, 1000);
   };
-  const handleDeleteTable = (tableName) => {
-    messageApi.success(`Đã xóa bảng ${tableName}!`);
-  };
+  // const handleDeleteTable = (tableName) => {
+  //   messageApi.success(`Đã xóa bảng ${tableName}!`);
+  // };
 
-  const handleDeleteFunction = (functionName) => {
-    messageApi.success(`Đã xóa function ${functionName}!`);
-  };
+  // const handleDeleteFunction = (functionName) => {
+  //   messageApi.success(`Đã xóa function ${functionName}!`);
+  // };
 
-  const handleDeleteSequence = (sequenceName) => {
-    messageApi.success(`Đã xóa sequence ${sequenceName}!`);
-  };
+  // const handleDeleteSequence = (sequenceName) => {
+  //   messageApi.success(`Đã xóa sequence ${sequenceName}!`);
+  // };
 
   const renderTables = () => {
     const columns = [

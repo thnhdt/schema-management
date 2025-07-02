@@ -68,6 +68,17 @@ const logout = async (req, res, next) => {
     message: "Log out thành công !",
   }).send(res)
 };
+const deleteUser = async (req, res, next) => {
+  try {
+    const deleted = await userService.deleteUser(req.body._id);
+    new SucessReponse({
+      message: "Xóa user thành công!",
+      metaData: deleted
+    }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
 module.exports = {
   login,
   signUp,
@@ -75,5 +86,6 @@ module.exports = {
   getAllUsers,
   logout,
   getState,
-  updateUser
+  updateUser,
+  deleteUser
 }

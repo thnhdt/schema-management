@@ -155,6 +155,12 @@ export const getAllDatabaseInHost = async (idHost, status) => {
 
 export const login = async (email, password) => {
   const response = await api.post('/user/login', { email, password });
+  const user = response.data?.metaData?.metaData?.user;
+  if (user && Array.isArray(user.roles)) {
+    sessionStorage.setItem('roles', JSON.stringify(user.roles));
+  } else {
+    sessionStorage.removeItem('roles');
+  }
   return response.data
 }
 export const logout = async () => {
@@ -236,4 +242,13 @@ export const updateUser = async (updateData) => {
   });
   return response.data;
 }
+
+export const deleteUser = async (_id) => {
+  const response = await api.delete('/user/delete-user', {
+    data: { _id },
+    requiresAuth: true,
+  });
+  return response.data;
+}
+
 export default api; 

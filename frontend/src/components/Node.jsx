@@ -6,20 +6,16 @@ import {
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { getAllNodes, createNode, editNode, deleteNode } from '../api';
 import '../App.css';
 import AddDatabaseInNode from './Database/ModalAddDatabase';
-import { useGlobalUser } from '../App';
 
 const { Title, Text } = Typography;
 
 
 const Node = () => {
-  const { user, setUser } = useGlobalUser();
   const [nodes, setNodes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
@@ -32,12 +28,12 @@ const Node = () => {
   const [nodeIdAddDatabase, setNodeIdAddDatabase] = useState(null);
   const [databases, setDatabases] = useState([]);
   const [urlString, setUrlString] = useState([]);
-  const isAdmin = user ? user.roles.includes('admin') : false;
+  const roles = JSON.parse(sessionStorage.getItem('roles') || '[]');
+  const isAdmin = roles.includes('admin');
 
   useEffect(() => {
-    console.log(user);
     fetchNode();
-  }, [user]);
+  }, []);
   const fetchNode = async (idNode = null) => {
     try {
       const response = await getAllNodes();
@@ -123,22 +119,12 @@ const Node = () => {
     });
   };
 
-  const handleViewSchema = (node) => {
-    navigate(`/schema?id=${node.id}`, {
-      state: {
-        nodeData: node,
-        nodeName: node.name
-      }
-    });
-  };
-
-
   const columns = [
     {
       title: 'Tên Node',
       dataIndex: 'name',
       key: 'name',
-      render: (text, record) => (
+      render: (text) => (
         <Space>
           <DatabaseOutlined style={{ color: '#336791' }} />
           <Text strong>{text}</Text>
@@ -238,7 +224,7 @@ const Node = () => {
       <Card
         title="Danh Sách PostgreSQL Nodes"
         extra={
-          (user ? user?.roles.includes('admin') : false) && <Button
+          (roles.includes('admin')) && <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleAddNode}

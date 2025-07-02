@@ -19,15 +19,23 @@ const databaseSchema = new Schema({
     required: true,
     trim: true
   },
+  database: {
+    type: String,
+    required: true
+  },
+  username: {
+    type: String,
+    required: true
+  },
+  password: {
+    type: String,
+    required: true
+  },
   status: {
     type: String,
     default: 'inactive',
     enum: ['active', 'inactive']
-  },
-  urlString: {
-    type: String,
-    required: true
-  },
+  }
 }, {
   collection: COLLECTION_NAME,
   timestamps: true

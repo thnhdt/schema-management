@@ -23,4 +23,8 @@ userRouter.route('/get-state')
   .get(handlerError(UserController.getState));
 userRouter.route('/logout')
   .post(handlerError(UserController.logout));
+
+userRouter.route('/delete-user')
+  .delete(handlerError(UserController.deleteUser));
+
 module.exports = userRouter

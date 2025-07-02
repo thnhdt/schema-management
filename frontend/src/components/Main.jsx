@@ -1,25 +1,23 @@
 import { useNavigate } from 'react-router-dom';
 import { Select, Button, message, Card, Typography, Space, Input } from 'antd';
 import '../App.css'
-import { useState, useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { login } from '../api/index.js';
 import { useGlobalUser } from '../App.jsx';
 function Main() {
-  // const [name, setName] = useState('');
-  // const [userOptions, setUserOptions] = useState([]);
   const navigate = useNavigate();
   const passwordRef = useRef(null);
   const emailRef = useRef(null);
   const [messageApi, contextHolder] = message.useMessage();
-  const { user, setUser } = useGlobalUser();
-  const handleSubmit = async (e) => {
+  const handleSubmit = async () => {
     try {
       const data = await login(emailRef.current.input.value, passwordRef.current.input.value);
       setUser(data.metaData.metaData.user);
       sessionStorage.setItem('token', data.metaData.metaData.tokens.accessToken);
       sessionStorage.setItem('username', data.metaData.metaData.user.name);
       sessionStorage.setItem('userId', data.metaData.metaData.user.userId);
-      navigate('/sheet', { replace: true });
+      sessionStorage.setItem('roles', JSON.stringify(data.metaData.metaData.user.roles));
+      navigate('/sheet');
     } catch (error) {
       messageApi.open({
         type: 'error',

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
-import { Select, Button, message, Card, Typography, Space, Input } from 'antd';
+import { Button, message, Card, Typography, Space, Input } from 'antd';
 import '../App.css'
-import { useState, useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { login, signUp } from '../api/index.js';
 
 function Register() {
@@ -13,7 +13,7 @@ function Register() {
   const nameRef = useRef(null);
   const [messageApi, contextHolder] = message.useMessage();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async () => {
     try {
       const email = emailRef.current.input.value.trim();
       const password = passwordRef.current.input.value;
@@ -42,7 +42,7 @@ function Register() {
         name: name,
         roles: ['user']
       }
-      const data = await signUp(dataRegister);
+      await signUp(dataRegister);
       messageApi.open({
         type: 'success',
         content: 'Đăng ký thành công! Đang đăng nhập...',
@@ -55,7 +55,7 @@ function Register() {
         setTimeout(() => {
           navigate('/sheet');
         }, 1500);
-      } catch (loginError) {
+      } catch {
         messageApi.open({
           type: 'warning',
           content: 'Đăng ký thành công! Vui lòng đăng nhập thủ công.',

@@ -4,9 +4,10 @@ import {
   DatabaseOutlined,
   ArrowLeftOutlined
 } from '@ant-design/icons';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { getAllDatabaseInHost, connectToDatabase, disconnectToDatabase } from '../../api';
 import '../../App.css'
+import ModalAddDatabase from './ModalAddDatabase';
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 
@@ -16,7 +17,6 @@ const Database = () => {
   const [loading, setLoading] = useState(false);
   const [connectingId, setConnectingId] = useState(null);
   const [disconnectingId, setDisconnectingId] = useState(null);
-  const [connectedDatabaseId, setConnectedDatabaseId] = useState(null);
   const [activeTab, setActiveTab] = useState('2');
   const [messageApi, contextHolder] = message.useMessage();
   const navigate = useNavigate();
@@ -24,6 +24,7 @@ const Database = () => {
   const searchParams = new URLSearchParams(location.search);
   const id = searchParams.get('id');
   const nodeData = location.state?.nodeData;
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     fetchDatabases();
@@ -54,9 +55,7 @@ const Database = () => {
   const handleConnect = async (record) => {
     setConnectingId(record._id);
     try {
-      const response = await connectToDatabase({ id: record._id });
-      console.log(response);
-      setConnectedDatabaseId(record._id);
+      await connectToDatabase({ id: record._id });
       messageApi.success(`Đã kết nối thành công đến database ${record.name}`);
       // Refresh danh sách database để cập nhật trạng thái
       await fetchDatabases();
@@ -71,17 +70,8 @@ const Database = () => {
   const handleDisconnect = async (record) => {
     setDisconnectingId(record._id);
     try {
-      // Debug: Kiểm tra token và userId
-      const token = sessionStorage.getItem('token');
-      const userId = sessionStorage.getItem('userId');
-      console.log('Debug disconnect - Token:', token ? 'exists' : 'missing');
-      console.log('Debug disconnect - UserId:', userId);
-      console.log('Debug disconnect - Database ID:', record._id);
-
-      const response = await disconnectToDatabase({ id: record._id });
-      setConnectedDatabaseId(null);
+      await disconnectToDatabase({ id: record._id });
       messageApi.success(`Đã ngắt kết nối database ${record.name}`);
-      // Refresh danh sách database để cập nhật trạng thái
       await fetchDatabases();
     } catch (error) {
       console.error('Error disconnecting from database:', error);
@@ -230,6 +220,11 @@ const Database = () => {
           </Title>
         </Space>
       </div>
+      <Space style={{ marginBottom: 16 }}>
+        <Button type="primary" onClick={() => setShowAddModal(true)}>
+          Thêm database
+        </Button>
+      </Space>
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
@@ -275,6 +270,14 @@ const Database = () => {
             ),
           },
         ]}
+      />
+      <ModalAddDatabase
+        visible={showAddModal}
+        onCancel={() => setShowAddModal(false)}
+        idNode={id}
+        fetchNode={fetchDatabases}
+        databases={[...activeDatabases, ...inactiveDatabases]}
+        nodes={nodeData ? [nodeData] : []}
       />
     </div>
   );

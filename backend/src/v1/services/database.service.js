@@ -40,13 +40,22 @@ const getAllDatabaseInHost = async (reqQuery) => {
 
 const connectToDatabase = async (reqBody) => {
   const { id } = reqBody;
-  const targetDatabase = await databaseModel.findById(id);
+  const targetDatabase = await databaseModel.findById(id).lean();
   if (!targetDatabase) throw new NotFoundError("Không tồn tại database!");
-  const sequelize = new Sequelize(targetDatabase.urlString, {
-    pool: { max: 10, min: 0, idle: 10_000 },
-    dialect: 'postgres',
-    logging: false,
-  });
+  const targetNode = await nodeModel.findById(targetDatabase.nodeId).lean();
+  if (!targetNode) throw new NotFoundError("Không tồn tại node!");
+  const sequelize = new Sequelize(
+    targetDatabase.database,
+    targetDatabase.username,
+    targetDatabase.password,
+    {
+      host: targetNode.host,
+      port: Number(targetNode.port),
+      dialect: 'postgres',
+      pool: { max: 10, min: 0, idle: 10_000 },
+      logging: false,
+    }
+  );
   await sequelize.authenticate();
   await POOLMAP.set(id, { sequelize, lastUsed: Date.now() });
   const updateDatabase = await databaseModel.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, { status: 'active' }, { new: true });

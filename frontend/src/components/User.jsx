@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { message, Button, Popconfirm, Space, Form, Input, Select, Tag } from 'antd';
 import { DeleteOutlined, UserOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
-import { getAllUsers, updateUser } from '../api';
+import { getAllUsers, updateUser, deleteUser } from '../api';
 import { TableComponent } from '../util/helper';
-import axios from 'axios';
 
 const { Option } = Select;
 
@@ -18,14 +16,16 @@ const User = () => {
   const [editingKey, setEditingKey] = useState('');
   
   useEffect(() => {
-    //Fetch admin role
-    const adminStatus = 'true';
-    setIsAdmin(adminStatus === 'true');
-  }, []);
-
-  useEffect(() => {
     fetchUsers();
   }, []);
+  
+  useEffect(() => {
+    try {
+      setIsAdmin(JSON.parse(sessionStorage.getItem('roles') || '[]').includes('admin'));
+    } catch {
+      setIsAdmin(false);
+    }
+  }, [users]);
   
   const fetchUsers = async () => {
     try {
@@ -45,12 +45,12 @@ const User = () => {
     }
   };
 
-  const handleAddNewInline = () => {
-    if (addingRow) return;
-    setAddingRow({ _id: 'new', name: '', roles: ['user'] });
-    setEditingKey('new');
-    form.setFieldsValue({ name: '', roles: ['user'] });
-  };
+  // const handleAddNewInline = () => {
+  //   if (addingRow) return;
+  //   setAddingRow({ _id: 'new', name: '', roles: ['user'] });
+  //   setEditingKey('new');
+  //   form.setFieldsValue({ name: '', roles: ['user'] });
+  // };
 
   const cancelNew = () => {
     setAddingRow(null);
@@ -59,7 +59,7 @@ const User = () => {
 
   const saveNew = async () => {
     try {
-      const values = await form.validateFields();
+      await form.validateFields();
       setAddingRow(null);
       setEditingKey('');
       message.success('Thêm người dùng mới thành công');
@@ -71,15 +71,15 @@ const User = () => {
 
   const handleDelete = async (id) => {
     try {
-      // await deleteUser(id);
-      // fetchUsers();
+      await deleteUser(id);
       message.success('Xóa người dùng thành công');
+      fetchUsers();
     } catch (error) {
       messageApi.open({
         type: 'error',
         content: 'Bạn phải là admin mới được xóa người dùng!',
       });
-      console.error('Error deleting user:', error.message);
+      console.error('Error deleting user:', error);
     }
   };
 
@@ -198,19 +198,20 @@ const User = () => {
                   roles: record.roles
                 });
               }}
+              disabled={!isAdmin}
             />
             <Popconfirm
               title="Bạn có chắc muốn xoá người dùng này?"
               onConfirm={() => handleDelete(record._id)}
               okText="Xoá"
               cancelText="Huỷ"
-              disabled={editingKey !== ''}
+              disabled={editingKey !== '' || !isAdmin}
             >
               <Button 
                 danger 
                 icon={<DeleteOutlined />} 
                 size="small"
-                disabled={editingKey !== ''} 
+                disabled={editingKey !== '' || !isAdmin} 
               />
             </Popconfirm>
           </Space>
