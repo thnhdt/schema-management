@@ -5,9 +5,9 @@ const env = require('../config/environment');
 const login = async (req, res, next) => {
   const loginUser = await userService.login(req.body)
   res.cookie("refreshToken", loginUser.metaData.tokens.refreshToken, {
-    httpOnly: true,                      // chống XSS
-    secure: false, // HTTPS only ở production
-    sameSite: "Strict",          // cookie chỉ gửi tới endpoint này
+    httpOnly: true,
+    secure: false,
+    sameSite: "Strict",
     maxAge: 24 * 60 * 60 * 1000,
   });
   new SucessReponse({

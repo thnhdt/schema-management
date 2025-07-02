@@ -10,6 +10,8 @@ import SchemaComponent from './components/Schema/Schema';
 import SchemaFlow from './components/Schema/SchemaFlow';
 import ReactFlowTest from './components/Schema/ReactFlowTest';
 import SQLToERD from './components/Schema/SQLToERD';
+import Register from './components/Register';
+
 import { AlreadyLogined } from './Authentication';
 import User from './components/User';
 import AxiosInterceptor from './Authentication';
@@ -53,6 +55,7 @@ function App() {
                   <AlreadyLogined>
                     <Main />
                   </AlreadyLogined>} />
+                <Route path='/register' element={<Register />} />
                 {/* <Route path="/" element={<Main />} /> */}
                 {/* <Route element={<RequireUsername />}> */}
                 <Route element={<AppLayout />}>

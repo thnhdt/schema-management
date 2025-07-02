@@ -4,7 +4,7 @@ import '../App.css'
 import { useState, useEffect, useRef } from 'react';
 import { login, signUp } from '../api/index.js';
 
-function Main() {
+function Register() {
   // const [name, setName] = useState('');
   // const [userOptions, setUserOptions] = useState([]);
   const navigate = useNavigate();
@@ -15,21 +15,59 @@ function Main() {
 
   const handleSubmit = async (e) => {
     try {
+      const email = emailRef.current.input.value.trim();
+      const password = passwordRef.current.input.value;
+      const name = nameRef.current.input.value.trim();
+
+      if (!name || !email || !password) {
+        messageApi.open({
+          type: 'error',
+          content: 'Vui lòng đầy đủ nội dung!',
+        });
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        messageApi.open({
+          type: 'error',
+          content: 'Email không hợp lệ!',
+        });
+        return;
+      }
+
       const dataRegister = {
-        email: emailRef.current.input.value,
-        password: passwordRef.current.input.value,
-        name: nameRef.current.input.value,
-        role: ['user']
+        email: email,
+        password: password,
+        name: name,
+        roles: ['user']
       }
       const data = await signUp(dataRegister);
-      sessionStorage.setItem('token', data.metaData.metaData.tokens.accessToken);
-      sessionStorage.setItem('username', data.metaData.metaData.user.name);
-      sessionStorage.setItem('userId', data.metaData.metaData.user.userId);
-      navigate('/sheet');
+      messageApi.open({
+        type: 'success',
+        content: 'Đăng ký thành công! Đang đăng nhập...',
+      });
+      try {
+        const loginData = await login(email, password);
+        sessionStorage.setItem('token', loginData.metaData.metaData.tokens.accessToken);
+        sessionStorage.setItem('username', loginData.metaData.metaData.user.name);
+        sessionStorage.setItem('userId', loginData.metaData.metaData.user.userId);
+        setTimeout(() => {
+          navigate('/sheet');
+        }, 1500);
+      } catch (loginError) {
+        messageApi.open({
+          type: 'warning',
+          content: 'Đăng ký thành công! Vui lòng đăng nhập thủ công.',
+        });
+        setTimeout(() => {
+          navigate('/');
+        }, 2000);
+      }
     } catch (error) {
       messageApi.open({
         type: 'error',
-        content: 'Nhập sai email hoặc mật khẩu!',
+        content: 'Đăng ký thất bại! Vui lòng thử lại.',
       });
       console.error('Error: ', error.message);
     }
@@ -41,12 +79,15 @@ function Main() {
       <div className="login-container">
         <Card className="login-card" bordered={false} style={{ maxWidth: 350, margin: '0 auto', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <Typography.Title level={2} style={{ textAlign: 'center', marginBottom: 0 }}>Schema Management</Typography.Title>
+            <Typography.Title level={2} style={{ textAlign: 'center', marginBottom: 0 }}>Đăng kí User</Typography.Title>
             <Input placeholder="Nhập họ và tên" ref={nameRef} />
             <Input placeholder="Nhập email" ref={emailRef} />
             <Input.Password placeholder="input password" ref={passwordRef} />
-            {/* <Button type='primary' size="large" block onClick={handleSubmit} disabled={!name}>Đặt cơm</Button> */}
             <Button type='primary' size="large" block onClick={handleSubmit}>Đăng ký</Button>
+            <Button size="medium" block onClick={() => {
+              navigate('/');
+            }
+            }>Quay về Đăng Nhập</Button>
           </Space>
         </Card>
 
@@ -55,4 +96,4 @@ function Main() {
   );
 }
 
-export default Main;
+export default Register;

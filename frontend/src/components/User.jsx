@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { message, Button, Popconfirm, Space, Form, Input } from 'antd';
-import { DeleteOutlined, UserOutlined, PlusOutlined } from '@ant-design/icons';
+import { message, Button, Popconfirm, Space, Form, Input, Select, Tag } from 'antd';
+import { DeleteOutlined, UserOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
 import { getAllUsers } from '../api';
 import { TableComponent } from '../util/helper';
+
+const { Option } = Select;
 
 const User = () => {
   const [users, setUsers] = useState([]);
@@ -13,7 +15,9 @@ const User = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [addingRow, setAddingRow] = useState(null);
   const [editingKey, setEditingKey] = useState('');
+  
   useEffect(() => {
+    //Fetch admin role
     const adminStatus = 'true';
     setIsAdmin(adminStatus === 'true');
   }, []);
@@ -21,6 +25,7 @@ const User = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
+  
   const fetchUsers = async () => {
     try {
       const response = await getAllUsers();
@@ -41,9 +46,9 @@ const User = () => {
 
   const handleAddNewInline = () => {
     if (addingRow) return;
-    setAddingRow({ _id: 'new', user: '' });
+    setAddingRow({ _id: 'new', name: '', roles: ['user'] });
     setEditingKey('new');
-    form.setFieldsValue({ user: '' });
+    form.setFieldsValue({ name: '', roles: ['user'] });
   };
 
   const cancelNew = () => {
@@ -54,10 +59,8 @@ const User = () => {
   const saveNew = async () => {
     try {
       const values = await form.validateFields();
-      // await addUser({ user: values.user });
       setAddingRow(null);
       setEditingKey('');
-      // fetchUsers();
       message.success('Thêm người dùng mới thành công');
     } catch (error) {
       console.error('Error adding new user:', error);
@@ -85,19 +88,19 @@ const User = () => {
     {
       title: 'Tên người dùng',
       dataIndex: 'name',
-      key: 'user',
-      width: '85%',
+      key: 'name',
+      width: '60%',
       render: (text, record) => {
         const editable = isEditing(record);
         if (editable) {
           return (
             <Form form={form} component={false}>
               <Form.Item
-                name="user"
+                name="name"
                 style={{ margin: 0 }}
                 rules={[{ required: true, message: 'Vui lòng nhập tên người dùng' }]}
               >
-                <Input />
+                <Input placeholder="Nhập tên người dùng" />
               </Form.Item>
             </Form>
           );
@@ -110,11 +113,48 @@ const User = () => {
         );
       },
     },
+    {
+      title: 'Roles',
+      dataIndex: 'roles',
+      key: 'roles',
+      width: '25%',
+      render: (roles, record) => {
+        const editable = isEditing(record);
+        if (editable) {
+          return (
+            <Form form={form} component={false}>
+              <Form.Item
+                name="roles"
+                style={{ margin: 0 }}
+                rules={[{ required: true, message: 'Vui lòng chọn role' }]}
+              >
+                <Select mode="multiple" placeholder="Chọn role">
+                  <Option value="user">user</Option>
+                  <Option value="admin">admin</Option>
+                </Select>
+              </Form.Item>
+            </Form>
+          );
+        }
+        return (
+          <Space>
+            {roles && roles.map(role => (
+              <Tag 
+                key={role} 
+                color={role === 'admin' ? 'red' : 'blue'}
+              >
+                {role}
+              </Tag>
+            ))}
+          </Space>
+        );
+      },
+    },
   ];
 
   if (isAdmin) {
     columns.push({
-      title: 'Xóa',
+      title: 'Thao tác',
       key: 'action',
       width: '15%',
       render: (_, record) => {
@@ -128,15 +168,34 @@ const User = () => {
           );
         }
         return (
-          <Popconfirm
-            title="Bạn có chắc muốn xoá người dùng này?"
-            onConfirm={() => handleDelete(record._id)}
-            okText="Xoá"
-            cancelText="Huỷ"
-            disabled={editingKey !== ''}
-          >
-            <Button danger icon={<DeleteOutlined />} disabled={editingKey !== ''} />
-          </Popconfirm>
+          <Space>
+            <Button 
+              type="primary" 
+              icon={<EditOutlined />} 
+              size="small"
+              onClick={() => {
+                setEditingKey(record._id);
+                form.setFieldsValue({
+                  name: record.name,
+                  roles: record.roles
+                });
+              }}
+            />
+            <Popconfirm
+              title="Bạn có chắc muốn xoá người dùng này?"
+              onConfirm={() => handleDelete(record._id)}
+              okText="Xoá"
+              cancelText="Huỷ"
+              disabled={editingKey !== ''}
+            >
+              <Button 
+                danger 
+                icon={<DeleteOutlined />} 
+                size="small"
+                disabled={editingKey !== ''} 
+              />
+            </Popconfirm>
+          </Space>
         );
       },
     });

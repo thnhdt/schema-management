@@ -33,8 +33,6 @@ const AppLayout = () => {
     } catch (error) {
       console.error("Logout ko thành công!", error.message);
     }
-    //Reset
-
 
   }
   return (
