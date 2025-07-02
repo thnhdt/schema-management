@@ -405,10 +405,10 @@ function SchemaComponent() {
   };
 
   return (
-    <div style={{ padding: '0', height: '100vh' }}>
+    <div style={{ padding: '0', height: '120vh' }}>
       {contextHolder}
 
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 40 }}>
         <Space align="center">
           <Button
             type="text"
@@ -418,44 +418,90 @@ function SchemaComponent() {
             Quay lại Nodes
           </Button>
         </Space>
+
+        <Row gutter={16} style={{ marginBottom: 24 }} align="stretch">
+          <Col span={8}>
+            <Card style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'left' }}>
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Space wrap >
+                  <Text strong>Schema hiện tại: </Text>
+                  <Text code>{selectedSchema?.name || 'public'}</Text>
+                  <Button
+                    icon={<ReloadOutlined />}
+                    onClick={handleRefresh}
+                    loading={loading}
+                  >
+                    Làm mới
+                  </Button>
+                  {/* <Button
+                    icon={<ExportOutlined />}
+                    onClick={handleExportSchema}
+                    disabled={!selectedSchema}
+                  >
+                    Export
+                  </Button>
+                  <Button
+                    icon={<ImportOutlined />}
+                    onClick={handleImportSchema}
+                  >
+                    Import
+                  </Button>
+                  <Button
+                    type="primary"
+                    icon={<DatabaseOutlined />}
+                    onClick={() => navigate('/schema/flow')}
+                  >
+                    Schema Flow
+                  </Button> */}
+                </Space>
+              </Space>
+            </Card>
+          </Col>
+
+          <Col span={16}>
+            <Row gutter={8}>
+              <Col span={6}>
+                <Card style={{ height: '100%' }}>
+                  <Statistic
+                    title="Số Schema"
+                    value={1}
+                    prefix={<DatabaseOutlined />}
+                  />
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card style={{ height: '100%' }}>
+                  <Statistic
+                    title="Số Table"
+                    value={2}
+                    prefix={<DatabaseOutlined />}
+                  />
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card style={{ height: '100%' }}>
+                  <Statistic
+                    title="Số Function"
+                    value={3}
+                    prefix={<DatabaseOutlined />}
+                  />
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card style={{ height: '100%' }}>
+                  <Statistic
+                    title="Số Sequence"
+                    value={4}
+                    prefix={<DatabaseOutlined />}
+                  />
+                </Card>
+              </Col>
+            </Row>
+          </Col>
+        </Row>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', height: '95%', overflow: 'hidden' }}>
-        <Card style={{ marginBottom: 16 }}>
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <Space wrap>
-              <Text strong>Schema hiện tại: </Text>
-              <Text code>{selectedSchema?.name || 'public'}</Text>
-              <Button
-                icon={<ReloadOutlined />}
-                onClick={handleRefresh}
-                loading={loading}
-              >
-                Làm mới
-              </Button>
-              <Button
-                icon={<ExportOutlined />}
-                onClick={handleExportSchema}
-                disabled={!selectedSchema}
-              >
-                Export
-              </Button>
-              <Button
-                icon={<ImportOutlined />}
-                onClick={handleImportSchema}
-              >
-                Import
-              </Button>
-              <Button
-                type="primary"
-                icon={<DatabaseOutlined />}
-                onClick={() => navigate('/schema/flow')}
-              >
-                Schema Flow
-              </Button>
-            </Space>
-          </Space>
-        </Card>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '80%', overflow: 'hidden' }}>
         <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px #f0f1f2', padding: 8 }}>
           <div style={{ flex: 3, minWidth: 0, minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
             <Tabs
