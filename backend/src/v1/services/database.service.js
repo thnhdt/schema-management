@@ -5,9 +5,33 @@ const { Sequelize } = require('sequelize');
 const mongoose = require('mongoose');
 const POOLMAP = new Map();
 
+const createPhysicalDB = async (dbName, username, password, host, port) => {
+  const sequelize = new Sequelize('postgres', username, password, {
+    host,
+    port,
+    dialect: 'postgres',
+    logging: false,
+  });
+  const [results] = await sequelize.query(`SELECT 1 FROM pg_database WHERE datname = '${dbName}'`);
+  if (results.length === 0) {
+    await sequelize.query(`CREATE DATABASE "${dbName}"`);
+  }
+  await sequelize.close();
+};
+
 const createDatabase = async (dataCreated) => {
   const checkNameAlready = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(dataCreated.nodeId), name: dataCreated.name }).lean();
   if (checkNameAlready.length > 0) throw new BadResponseError('Tên Database đã tồn tại!');
+  const node = await nodeModel.findById(dataCreated.nodeId).lean();
+  if (!node) throw new BadResponseError('Node không tồn tại!');
+  await createPhysicalDB(
+    dataCreated.database,
+    dataCreated.username,
+    dataCreated.password,
+    node.host,
+    node.port
+  );
+
   const dataCreate = {
     ...dataCreated,
     nodeId: new mongoose.Types.ObjectId(dataCreated.nodeId)

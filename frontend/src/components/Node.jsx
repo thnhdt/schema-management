@@ -83,9 +83,17 @@ const Node = () => {
   };
 
   const onAddSubmit = async (values) => {
+    const { name, host, port, username, password, database, ...rest } = values;
     const newNode = {
-      ...values,
-      status: 'inactive'
+      name,
+      host,
+      port,
+      databaseInfo: {
+        username,
+        password,
+        database
+      },
+      ...rest
     };
     await createNode(newNode);
     const updatedNodes = [newNode, ...nodes];
@@ -142,12 +150,6 @@ const Node = () => {
       title: 'Port',
       dataIndex: 'port',
       key: 'port',
-      render: (text) => <Text code>{text}</Text>,
-    },
-    {
-      title: 'User',
-      dataIndex: 'username',
-      key: 'username',
       render: (text) => <Text code>{text}</Text>,
     },
     {
@@ -275,19 +277,27 @@ const Node = () => {
           </Form.Item>
 
           <Form.Item
-            name="password"
-            label="Mật khẩu"
-            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
-          >
-            <Input placeholder="Tên database" />
-          </Form.Item>
-
-          <Form.Item
             name="username"
             label="Username"
             rules={[{ required: true, message: 'Vui lòng nhập username!' }]}
           >
             <Input placeholder="Username" />
+          </Form.Item>
+
+          <Form.Item
+            name="password"
+            label="Mật khẩu"
+            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
+          >
+            <Input.Password placeholder="Mật khẩu" />
+          </Form.Item>
+
+          <Form.Item
+            name="database"
+            label="Database kết nối"
+            rules={[{ required: true, message: 'Vui lòng nhập 1 database kết nối!' }]}
+          >
+            <Input placeholder="Tên database" />
           </Form.Item>
 
           <Form.Item

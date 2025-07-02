@@ -14,11 +14,7 @@ const AddDatabaseInNode = (props) => {
     try {
       await deleteDatabase(id);
       await fetchNode(idNode);
-<<<<<<< HEAD
-      message.success('Xóa món thành công');
-=======
       message.success('Xóa database thành công');
->>>>>>> 3b43b62 (fix: things)
     } catch (error) {
       console.error('Error deleting item:', error);
       message.error('Không thể xóa database');
@@ -161,9 +157,9 @@ const AddDatabaseInNode = (props) => {
       dataIndex: 'password',
       key: 'password',
       width: '20%',
-      editable: true,
+      editable: false,
       render: (text, record) => {
-        if (record._id === 'new' || isEditing(record)) {
+        if (record._id === 'new') {
           return (
             <Form form={editForm} component={false}>
               <Form.Item

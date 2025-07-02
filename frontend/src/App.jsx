@@ -1,6 +1,6 @@
 import './App.css';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
-import { message } from 'antd';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+// import { message } from 'antd';
 import { createContext, useContext, useEffect, useState } from 'react';
 import Main from './components/Main'
 import AppLayout from './Layout';
@@ -18,8 +18,6 @@ import AxiosInterceptor from './Authentication';
 import { getState } from './api';
 
 const GlobalContext = createContext();
-
-// eslint-disable-next-line react-refresh/only-export-components
 export const useGlobalUser = () => useContext(GlobalContext);
 
 function App() {
@@ -28,8 +26,6 @@ function App() {
   const [isInitializing, setIsInitializing] = useState(true);
   useEffect(() => {
     const userId = sessionStorage.getItem('userId');
-
-    // 👉 Nếu chưa đăng nhập, dừng loader ngay:
     if (!userId && !user) {
       setIsInitializing(false);
       return;
@@ -41,14 +37,14 @@ function App() {
       } catch (err) {
         console.error(err);
       } finally {
-        setIsInitializing(false); // luôn chạy
+        setIsInitializing(false);
       }
     })();
   }, []);
 
   const value = { user, setUser };
   if (isInitializing) {
-    return <div>Đang tải thông tin người dùng...</div>; // hoặc spinner
+    return <div>Đang tải thông tin người dùng...</div>;
   }
   return (
     <GlobalContext.Provider value={value}>
@@ -67,7 +63,7 @@ function App() {
               <Route element={
                 <AppLayout />
               }>
-                <Route path='/sheet' element={<Node />} />
+                <Route path='/node' element={<Node />} />
                 <Route path='/database' element={<Database />} />
                 <Route path='/database/:id' element={<Database />} />
                 <Route path='/schema' element={<SchemaComponent />} />

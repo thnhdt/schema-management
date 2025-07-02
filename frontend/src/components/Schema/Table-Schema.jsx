@@ -157,7 +157,7 @@ function SchemaComponent() {
                   <Button type="primary"
                     icon={<UnorderedListOutlined />}
                     onClick={() => {
-                      navigate(`/sheet/detail?id=${record?._id}`, {
+                      navigate(`/node/detail?id=${record?._id}`, {
                         state: {
                           userData: { date: record?.date, menus: record?.menus, status: record?.status }
                         }

@@ -3,9 +3,22 @@ const databaseModel = require('../models/database.model');
 const mongoose = require('mongoose');
 const { BadResponseError } = require('../cores/error.response');
 const createNode = async (dataCreated) => {
-  const checkNameAlready = await nodeModel.find({ name: dataCreated.name });
-  if (checkNameAlready.length > 0) throw new BadResponseError('Tên Node đã tồn tại!');
-  const newNode = await nodeModel.create(dataCreated);
+  const { name, host, port, databaseInfo } = dataCreated;
+  const checkNodeAlready = await nodeModel.find({ host, port });
+  if (checkNodeAlready.length > 0) throw new BadResponseError('Node đã tồn tại!');
+  const newNode = await nodeModel.create({ name, host, port });
+
+  if (databaseInfo && databaseInfo.username && databaseInfo.password && databaseInfo.database) {
+    await databaseModel.create({
+      nodeId: newNode._id,
+      name: databaseInfo.database,
+      username: databaseInfo.username,
+      password: databaseInfo.password,
+      database: databaseInfo.database,
+      status: 'inactive'
+    });
+  }
+
   return {
     code: 201,
     metaData: {
@@ -18,7 +31,7 @@ const getAllNode = async () => {
     { $sort: { createdAt: -1 } },
     {
       $lookup: {
-        from: 'Databases',        // Tên collection trong MongoDB (viết thường, dạng plural)
+        from: 'Databases',
         localField: '_id',
         foreignField: 'nodeId',
         as: 'databases'

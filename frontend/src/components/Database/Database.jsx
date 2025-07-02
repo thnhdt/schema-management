@@ -211,7 +211,7 @@ const Database = () => {
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/sheet')}
+            onClick={() => navigate('/node')}
           >
             Quay lại Nodes
           </Button>

@@ -79,7 +79,7 @@ const AppLayout = () => {
           onClick={({ key }) => navigate(key)}
           items={[
             {
-              key: '/sheet',
+              key: '/node',
               icon: <FileExcelOutlined />,
               label: 'Nodes',
             },

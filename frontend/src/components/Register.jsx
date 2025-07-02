@@ -53,7 +53,7 @@ function Register() {
         sessionStorage.setItem('username', loginData.metaData.metaData.user.name);
         sessionStorage.setItem('userId', loginData.metaData.metaData.user.userId);
         setTimeout(() => {
-          navigate('/sheet');
+          navigate('/node');
         }, 1500);
       } catch {
         messageApi.open({

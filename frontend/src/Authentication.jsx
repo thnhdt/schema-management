@@ -55,7 +55,7 @@ export const AlreadyLogined = ({ children }) => {
   const location = useLocation();
 
   if (hasUserId && location.pathname === "/") {
-    return <Navigate to="/sheet" replace />;
+    return <Navigate to="/node" replace />;
   }
   return children;
 };

@@ -17,7 +17,7 @@ function Main() {
       sessionStorage.setItem('token', data.metaData.metaData.tokens.accessToken);
       sessionStorage.setItem('username', data.metaData.metaData.user.name);
       sessionStorage.setItem('userId', data.metaData.metaData.user.userId);
-      navigate('/sheet', { replace: true });
+      navigate('/node', { replace: true });
     } catch (error) {
       messageApi.open({
         type: 'error',
