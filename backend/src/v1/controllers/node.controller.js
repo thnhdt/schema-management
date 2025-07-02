@@ -14,7 +14,23 @@ const getAllNodes = async (req, res, next) => {
     metaData: allNodes
   }).send(res)
 }
+const editNode = async (req, res, next) => {
+  const data = await nodeService.editNode(req.body);
+  new SucessReponse({
+    message: 'get all nodes thành công!',
+    metaData: data
+  }).send(res)
+}
+const deleteNode = async (req, res, next) => {
+  const data = await nodeService.deleteNode(req.params);
+  new SucessReponse({
+    message: 'get all nodes thành công!',
+    metaData: data
+  }).send(res)
+}
 module.exports = {
   createNode,
-  getAllNodes
+  getAllNodes,
+  editNode,
+  deleteNode
 }

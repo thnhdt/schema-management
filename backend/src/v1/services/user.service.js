@@ -3,6 +3,8 @@ const env = require('../config/environment');
 const { createTokenPair } = require('../utils/auth.utils');
 const bcrypt = require('bcrypt');
 const { AuthFailureError, ForbiddenError, BadResponseError } = require('../cores/error.response');
+const mongoose = require('mongoose');
+
 const signUp = async (dataCreated) => {
   const { email } = dataCreated
   const validateEmail = await userModel.findOne({ email }).lean();
@@ -77,9 +79,14 @@ const getAllUsers = async () => {
   return targetUser
 }
 
+const getUser = async (userId) => {
+  const targetUser = await userModel.find({ _id: new mongoose.Types.ObjectId(userId) }, '_id name roles').sort({ createdAt: -1 }).lean();
+  return targetUser[0]
+}
 module.exports = {
   signUp,
   login,
   handlerRefreshToken,
-  getAllUsers
+  getAllUsers,
+  getUser
 }

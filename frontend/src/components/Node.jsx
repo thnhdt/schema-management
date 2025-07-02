@@ -10,13 +10,16 @@ import {
   CloseCircleOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { getAllNodes } from '../api';
-// import '../App.css';
+import { getAllNodes, createNode, editNode, deleteNode } from '../api';
+import '../App.css';
+import AddDatabaseInNode from './Database/ModalAddDatabase';
+import { useGlobalUser } from '../App';
 
 const { Title, Text } = Typography;
 
 
 const Node = () => {
+  const { user, setUser } = useGlobalUser();
   const [nodes, setNodes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
@@ -25,17 +28,29 @@ const Node = () => {
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
   const navigate = useNavigate();
+  const [visible, setVisible] = useState(false);
+  const [nodeIdAddDatabase, setNodeIdAddDatabase] = useState(null);
+  const [databases, setDatabases] = useState([]);
+  const [urlString, setUrlString] = useState([]);
+  const isAdmin = user ? user.roles.includes('admin') : false;
 
   useEffect(() => {
-    fetchNode()
-  }, []);
-  const fetchNode = async () => {
+    console.log(user);
+    fetchNode();
+  }, [user]);
+  const fetchNode = async (idNode = null) => {
     try {
       const response = await getAllNodes();
       setNodes(response.metaData.metaData.node);
+      if (idNode) {
+        const targetNode = response.metaData.metaData.node.filter(item => item._id === idNode);
+        console.log(targetNode[0].databases);
+        setDatabases(targetNode[0].databases);
+      }
     } catch (error) {
       console.error('Error fetching Sheets:', error.message);
     } finally {
+
       setLoading(false);
     }
   };
@@ -52,66 +67,41 @@ const Node = () => {
       host: node.host,
       port: node.port,
       username: node.username,
+      password: node.password
     });
     setIsEditModalVisible(true);
   };
 
-  const handleDeleteNode = (nodeId) => {
-    const updatedNodes = nodes.filter(node => node.id !== nodeId);
+  const handleDeleteNode = async (nodeId) => {
+    const updatedNodes = nodes.filter(node => node._id !== nodeId);
+    await deleteNode(nodeId);
     setNodes(updatedNodes);
     localStorage.setItem('databaseNodes', JSON.stringify(updatedNodes));
     messageApi.success('Xóa node thành công!');
   };
 
-  const handleConnectNode = (node) => {
-    // Simulate connection
-    const updatedNodes = nodes.map(n =>
-      n.id === node.id
-        ? { ...n, status: 'connected', lastConnected: new Date().toLocaleString() }
-        : n
-    );
-    setNodes(updatedNodes);
-    localStorage.setItem('databaseNodes', JSON.stringify(updatedNodes));
-    messageApi.success(`Đã kết nối đến ${node.name}!`);
-  };
-
-  const handleDisconnectNode = (node) => {
-    const updatedNodes = nodes.map(n =>
-      n.id === node.id
-        ? { ...n, status: 'disconnected' }
-        : n
-    );
-    setNodes(updatedNodes);
-    localStorage.setItem('databaseNodes', JSON.stringify(updatedNodes));
-    messageApi.info(`Đã ngắt kết nối ${node.name}!`);
-  };
-
-  const onAddSubmit = (values) => {
+  const onAddSubmit = async (values) => {
     const newNode = {
-      id: Date.now(),
       ...values,
-      status: 'disconnected',
-      lastConnected: null,
-      tables: 0,
-      schemas: 0
+      status: 'inactive'
     };
-
-    const updatedNodes = [...nodes, newNode];
+    await createNode(newNode);
+    const updatedNodes = [newNode, ...nodes];
     setNodes(updatedNodes);
-    localStorage.setItem('databaseNodes', JSON.stringify(updatedNodes));
     setIsAddModalVisible(false);
     form.resetFields();
     messageApi.success('Thêm node thành công!');
   };
 
-  const onEditSubmit = (values) => {
+  const onEditSubmit = async (values) => {
+    console.log(values);
     const updatedNodes = nodes.map(node =>
-      node.id === editingNode.id
+      node._id === editingNode._id
         ? { ...node, ...values }
         : node
     );
+    await editNode(editingNode._id, values);
     setNodes(updatedNodes);
-    localStorage.setItem('databaseNodes', JSON.stringify(updatedNodes));
     setIsEditModalVisible(false);
     setEditingNode(null);
     form.resetFields();
@@ -172,65 +162,56 @@ const Node = () => {
       title: 'Thao Tác',
       key: 'actions',
       render: (_, record) => (
-        <Space.Compact block size='large'>
+        <Space.Compact block size="large">
+          {/* Nút luôn hiển thị */}
           <Tooltip title="Xem Database">
             <Button
               type="primary"
-
               icon={<EyeOutlined />}
               onClick={() => handleViewDatabase(record)}
             />
           </Tooltip>
-          <Tooltip title="Xem Schema">
-            <Button
-              type="default"
 
-              icon={<DatabaseOutlined />}
-              onClick={() => handleViewSchema(record)}
-            />
-          </Tooltip>
-          {/* {record.status === 'connected' ? (
-            <Tooltip title="Ngắt kết nối">
-              <Button
-                type="default"
-            
-                icon={<CloseCircleOutlined />}
-                onClick={() => handleDisconnectNode(record)}
-              />
-            </Tooltip>
-          ) : (
-            <Tooltip title="Kết nối">
-              <Button
-                type="primary"
-            
-                icon={<CheckCircleOutlined />}
-                onClick={() => handleConnectNode(record)}
-              />
-            </Tooltip>
-          )} */}
-          <Tooltip title="Chỉnh sửa">
-            <Button
-              type="default"
+          {/* Chỉ hiển thị khi isAdmin = true */}
+          {isAdmin && (
+            <>
+              <Tooltip title="Thêm database">
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    setNodeIdAddDatabase(record._id);
+                    setVisible(true);
+                    setDatabases(record.databases);
+                    setUrlString(
+                      `postgres://${record.username}:${record.password}@${record.host}:${record.port}`,
+                    );
+                  }}
+                />
+              </Tooltip>
 
-              icon={<EditOutlined />}
-              onClick={() => handleEditNode(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xác nhận xóa"
-            description={`Bạn có chắc chắn muốn xóa node "${record.name}"?`}
-            onConfirm={() => handleDeleteNode(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Button
-              type="primary"
-              danger
+              <Tooltip title="Chỉnh sửa">
+                <Button
+                  color="green"
+                  variant="solid"
+                  icon={<EditOutlined />}
+                  onClick={() => handleEditNode(record)}
+                />
+              </Tooltip>
 
-              icon={<DeleteOutlined />}
-            />
-          </Popconfirm>
+              <Popconfirm
+                title="Xác nhận xóa"
+                description={`Bạn có chắc chắn muốn xóa node "${record.name}"?`}
+                onConfirm={() => handleDeleteNode(record._id)}
+                okText="Xóa"
+                cancelText="Hủy"
+              >
+                <Button type="primary" danger icon={<DeleteOutlined />} />
+              </Popconfirm>
+            </>
+          )}
         </Space.Compact>
+
       ),
     },
   ];
@@ -251,7 +232,7 @@ const Node = () => {
       <Card
         title="Danh Sách PostgreSQL Nodes"
         extra={
-          <Button
+          (user ? user?.roles.includes('admin') : false) && <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleAddNode}
@@ -266,12 +247,7 @@ const Node = () => {
           loading={loading}
           rowKey="id"
           rowClassName={() => 'no-hover'}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} nodes`
-          }}
+          pagination={false}
         />
       </Card>
       <Modal
@@ -307,9 +283,9 @@ const Node = () => {
           </Form.Item>
 
           <Form.Item
-            name="database"
-            label="Database Name"
-            rules={[{ required: true, message: 'Vui lòng nhập tên database!' }]}
+            name="password"
+            label="Mật khẩu"
+            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
           >
             <Input placeholder="Tên database" />
           </Form.Item>
@@ -375,11 +351,11 @@ const Node = () => {
           </Form.Item>
 
           <Form.Item
-            name="database"
-            label="Database Name"
-            rules={[{ required: true, message: 'Vui lòng nhập tên database!' }]}
+            name="password"
+            label="Password"
+            rules={[{ required: true, message: 'Vui lòng nhập password!' }]}
           >
-            <Input placeholder="Tên database" />
+            <Input placeholder="Password" />
           </Form.Item>
 
           <Form.Item
@@ -409,6 +385,17 @@ const Node = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      <AddDatabaseInNode
+        visible={visible}
+        onOk={() => setVisible(false)}
+        onCancel={() => setVisible(false)}
+        idNode={nodeIdAddDatabase}
+        databases={databases}
+        urlStringDefault={urlString}
+        fetchNode={fetchNode}
+        nodes={nodes}
+      />
     </div>
   );
 };

@@ -16,8 +16,8 @@ userRouter.use(authentication);
 userRouter.route('/get-all-users')
   .get(handlerError(UserController.getAllUsers));
 
-userRouter.route('/check-auth')
-  .post(handlerError(UserController.checkAuth));
+userRouter.route('/get-state')
+  .get(handlerError(UserController.getState));
 userRouter.route('/logout')
   .post(handlerError(UserController.logout));
 module.exports = userRouter

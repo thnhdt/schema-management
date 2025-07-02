@@ -6,8 +6,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { getAllDatabaseInHost, connectToDatabase, disconnectToDatabase } from '../../api';
-import DatabaseConnection from './DatabaseConnection';
-
+import '../../App.css'
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 
@@ -35,8 +34,6 @@ const Database = () => {
     try {
       const r1 = await getAllDatabaseInHost(id, "active");
       const r2 = await getAllDatabaseInHost(id, "inactive");
-      console.log(r1);
-      console.log(r2);
       setActiveDatabases(r1.metaData.metaData.database);
       setInactiveDatabases(r2.metaData.metaData.database);
     } catch (error) {
@@ -73,7 +70,7 @@ const Database = () => {
       console.log('Debug disconnect - Token:', token ? 'exists' : 'missing');
       console.log('Debug disconnect - UserId:', userId);
       console.log('Debug disconnect - Database ID:', record._id);
-      
+
       const response = await disconnectToDatabase({ id: record._id });
       setConnectedDatabaseId(null);
       messageApi.success(`Đã ngắt kết nối database ${record.name}`);
@@ -119,22 +116,22 @@ const Database = () => {
       render: (_, record) => {
         const isConnecting = connectingId === record._id;
         const isConnected = record.status === 'active';
-        
+
         return (
           <Space>
             {!isConnected ? (
-              <Button 
-                type="primary" 
-                onClick={() => handleConnect(record)} 
+              <Button
+                type="primary"
+                onClick={() => handleConnect(record)}
                 loading={isConnecting}
                 disabled={isConnecting}
               >
                 Kết nối
               </Button>
             ) : (
-              <Button 
+              <Button
                 danger
-                onClick={() => handleDisconnect(record)} 
+                onClick={() => handleDisconnect(record)}
                 loading={disconnectingId === record._id}
                 disabled={disconnectingId === record._id}
               >
@@ -154,25 +151,25 @@ const Database = () => {
       key: 'action',
       render: (_, record) => (
         <Space>
-          <Button 
+          <Button
             onClick={() => handleViewSchema(record)}
             disabled={record.status !== 'active'}
           >
             Xem chi tiết
           </Button>
           {record.status === 'active' ? (
-            <Button 
+            <Button
               danger
-              onClick={() => handleDisconnect(record)} 
+              onClick={() => handleDisconnect(record)}
               loading={disconnectingId === record._id}
               disabled={disconnectingId === record._id}
             >
               Ngắt kết nối
             </Button>
           ) : (
-            <Button 
-              type="primary" 
-              onClick={() => handleConnect(record)} 
+            <Button
+              type="primary"
+              onClick={() => handleConnect(record)}
               loading={connectingId === record._id}
               disabled={connectingId === record._id}
             >
@@ -247,6 +244,7 @@ const Database = () => {
                 loading={loading}
                 pagination={false}
                 locale={{ emptyText: 'Không có database nào cần kết nối.' }}
+                rowClassName={() => 'no-hover'}
               />
             ),
           },

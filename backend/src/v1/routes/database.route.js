@@ -9,10 +9,19 @@ const { authentication } = require('../utils/auth.utils.js');
 databaseRouter.route('/connect-database')
   .post(handlerError(databaseController.connectToDatabase))
 
+databaseRouter.route('/create-database')
+  .post(handlerError(databaseController.createDatabase))
+
+
 databaseRouter.route('/disconnect-database')
   .post(handlerError(databaseController.disconnectToDatabase))
 
 databaseRouter.route('/get-all-databases')
   .get(handlerError(databaseController.getAllDatabaseInHost))
+
+databaseRouter.route('/')
+  .put(handlerError(databaseController.editDatabase))
+databaseRouter.route('/:id')
+  .delete(handlerError(databaseController.deleteDatabase))
 
 module.exports = databaseRouter

@@ -127,14 +127,14 @@ const AppLayout = () => {
         </Header>
 
         <Content
-          className={`app-content ${collapsed ? 'collapsed' : ''}`}
+          // className={`app-content ${collapsed ? 'collapsed' : ''}`}
           style={{
             margin: '88px 16px 24px 16px',
             padding: 24,
-            minHeight: 'calc(100vh - 112px)',
+            minHeight: 'calc(100vh - 200px)',
             background: '#ffffff',
             borderRadius: borderRadiusLG,
-            transition: 'margin-left 0.2s'
+            transition: 'margin-left 0.2s',
           }}
         >
           <Outlet />

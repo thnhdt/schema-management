@@ -14,7 +14,7 @@ class ErrorResponse extends Error {
 }
 
 class BadResponseError extends ErrorResponse {
-  constructor(message = ReasonStatusCode.FORBIDDEN, status = StatusCode.FORBIDDEN) {
+  constructor(message = ReasonStatusCode.INTERNAL_SERVER_ERROR, status = StatusCode.INTERNAL_SERVER_ERROR) {
     super(message, status)
   }
 }

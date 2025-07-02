@@ -28,9 +28,25 @@ const getAllDatabaseInHost = async (req, res, next) => {
     metaData: allDatabases
   }).send(res)
 }
+const editDatabase = async (req, res, next) => {
+  const targetDatabase = await databaseService.editDatabase(req.body)
+  new SucessReponse({
+    message: 'update databases thành công!',
+    metaData: targetDatabase
+  }).send(res)
+};
+const deleteDatabase = async (req, res, next) => {
+  const targetDatabase = await databaseService.deleteDatabase(req.params)
+  new SucessReponse({
+    message: 'delete databases thành công!',
+    metaData: targetDatabase
+  }).send(res)
+}
 module.exports = {
   createDatabase,
   connectToDatabase,
   disconnectToDatabase,
-  getAllDatabaseInHost
+  getAllDatabaseInHost,
+  editDatabase,
+  deleteDatabase
 }

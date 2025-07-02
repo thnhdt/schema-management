@@ -15,6 +15,7 @@ const databaseSchema = new Schema({
   },
   nodeId: {
     type: mongoose.Types.ObjectId,
+    ref: 'Nodes',
     required: true,
     trim: true
   },

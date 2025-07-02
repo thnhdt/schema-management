@@ -37,9 +37,12 @@ const getAllUsers = async (req, res, next) => {
     metaData: allUsers
   }).send(res)
 };
-const checkAuth = async (req, res, next) => {
+const getState = async (req, res, next) => {
+  const { userId } = req.query;
+  const targetUser = await userService.getUser(userId);
   new SucessReponse({
     message: "Check auth thành công !",
+    metaData: targetUser
   }).send(res)
 };
 const logout = async (req, res, next) => {
@@ -59,5 +62,5 @@ module.exports = {
   handlerRefreshToken,
   getAllUsers,
   logout,
-  checkAuth
+  getState
 }

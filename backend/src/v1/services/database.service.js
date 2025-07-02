@@ -6,9 +6,13 @@ const mongoose = require('mongoose');
 const POOLMAP = new Map();
 
 const createDatabase = async (dataCreated) => {
-  const checkNameAlready = await databaseModel.find({ name: dataCreated.name });
-  if (checkNameAlready) throw new BadResponseError('Tên Node đã tồn tại!');
-  const newDatabase = await databaseModel.create(dataCreated);
+  const checkNameAlready = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(dataCreated.nodeId), name: dataCreated.name }).lean();
+  if (checkNameAlready.length > 0) throw new BadResponseError('Tên Database đã tồn tại!');
+  const dataCreate = {
+    ...dataCreated,
+    nodeId: new mongoose.Types.ObjectId(dataCreated.nodeId)
+  }
+  const newDatabase = await databaseModel.create(dataCreate);
   return {
     code: 201,
     metaData: {
@@ -18,7 +22,14 @@ const createDatabase = async (dataCreated) => {
 };
 const getAllDatabaseInHost = async (reqQuery) => {
   const { idHost, status } = reqQuery;
-  const allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost), status: status }).lean();
+  let allDatabase = [];
+  if (status) {
+    allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost), status: status }).lean();
+  }
+  else {
+    allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost) }).lean();
+  }
+
   return {
     code: 200,
     metaData: {
@@ -61,6 +72,25 @@ const disconnectDb = async (reqBody) => {
     }
   };
 }
+const editDatabase = async (reqBody) => {
+  const { id, updateData } = reqBody;
+  const targetDatabase = await databaseModel.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, updateData, { new: true });
+  return {
+    code: 201,
+    metaData: {
+      database: targetDatabase
+    }
+  }
+};
+const deleteDatabase = async ({ id }) => {
+  const targetDatabase = await databaseModel.findOneAndDelete({ _id: new mongoose.Types.ObjectId(id) });
+  return {
+    code: 201,
+    metaData: {
+      database: targetDatabase
+    }
+  }
+}
 /* graceful shutdown */
 process.on('SIGINT', async () => {
   await Promise.all([...POOLS.values()].map((p) => p.sequelize.close()));
@@ -70,5 +100,7 @@ module.exports = {
   createDatabase,
   connectToDatabase,
   disconnectDb, getAllDatabaseInHost,
+  editDatabase,
+  deleteDatabase,
   POOLMAP
 }

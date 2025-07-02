@@ -1,4 +1,3 @@
-
 .App {
   text-align: left;
   min-height: 100vh;
@@ -21,14 +20,15 @@
 
 .login-card {
   border-radius: 18px !important;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.08) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08) !important;
   padding: 32px 24px !important;
   background: #fff !important;
 }
 
-.ant-input:focus, .ant-input-focused {
+.ant-input:focus,
+.ant-input-focused {
   border-color: #1677ff;
-  box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1);
 }
 
 .logo {
@@ -74,7 +74,9 @@
   background-color: #e6f7ff !important;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   margin: 0;
   padding: 0;

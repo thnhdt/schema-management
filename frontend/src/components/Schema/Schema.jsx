@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Tabs, Card, Space, Button, Typography, message, Tooltip, Popconfirm, Input } from 'antd';
+import Highlighter from 'react-highlight-words';
 import {
   DatabaseOutlined,
   TableOutlined,
@@ -10,8 +11,11 @@ import {
   DeleteOutlined,
   FunctionOutlined,
   OrderedListOutlined,
-  ArrowLeftOutlined
+  ArrowLeftOutlined,
+  SearchOutlined,
+
 } from '@ant-design/icons';
+import '../../App.css';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
 import { TableComponent } from '../../util/helper';
@@ -48,10 +52,99 @@ function SchemaComponent() {
   const [functions, setFunctions] = useState([]);
   const [sequences, setSequences] = useState([]);
   const [selectedFunction, setSelectedFunction] = useState(null);
+  const [searchText, setSearchText] = useState('');
+  const [searchedColumn, setSearchedColumn] = useState('');
+  const searchInput = useRef(null);
   const [selectedTable, setSelectedTable] = useState(null);
   const [selectedSequence, setSelectedSequence] = useState(null);
   const [activeTab, setActiveTab] = useState('table');
 
+  const handleSearch = (selectedKeys, confirm, dataIndex) => {
+    confirm();
+    setSearchText(selectedKeys[0]);
+    setSearchedColumn(dataIndex);
+  };
+  const handleReset = clearFilters => {
+    clearFilters();
+    setSearchText('');
+  };
+
+  const getColumnSearchProps = dataIndex => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
+      <div style={{ padding: 8 }} onKeyDown={e => e.stopPropagation()}>
+        <Input
+          ref={searchInput}
+          placeholder={`Search ${dataIndex}`}
+          value={selectedKeys[0]}
+          onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
+          style={{ marginBottom: 8, display: 'block' }}
+        />
+        <Space>
+          <Button
+            type="primary"
+            onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+            icon={<SearchOutlined />}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Search
+          </Button>
+          <Button
+            onClick={() => clearFilters && handleReset(clearFilters)}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Reset
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => {
+              confirm({ closeDropdown: false });
+              setSearchText(selectedKeys[0]);
+              setSearchedColumn(dataIndex);
+            }}
+          >
+            Filter
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => {
+              close();
+            }}
+          >
+            close
+          </Button>
+        </Space>
+      </div>
+    ),
+    filterIcon: filtered => <SearchOutlined style={{ color: filtered ? '#1677ff' : undefined }} />,
+    onFilter: (value, record) =>
+      record[dataIndex].toString().toLowerCase().includes(value.toLowerCase()),
+    filterDropdownProps: {
+      onOpenChange(open) {
+        if (open) {
+          setTimeout(() => {
+            var _a;
+            return (_a = searchInput.current) === null || _a === void 0 ? void 0 : _a.select();
+          }, 100);
+        }
+      },
+    },
+    render: text =>
+      searchedColumn === dataIndex ? (
+        <Highlighter
+          highlightStyle={{ backgroundColor: '#ffc069', padding: 0 }}
+          searchWords={[searchText]}
+          autoEscape
+          textToHighlight={text ? text.toString() : ''}
+        />
+      ) : (
+        text
+      ),
+  });
   useEffect(() => {
     fetchAll()
   }, [id]);
@@ -102,7 +195,6 @@ function SchemaComponent() {
       messageApi.success('Đã làm mới dữ liệu!');
     }, 1000);
   };
-
   const handleDeleteTable = (tableName) => {
     messageApi.success(`Đã xóa bảng ${tableName}!`);
   };
@@ -117,14 +209,17 @@ function SchemaComponent() {
 
   const renderTables = () => {
     const columns = [
-      {
-        title: 'Tên Bảng',
-        dataIndex: 'table_name',
-        key: 'name',
-        render: (text) => <Text strong>{text}</Text>,
-        ellipsis: true,
-        width: 200
-      },
+      Object.assign(
+        {
+          title: 'Tên Bảng',
+          dataIndex: 'table_name',
+          key: 'table_name',
+          ellipsis: true,
+          width: 200,
+          render: (text) => <Text strong>{text}</Text>
+        },
+        getColumnSearchProps('table_name'),
+      ),
       {
         title: 'Số Cột',
         dataIndex: 'columns',
@@ -173,7 +268,7 @@ function SchemaComponent() {
           onRow={record => ({
             onClick: () => setSelectedTable(record)
           })}
-          rowClassName={record => selectedTable && record.table_name === selectedTable.table_name ? 'selected-row' : ''}
+          rowClassName={record => selectedTable && record.table_name === selectedTable.table_name ? 'selected-row' : 'no-hover'}
           scroll={{ x: 'max-content', y: 'calc(100vh - 350px)' }}
         />
       </div>
@@ -182,14 +277,17 @@ function SchemaComponent() {
 
   const renderFunctions = () => {
     const columns = [
-      {
-        title: 'Tên Function',
-        dataIndex: 'functionName',
-        key: 'functionName',
-        render: (text) => <Text strong>{text}</Text>,
-        ellipsis: true,
-        width: 200
-      },
+      Object.assign(
+        {
+          title: 'Tên Function',
+          dataIndex: 'functionName',
+          key: 'functionName',
+          render: (text) => <Text strong>{text}</Text>,
+          ellipsis: true,
+          width: 200
+        },
+        getColumnSearchProps('functionName'),
+      ),
       {
         title: 'Tham Số',
         dataIndex: 'functionArguments',
@@ -210,7 +308,7 @@ function SchemaComponent() {
           onRow={record => ({
             onClick: () => setSelectedFunction(record)
           })}
-          rowClassName={record => selectedFunction && record.functionName === selectedFunction.functionName ? 'selected-row' : ''}
+          rowClassName={record => selectedFunction && record.functionName === selectedFunction.functionName ? 'selected-row' : 'no-hover'}
           customButton={
             <Space>
               <Button
@@ -299,7 +397,7 @@ function SchemaComponent() {
           onRow={record => ({
             onClick: () => setSelectedSequence(record)
           })}
-          rowClassName={record => selectedSequence && record.sequence_name === selectedSequence.sequence_name ? 'selected-row' : ''}
+          rowClassName={record => selectedSequence && record.sequence_name === selectedSequence.sequence_name ? 'selected-row' : 'no-hover'}
           scroll={{ x: 'max-content', y: 'calc(100vh - 350px)' }}
         />
       </div>
@@ -368,7 +466,6 @@ function SchemaComponent() {
                 setSelectedTable(null);
                 setSelectedSequence(null);
               }}
-              style={{ height: '100%' }}
               tabBarStyle={{ marginBottom: 0 }}
             >
               <Tabs.TabPane tab={<span><TableOutlined /> Table</span>} key="table">
@@ -391,7 +488,7 @@ function SchemaComponent() {
           <div style={{ flex: 2, minWidth: 0, minHeight: 0, height: '100%', paddingLeft: 16, display: 'flex', flexDirection: 'column' }}>
             {activeTab === 'function' && (
               <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-                <Text strong>Definition:</Text>
+                <Text strong>Definition: {selectedFunction?.functionName || ''}</Text>
                 <Input.TextArea
                   style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0, resize: 'none' }}
                   value={selectedFunction ? selectedFunction.definition : ''}
@@ -404,7 +501,7 @@ function SchemaComponent() {
             )}
             {activeTab === 'table' && (
               <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-                <Text strong>Table Info:</Text>
+                <Text strong>Table Info: {selectedFunction?.table_name || ''}</Text>
                 <Input.TextArea
                   style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0, resize: 'none' }}
                   value={selectedTable ? (selectedTable.text || 'Chưa có thông tin chi tiết cho bảng này') : ''}
@@ -417,7 +514,7 @@ function SchemaComponent() {
             )}
             {activeTab === 'sequence' && (
               <div style={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-                <Text strong>Sequence Info:</Text>
+                <Text strong>Sequence Info: {selectedFunction?.sequence_name || ''}</Text>
                 <Input.TextArea
                   style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0, resize: 'none' }}
                   value={selectedSequence ? (selectedSequence.text || 'Chưa có thông tin chi tiết cho sequence này') : ''}

@@ -11,4 +11,9 @@ nodeRouter.route('/create-node')
 nodeRouter.route('/get-all-nodes')
   .get(handlerError(nodeController.getAllNodes))
 
+nodeRouter.route('/')
+  .put(handlerError(nodeController.editNode))
+nodeRouter.route('/:id')
+  .delete(handlerError(nodeController.deleteNode))
+
 module.exports = nodeRouter

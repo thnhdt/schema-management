@@ -115,15 +115,6 @@ export const disconnectToDatabase = async (connectionConfig) => {
     throw error.response?.data || error.message;
   }
 };
-// Schema operations
-export const getSchemas = async () => {
-  try {
-    const response = await api.get('/schema/schemas');
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
 
 export const getTables = async (schema, id) => {
   try {
@@ -138,121 +129,7 @@ export const getAllDdlText = async (schema, id) => {
   return response.data;
 }
 
-// export const getTableColumns = async (schemaName, tableName) => {
-//   try {
-//     const response = await api.get(`/table//${schemaName}/${tableName}`);
-//     return response.data;
-//   } catch (error) {
-//     throw error.response?.data || error.message;
-//   }
-// };
 
-// export const getTableRelationships = async (schemaName, tableName) => {
-//   try {
-//     const response = await api.get(`/schema/relationships/${schemaName}/${tableName}`);
-//     return response.data;
-//   } catch (error) {
-//     throw error.response?.data || error.message;
-//   }
-// };
-
-// Table operations
-export const createTable = async (schemaName, tableData) => {
-  try {
-    const response = await api.post(`/schema/tables/${schemaName}`, tableData);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
-
-export const updateTable = async (schemaName, tableName, tableData) => {
-  try {
-    const response = await api.put(`/schema/tables/${schemaName}/${tableName}`, tableData);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
-
-export const deleteTable = async (schemaName, tableName) => {
-  try {
-    const response = await api.delete(`/schema/tables/${schemaName}/${tableName}`);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
-
-// Column operations
-export const addColumn = async (schemaName, tableName, columnData) => {
-  try {
-    const response = await api.post(`/schema/columns/${schemaName}/${tableName}`, columnData);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
-
-export const updateColumn = async (schemaName, tableName, columnName, columnData) => {
-  try {
-    const response = await api.put(`/schema/columns/${schemaName}/${tableName}/${columnName}`, columnData);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
-
-export const deleteColumn = async (schemaName, tableName, columnName) => {
-  try {
-    const response = await api.delete(`/schema/columns/${schemaName}/${tableName}/${columnName}`);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
-
-// Relationship operations
-export const createRelationship = async (relationshipData) => {
-  try {
-    const response = await api.post('/schema/relationships', relationshipData);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
-
-export const deleteRelationship = async (relationshipId) => {
-  try {
-    const response = await api.delete(`/schema/relationships/${relationshipId}`);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
-
-// Export schema
-export const exportSchema = async (schemaName, format = 'sql') => {
-  try {
-    const response = await api.get(`/schema/export/${schemaName}`, {
-      params: { format },
-      responseType: 'blob',
-    });
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
-
-// Import schema
-export const importSchema = async (schemaData) => {
-  try {
-    const response = await api.post('/schema/import', schemaData);
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error.message;
-  }
-};
 export const getAllUsers = async () => {
   const response = await api.get('/user/get-all-users', { requiresAuth: true });
   return response.data;
@@ -288,11 +165,58 @@ export const getAllSequences = async (schema, id) => {
 }
 
 export const createNode = async (nodeData) => {
-  const response = await api.post('/node/create-node', nodeData, { 
+  const response = await api.post('/node/create-node', nodeData, {
     requiresAuth: true,
-    withCredentials: true 
   });
   return response.data;
 }
 
+export const editNode = async (id, updateData) => {
+  const response = await api.put('/node', { id: id, updateData }, {
+    requiresAuth: true,
+  });
+  return response.data;
+}
+
+
+export const deleteNode = async (id) => {
+  const response = await api.delete(`/node/${id}`, {
+    requiresAuth: true,
+  });
+  return response.data;
+}
+
+export const editDatabase = async (id, updateData) => {
+  const response = await api.put(`/database`, { id, updateData }, {
+    requiresAuth: true,
+  });
+  return response.data;
+}
+export const deleteDatabase = async (id) => {
+  const response = await api.delete(`/database/${id}`, {
+    requiresAuth: true,
+  });
+  return response.data;
+}
+
+export const createDatabase = async (createdData) => {
+  const response = await api.post(`/database/create-database`, createdData, {
+    requiresAuth: true,
+  });
+  return response.data;
+}
+export const getState = async (userId) => {
+  console.log('getState called with', userId);
+  const response = await api.get(`/user/get-state`, {
+    params: { userId },
+    requiresAuth: true,
+  });
+  return response.data;
+}
+export const signUp = async (createdData) => {
+  const response = await api.post(`/user/signup`, createdData, {
+    requiresAuth: true,
+  });
+  return response.data;
+}
 export default api; 

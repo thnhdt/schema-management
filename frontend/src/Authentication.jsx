@@ -14,6 +14,7 @@ export default function AxiosInterceptor({ children }) {
         const status = error?.response?.status;
         if (status === 403) {
           messageApi.open({
+            key: 'expired',
             type: 'error',
             content: 'Hết phiên đăng nhập. Sẽ quay lại trang đăng nhập!',
           });
@@ -47,15 +48,14 @@ export const RequireUsername = () => {
 };
 
 
-// export const AlreadyLogined = ({ children }) => {
+export const AlreadyLogined = ({ children }) => {
+  const hasUserId = !!sessionStorage.getItem("userId");
+  const location = useLocation();
 
-//   const location = useLocation();
-//   React.useEffect(() => {
+  if (hasUserId && location.pathname === "/") {
+    return <Navigate to="/sheet" replace />;
+  }
+  return children;
+};
 
-//   }, []);
-//   if (hasUsername && location.pathname === "/") {
-//     return <Navigate to="/sheet" replace />;
-//   }
-//   return children;
-// };
 

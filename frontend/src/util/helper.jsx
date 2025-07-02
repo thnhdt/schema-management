@@ -23,9 +23,9 @@ export const TableComponent = (props) => {
         bordered
         rowClassName={rowClassName}
         size={size}
-        style={{ minWidth: 600 }}
+        style={{ minWidth: '50%' }}
         onRow={onRow}
-      // className="custom-table-spacing"
+        className="custom-table-spacing"
       />
     </>
   )
