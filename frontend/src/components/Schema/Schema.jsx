@@ -420,7 +420,7 @@ function SchemaComponent() {
         </Space>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '95%', overflow: 'hidden' }}>
         <Card style={{ marginBottom: 16 }}>
           <Space direction="vertical" style={{ width: '100%' }}>
             <Space wrap>
