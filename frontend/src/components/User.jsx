@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { message, Button, Popconfirm, Space, Form, Input, Select, Tag } from 'antd';
 import { DeleteOutlined, UserOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
-import { getAllUsers } from '../api';
+import { getAllUsers, updateUser } from '../api';
 import { TableComponent } from '../util/helper';
+import axios from 'axios';
 
 const { Option } = Select;
 
@@ -84,6 +85,23 @@ const User = () => {
 
   const isEditing = (record) => record._id === editingKey;
 
+  const saveEdit = async (record) => {
+    try {
+      const values = await form.validateFields();
+      await updateUser({
+        _id: record._id,
+        name: values.name,
+        roles: values.roles
+      });
+      setEditingKey('');
+      message.success('Cập nhật người dùng thành công');
+      fetchUsers();
+    } catch (error) {
+      message.error('Cập nhật người dùng thất bại');
+      console.error('Error updating user:', error);
+    }
+  };
+
   const columns = [
     {
       title: 'Tên người dùng',
@@ -162,7 +180,7 @@ const User = () => {
         if (editable) {
           return (
             <span>
-              <a onClick={saveNew} style={{ marginRight: 8 }}>Lưu</a>
+              <a onClick={() => record._id === 'new' ? saveNew() : saveEdit(record)} style={{ marginRight: 8 }}>Lưu</a>
               <a onClick={cancelNew}>Hủy</a>
             </span>
           );
@@ -213,7 +231,7 @@ const User = () => {
           data={dataSource}
           loading={loading}
         />
-        {isAdmin && (
+        {/* {isAdmin && (
           <div style={{ marginTop: '16px', textAlign: 'right' }}>
             <Button
               type="dashed"
@@ -224,7 +242,7 @@ const User = () => {
               disabled={!!addingRow}
             />
           </div>
-        )}
+        )} */}
       </div>
     </>
   );

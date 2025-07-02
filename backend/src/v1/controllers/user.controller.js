@@ -37,6 +37,18 @@ const getAllUsers = async (req, res, next) => {
     metaData: allUsers
   }).send(res)
 };
+const updateUser = async (req, res, next) => {
+  try {
+    const updatedUser = await userService.updateUser(req.body);
+    new SucessReponse({
+      message: "Cập nhật user thành công!",
+      metaData: updatedUser
+    }).send(res);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getState = async (req, res, next) => {
   const { userId } = req.query;
   const targetUser = await userService.getUser(userId);
@@ -62,5 +74,6 @@ module.exports = {
   handlerRefreshToken,
   getAllUsers,
   logout,
-  getState
+  getState,
+  updateUser
 }

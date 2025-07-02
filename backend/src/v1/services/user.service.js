@@ -83,10 +83,24 @@ const getUser = async (userId) => {
   const targetUser = await userModel.find({ _id: new mongoose.Types.ObjectId(userId) }, '_id name roles').sort({ createdAt: -1 }).lean();
   return targetUser[0]
 }
+
+const updateUser = async (dataUpdate) => {
+  const { _id, name, roles, email } = dataUpdate;
+  if (!_id) throw new BadResponseError('Missing user id');
+  const updated = await userModel.findByIdAndUpdate(
+    _id,
+    { name, roles, email },
+    { new: true, fields: '_id name roles email' }
+  ).lean();
+  if (!updated) throw new BadResponseError('User not found');
+  return updated;
+}
+
 module.exports = {
   signUp,
   login,
   handlerRefreshToken,
   getAllUsers,
-  getUser
+  getUser,
+  updateUser
 }

@@ -16,6 +16,9 @@ userRouter.use(authentication);
 userRouter.route('/get-all-users')
   .get(handlerError(UserController.getAllUsers));
 
+userRouter.route('/update-user')
+  .patch(handlerError(UserController.updateUser));
+
 userRouter.route('/get-state')
   .get(handlerError(UserController.getState));
 userRouter.route('/logout')

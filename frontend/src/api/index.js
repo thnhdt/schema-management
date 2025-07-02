@@ -219,4 +219,11 @@ export const signUp = async (createdData) => {
   });
   return response.data;
 }
+
+export const updateUser = async (updateData) => {
+  const response = await api.patch(`/user/update-user`, updateData, {
+    requiresAuth: true,
+  });
+  return response.data;
+}
 export default api; 
