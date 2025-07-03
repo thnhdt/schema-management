@@ -2,8 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import React from 'react';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from './api'; // axios instance của bạn
-import { logout } from './api';
+import api from './api';
 import { message } from 'antd';
 export default function AxiosInterceptor({ children }) {
   const navigate = useNavigate();

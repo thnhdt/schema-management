@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { message, Button, Popconfirm, Space, Form, Input, Select, Tag } from 'antd';
 import { DeleteOutlined, UserOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
-import { getAllUsers, updateUser, deleteUser } from '../api';
-import { TableComponent } from '../util/helper';
+import { getAllUsers, updateUser, deleteUser } from '../../api';
+import { TableComponent } from '../../util/helper';
 
 const { Option } = Select;
 

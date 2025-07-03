@@ -1,8 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { Button, message, Card, Typography, Space, Input } from 'antd';
-import '../App.css'
+import '../../App.css'
 import { useRef } from 'react';
-import { login, signUp } from '../api/index.js';
+import { login, signUp } from '../../api/index.js';
 
 function Register() {
   // const [name, setName] = useState('');

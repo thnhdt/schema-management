@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { Select, Button, message, Card, Typography, Space, Input } from 'antd';
-import '../App.css'
+import '../../App.css'
 import { useRef } from 'react';
-import { login } from '../api/index.js';
-import { useGlobalUser } from '../App.jsx';
+import { login } from '../../api/index.js';
+import { useGlobalUser } from '../../App.jsx';
+import Register from './Register';
+
 function Main() {
   const navigate = useNavigate();
   const passwordRef = useRef(null);

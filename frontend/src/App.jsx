@@ -2,18 +2,18 @@ import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 // import { message } from 'antd';
 import { createContext, useContext, useEffect, useState } from 'react';
-import Main from './components/Main'
+import Main from './modules/user/Main'
 import AppLayout from './Layout';
-import Node from './components/Node';
-import Database from './components/Database/Database';
-import SchemaComponent from './components/Schema/Schema';
-import SchemaFlow from './components/Schema/SchemaFlow';
-import ReactFlowTest from './components/Schema/ReactFlowTest';
-import SQLToERD from './components/Schema/SQLToERD';
-import Register from './components/Register';
+import Node from './modules/node/Node';
+import Database from './modules/database/Database';
+import Schema from './modules/schema/Schema';
+// import SchemaFlow from './components/garbage/SchemaFlow';
+// import ReactFlowTest from './components/garbage/ReactFlowTest';
+// import SQLToERD from './components/garbage/SQLToERD';
+import Register from './modules/user/Register';
 
 import { AlreadyLogined } from './Authentication';
-import User from './components/User';
+import User from './modules/user/User';
 import AxiosInterceptor from './Authentication';
 import { getState } from './api';
 
@@ -65,13 +65,9 @@ function App() {
               }>
                 <Route path='/node' element={<Node />} />
                 <Route path='/database' element={<Database />} />
-                <Route path='/database/:id' element={<Database />} />
-                <Route path='/schema' element={<SchemaComponent />} />
-                <Route path='/schema/:id' element={<SchemaComponent />} />
-                <Route path='/schema/table' element={<SchemaComponent />} />
-                <Route path='/schema/flow' element={<SchemaFlow />} />
-                <Route path='/schema/test' element={<ReactFlowTest />} />
-                <Route path='/schema/sql-to-erd' element={<SQLToERD />} />
+                {/* <Route path='/database/:id' element={<Database />} /> */}
+                <Route path='/schema' element={<Schema />} />
+                <Route path='/schema/:id' element={<Schema />} />
                 <Route path='/user' element={<User />} />
               </Route>
               {/* </Route> */}

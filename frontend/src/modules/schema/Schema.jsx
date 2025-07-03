@@ -24,7 +24,7 @@ import { getAllFunctions, getTables, getAllSequences, dropTable, dropFunction, d
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 
-function SchemaComponent() {
+function Schema() {
   const [schemas, ] = useState('public');
   const [selectedSchema, ] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -607,4 +607,4 @@ function SchemaComponent() {
   );
 }
 
-export default SchemaComponent;
+export default Schema;

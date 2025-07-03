@@ -8,9 +8,9 @@ import {
   EyeOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { getAllNodes, createNode, editNode, deleteNode } from '../api';
-import '../App.css';
-import AddDatabaseInNode from './Database/ModalAddDatabase';
+import { getAllNodes, createNode, editNode, deleteNode } from '../../api';
+import '../../App.css';
+import AddDatabaseInNode from '../database/ModalAddDatabase';
 
 const { Title, Text } = Typography;
 
@@ -157,7 +157,6 @@ const Node = () => {
       key: 'actions',
       render: (_, record) => (
         <Space.Compact block size="large">
-          {/* Nút luôn hiển thị */}
           <Tooltip title="Xem Database">
             <Button
               type="primary"
@@ -165,8 +164,6 @@ const Node = () => {
               onClick={() => handleViewDatabase(record)}
             />
           </Tooltip>
-
-          {/* Chỉ hiển thị khi isAdmin = true */}
           {isAdmin && (
             <>
               <Tooltip title="Thêm database">
