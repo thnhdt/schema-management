@@ -1,14 +1,17 @@
-import React, { useState } from "react";
-import { Modal, message, Spin, Button, Switch, Form, Popconfirm, Input, InputNumber } from "antd";
+import React, { useState, useRef } from "react";
+import { Modal, message, Spin, Button, Switch, Popconfirm, Input, InputNumber } from "antd";
 import { editDatabase, createDatabase, deleteDatabase } from "../../api";
 import { ModalComponent, TableComponent } from "../../util/helper";
 import { CheckOutlined, CloseOutlined, DeleteOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
 
 const AddDatabaseInNode = (props) => {
   const { visible, onCancel, idNode, onOk, databases, fetchNode } = props;
-  const [editForm] = Form.useForm();
   const [editingKey, setEditingKey] = useState('');
   const [addingRow, setAddingRow] = useState(null);
+  const addNameRef = useRef();
+  const addDatabaseRef = useRef();
+  const addUsernameRef = useRef();
+  const addPasswordRef = useRef();
 
   const handleDelete = async (id) => {
     try {
@@ -24,7 +27,6 @@ const AddDatabaseInNode = (props) => {
   const isEditing = (record) => record._id === editingKey;
 
   const edit = (record) => {
-    editForm.setFieldsValue({ name: '', database: '', username: '', password: '', ...record });
     setEditingKey(record._id);
   };
 
@@ -34,8 +36,14 @@ const AddDatabaseInNode = (props) => {
 
   const save = async (_id) => {
     try {
-      const row = await editForm.validateFields();
-      await editDatabase(_id, row);
+      const row = document.getElementById(`edit-row-${_id}`);
+      const data = {
+        name: row.elements.name.value.trim(),
+        database: row.elements.database.value.trim(),
+        username: row.elements.username.value.trim(),
+        password: row.elements.password.value.trim(),
+      };
+      await editDatabase(_id, data);
       await fetchNode(idNode);
       setEditingKey('');
       message.success('Cập nhật thành công');
@@ -46,25 +54,17 @@ const AddDatabaseInNode = (props) => {
 
   const handleAddNewInline = () => {
     if (addingRow) return;
-    setAddingRow({
-      _id: 'new',
-      name: '',
-      database: '',
-      username: '',
-      password: ''
-    });
+    setAddingRow({ _id: 'new' });
     setEditingKey('new');
-    editForm.setFieldsValue({ name: '', database: '', username: '', password: '' });
   };
 
   const saveNew = async () => {
     try {
-      const row = await editForm.validateFields();
       const createdData = {
-        name: row.name,
-        database: row.database,
-        username: row.username,
-        password: row.password,
+        name: addNameRef.current.value.trim(),
+        database: addDatabaseRef.current.value.trim(),
+        username: addUsernameRef.current.value.trim(),
+        password: addPasswordRef.current.value.trim(),
         nodeId: idNode
       };
       await createDatabase(createdData);
@@ -90,17 +90,16 @@ const AddDatabaseInNode = (props) => {
       width: '20%',
       editable: true,
       render: (text, record) => {
-        if (record._id === 'new' || isEditing(record)) {
+        if (record._id === 'new') {
           return (
-            <Form form={editForm} component={false}>
-              <Form.Item
-                name="name"
-                style={{ margin: 0 }}
-                rules={[{ required: true, message: 'Vui lòng nhập tên database' }]}
-              >
-                <Input />
-              </Form.Item>
-            </Form>
+            <input type="text" name="name" className="form-control" placeholder="Tên database" required ref={addNameRef} />
+          );
+        }
+        if (isEditing(record)) {
+          return (
+            <form id={`edit-row-${record._id}`}>
+              <input type="text" name="name" className="form-control" placeholder="Tên database" required defaultValue={record.name} />
+            </form>
           );
         }
         return text;
@@ -113,17 +112,16 @@ const AddDatabaseInNode = (props) => {
       width: '20%',
       editable: true,
       render: (text, record) => {
-        if (record._id === 'new' || isEditing(record)) {
+        if (record._id === 'new') {
           return (
-            <Form form={editForm} component={false}>
-              <Form.Item
-                name="database"
-                style={{ margin: 0 }}
-                rules={[{ required: true, message: 'Vui lòng nhập tên DB' }]}
-              >
-                <Input />
-              </Form.Item>
-            </Form>
+            <input type="text" name="database" className="form-control" placeholder="Tên DB" required ref={addDatabaseRef} />
+          );
+        }
+        if (isEditing(record)) {
+          return (
+            <form id={`edit-row-${record._id}`}>
+              <input type="text" name="database" className="form-control" placeholder="Tên DB" required defaultValue={record.database} />
+            </form>
           );
         }
         return text;
@@ -136,17 +134,16 @@ const AddDatabaseInNode = (props) => {
       width: '20%',
       editable: true,
       render: (text, record) => {
-        if (record._id === 'new' || isEditing(record)) {
+        if (record._id === 'new') {
           return (
-            <Form form={editForm} component={false}>
-              <Form.Item
-                name="username"
-                style={{ margin: 0 }}
-                rules={[{ required: true, message: 'Vui lòng nhập username' }]}
-              >
-                <Input />
-              </Form.Item>
-            </Form>
+            <input type="text" name="username" className="form-control" placeholder="Username" required ref={addUsernameRef} />
+          );
+        }
+        if (isEditing(record)) {
+          return (
+            <form id={`edit-row-${record._id}`}>
+              <input type="text" name="username" className="form-control" placeholder="Username" required defaultValue={record.username} />
+            </form>
           );
         }
         return text;
@@ -161,15 +158,14 @@ const AddDatabaseInNode = (props) => {
       render: (text, record) => {
         if (record._id === 'new') {
           return (
-            <Form form={editForm} component={false}>
-              <Form.Item
-                name="password"
-                style={{ margin: 0 }}
-                rules={[{ required: true, message: 'Vui lòng nhập password' }]}
-              >
-                <Input.Password />
-              </Form.Item>
-            </Form>
+            <input type="password" name="password" className="form-control" placeholder="Password" required ref={addPasswordRef} />
+          );
+        }
+        if (isEditing(record)) {
+          return (
+            <form id={`edit-row-${record._id}`}>
+              <input type="password" name="password" className="form-control" placeholder="Password" required defaultValue={record.password} />
+            </form>
           );
         }
         return <span>******</span>;

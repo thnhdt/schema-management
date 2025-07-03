@@ -10,7 +10,6 @@ const User = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [messageApi, contextHolder] = message.useMessage();
-  const [form] = Form.useForm();
   const [isAdmin, setIsAdmin] = useState(false);
   const [addingRow, setAddingRow] = useState(null);
   const [editingKey, setEditingKey] = useState('');
@@ -57,18 +56,6 @@ const User = () => {
     setEditingKey('');
   };
 
-  const saveNew = async () => {
-    try {
-      await form.validateFields();
-      setAddingRow(null);
-      setEditingKey('');
-      message.success('Thêm người dùng mới thành công');
-    } catch (error) {
-      console.error('Error adding new user:', error);
-      message.error('Không thể thêm người dùng mới');
-    }
-  };
-
   const handleDelete = async (id) => {
     try {
       await deleteUser(id);
@@ -87,11 +74,13 @@ const User = () => {
 
   const saveEdit = async (record) => {
     try {
-      const values = await form.validateFields();
+      const form = document.getElementById(`edit-user-${record._id}`);
+      const name = form.elements.name.value.trim();
+      const roles = Array.from(form.elements.roles.selectedOptions, option => option.value);
       await updateUser({
         _id: record._id,
-        name: values.name,
-        roles: values.roles
+        name,
+        roles
       });
       setEditingKey('');
       message.success('Cập nhật người dùng thành công');
@@ -112,15 +101,15 @@ const User = () => {
         const editable = isEditing(record);
         if (editable) {
           return (
-            <Form form={form} component={false}>
-              <Form.Item
+            <form id={`edit-user-${record._id}`}>
+              <input
+                type="text"
                 name="name"
-                style={{ margin: 0 }}
-                rules={[{ required: true, message: 'Vui lòng nhập tên người dùng' }]}
-              >
-                <Input placeholder="Nhập tên người dùng" />
-              </Form.Item>
-            </Form>
+                className="form-control"
+                placeholder="Nhập tên người dùng"
+                required
+              />
+            </form>
           );
         }
         return (
@@ -140,18 +129,17 @@ const User = () => {
         const editable = isEditing(record);
         if (editable) {
           return (
-            <Form form={form} component={false}>
-              <Form.Item
+            <form id={`edit-user-${record._id}`}>
+              <select
                 name="roles"
-                style={{ margin: 0 }}
-                rules={[{ required: true, message: 'Vui lòng chọn role' }]}
+                multiple
+                className="form-select"
+                required
               >
-                <Select mode="multiple" placeholder="Chọn role">
-                  <Option value="user">user</Option>
-                  <Option value="admin">admin</Option>
-                </Select>
-              </Form.Item>
-            </Form>
+                <option value="user">user</option>
+                <option value="admin">admin</option>
+              </select>
+            </form>
           );
         }
         return (
@@ -180,7 +168,7 @@ const User = () => {
         if (editable) {
           return (
             <span>
-              <a onClick={() => record._id === 'new' ? saveNew() : saveEdit(record)} style={{ marginRight: 8 }}>Lưu</a>
+              <a onClick={() => saveEdit(record)} style={{ marginRight: 8 }}>Lưu</a>
               <a onClick={cancelNew}>Hủy</a>
             </span>
           );
@@ -193,10 +181,6 @@ const User = () => {
               size="small"
               onClick={() => {
                 setEditingKey(record._id);
-                form.setFieldsValue({
-                  name: record.name,
-                  roles: record.roles
-                });
               }}
               disabled={!isAdmin}
             />
