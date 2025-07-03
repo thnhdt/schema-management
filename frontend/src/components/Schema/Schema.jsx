@@ -19,7 +19,7 @@ import '../../App.css';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { TableComponent } from '../../util/helper';
-import { getAllFunctions, getTables, getAllSequences } from '../../api';
+import { getAllFunctions, getTables, getAllSequences, dropTable, dropFunction, dropSequence } from '../../api';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -185,17 +185,44 @@ function SchemaComponent() {
       messageApi.success('Đã làm mới dữ liệu!');
     }, 1000);
   };
-  // const handleDeleteTable = (tableName) => {
-  //   messageApi.success(`Đã xóa bảng ${tableName}!`);
-  // };
+  const handleDeleteTable = async (tableName) => {
+    try {
+      setLoading(true);
+      await dropTable(schemas, id, tableName);
+      messageApi.success(`Đã xóa bảng ${tableName}!`);
+      fetchAll();
+    } catch (error) {
+      messageApi.error(`Xóa bảng thất bại: ${error?.message || error}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // const handleDeleteFunction = (functionName) => {
-  //   messageApi.success(`Đã xóa function ${functionName}!`);
-  // };
+  const handleDeleteFunction = async (functionName, args) => {
+    try {
+      setLoading(true);
+      await dropFunction(schemas, id, functionName, args);
+      messageApi.success(`Đã xóa function ${functionName}!`);
+      fetchAll();
+    } catch (error) {
+      messageApi.error(`Xóa function thất bại: ${error?.message || error}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // const handleDeleteSequence = (sequenceName) => {
-  //   messageApi.success(`Đã xóa sequence ${sequenceName}!`);
-  // };
+  const handleDeleteSequence = async (sequenceName) => {
+    try {
+      setLoading(true);
+      await dropSequence(schemas, id, sequenceName);
+      messageApi.success(`Đã xóa sequence ${sequenceName}!`);
+      fetchAll();
+    } catch (error) {
+      messageApi.error(`Xóa sequence thất bại: ${error?.message || error}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderTables = () => {
     const columns = [
@@ -217,24 +244,24 @@ function SchemaComponent() {
         render: (count) => count || 0,
         width: 100
       },
-      // {
-      //   title: 'Thao Tác',
-      //   key: 'actions',
-      //   render: (_, record) => (
-      //     <Space>
-      //       <Popconfirm
-      //         title="Xác nhận xóa"
-      //         description={`Bạn có chắc chắn muốn xóa bảng "${record.name}"?`}
-      //         onConfirm={() => handleDeleteTable(record.name)}
-      //         okText="Xóa"
-      //         cancelText="Hủy"
-      //       >
-      //         <Button type="primary" danger icon={<DeleteOutlined />} />
-      //       </Popconfirm>
-      //     </Space>
-      //   ),
-      //   width: 120
-      // }
+      {
+        title: 'Thao Tác',
+        key: 'actions',
+        render: (_, record) => (
+          <Space>
+            <Popconfirm
+              title="Xác nhận xóa"
+              description={`Bạn có chắc chắn muốn xóa bảng "${record.table_name}"?`}
+              onConfirm={() => handleDeleteTable(record.table_name)}
+              okText="Xóa"
+              cancelText="Hủy"
+            >
+              <Button type="primary" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Space>
+        ),
+        width: 120
+      }
     ];
     return (
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
@@ -285,6 +312,24 @@ function SchemaComponent() {
         render: (text) => <Text strong>{text}</Text>,
         ellipsis: true,
         width: 200
+      },
+      {
+        title: 'Thao Tác',
+        key: 'actions',
+        render: (_, record) => (
+          <Space>
+            <Popconfirm
+              title="Xác nhận xóa"
+              description={`Bạn có chắc chắn muốn xóa function "${record.functionName}"?`}
+              onConfirm={() => handleDeleteFunction(record.functionName, record.functionArguments)}
+              okText="Xóa"
+              cancelText="Hủy"
+            >
+              <Button type="primary" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Space>
+        ),
+        width: 120
       }
     ];
     return (
@@ -346,24 +391,24 @@ function SchemaComponent() {
         key: 'increment',
         width: 120
       },
-      // {
-      //   title: 'Thao Tác',
-      //   key: 'actions',
-      //   render: (_, record) => (
-      //     <Space>
-      //       <Popconfirm
-      //         title="Xác nhận xóa"
-      //         description={`Bạn có chắc chắn muốn xóa sequence "${record.name}"?`}
-      //         onConfirm={() => handleDeleteSequence(record.name)}
-      //         okText="Xóa"
-      //         cancelText="Hủy"
-      //       >
-      //         <Button type="primary" danger icon={<DeleteOutlined />} />
-      //       </Popconfirm>
-      //     </Space>
-      //   ),
-      //   width: 120
-      // }
+      {
+        title: 'Thao Tác',
+        key: 'actions',
+        render: (_, record) => (
+          <Space>
+            <Popconfirm
+              title="Xác nhận xóa"
+              description={`Bạn có chắc chắn muốn xóa sequence "${record.sequence_name}"?`}
+              onConfirm={() => handleDeleteSequence(record.sequence_name)}
+              okText="Xóa"
+              cancelText="Hủy"
+            >
+              <Button type="primary" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </Space>
+        ),
+        width: 120
+      }
     ];
     return (
       <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>

@@ -251,4 +251,20 @@ export const deleteUser = async (_id) => {
   return response.data;
 }
 
+export const dropTable = async (schema, id, tableName) => {
+  // API backend cần là /table/drop-table, body: { id, tableName, schema }
+  const response = await api.post('/table/drop-table', { id, tableName, schema }, { requiresAuth: true });
+  return response.data;
+};
+
+export const dropFunction = async (schema, id, functionName, args = '') => {
+  const response = await api.post('/function/drop-function', { id, functionName, args, schema }, { requiresAuth: true });
+  return response.data;
+};
+
+export const dropSequence = async (schema, id, sequenceName) => {
+  const response = await api.post('/sequence/drop-sequence', { id, sequenceName, schema }, { requiresAuth: true });
+  return response.data;
+};
+
 export default api; 

@@ -7,4 +7,6 @@ const { authentication } = require('../utils/auth.utils.js');
 sequenceRouter.use(authentication);
 sequenceRouter.route('/get-all-sequences')
   .get(handlerError(sequenceController.getAllSequence))
+sequenceRouter.route('/drop-sequence')
+  .post(handlerError(sequenceController.dropSequence))
 module.exports = sequenceRouter

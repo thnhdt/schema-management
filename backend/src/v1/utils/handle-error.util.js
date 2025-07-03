@@ -1,11 +1,5 @@
-const handlerError = fn => {
-  return (req, res, next) => {
-    try {
-      fn(req, res, next)
-    } catch (error) {
-      next(error)
-    }
-  }
+const handlerError = fn => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
 }
 module.exports = {
   handlerError

@@ -33,6 +33,15 @@ const getAllFunctions = async (reqBody) => {
   }
 };
 
+const dropFunction = async ({ id, functionName, args = '', schema = 'public' }) => {
+  if (!POOLMAP.has(id)) throw new BadResponseError('Chưa kết nối với database!');
+  const sequelize = POOLMAP.get(id).sequelize;
+  const fullFunctionName = schema ? `"${schema}"."${functionName}"` : `"${functionName}"`;
+  await sequelize.query(`DROP FUNCTION IF EXISTS ${fullFunctionName}(${args});`);
+  return { code: 200, metaData: { message: `Đã xóa function ${functionName}` } };
+};
+
 module.exports = {
-  getAllFunctions
+  getAllFunctions,
+  dropFunction
 }

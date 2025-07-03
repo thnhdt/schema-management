@@ -13,5 +13,11 @@ tableRouter.route('/test')
   .post(handlerError(tableController.test))
 tableRouter.route('/create-schema')
   .post(handlerError(tableController.createSchema))
+tableRouter.route('/drop-column')
+  .post(handlerError(tableController.dropColumn))
+tableRouter.route('/delete-row')
+  .post(handlerError(tableController.deleteRow))
+tableRouter.route('/drop-table')
+  .post(handlerError(tableController.dropTable))
 
 module.exports = tableRouter

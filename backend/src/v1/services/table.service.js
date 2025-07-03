@@ -97,10 +97,52 @@ const getCountColumns = async (reqBody) => {
   );
   return countColumns[0];
 };
+
+const dropColumn = async ({ id, tableName, columnName, schema = 'public' }) => {
+  if (!POOLMAP.has(id)) throw new BadResponseError('Chưa kết nối với database!');
+  const sequelize = POOLMAP.get(id).sequelize;
+  // Sử dụng schema nếu có
+  const fullTableName = schema ? `"${schema}"."${tableName}"` : `"${tableName}"`;
+  await sequelize.query(`ALTER TABLE ${fullTableName} DROP COLUMN "${columnName}";`);
+  return { code: 200, metaData: { message: `Đã xóa cột ${columnName} khỏi bảng ${tableName}` } };
+};
+
+const deleteRow = async ({ id, tableName, schema = 'public', where }) => {
+  if (!POOLMAP.has(id)) throw new BadResponseError('Chưa kết nối với database!');
+  const sequelize = POOLMAP.get(id).sequelize;
+  const fullTableName = schema ? `"${schema}"."${tableName}"` : `"${tableName}"`;
+  const keys = Object.keys(where);
+  if (keys.length === 0) throw new BadResponseError('Thiếu điều kiện xóa!');
+  const conditions = keys.map(key => `"${key}" = :${key}`).join(' AND ');
+  await sequelize.query(
+    `DELETE FROM ${fullTableName} WHERE ${conditions};`,
+    { replacements: where }
+  );
+  return { code: 200, metaData: { message: `Đã xóa hàng trong bảng ${tableName}` } };
+};
+
+const dropTable = async ({ id, tableName, schema = 'public' }) => {
+  if (!POOLMAP.has(id)) throw new BadResponseError('Chưa kết nối với database!');
+  const sequelize = POOLMAP.get(id).sequelize;
+  const fullTableName = schema ? `"${schema}"."${tableName}"` : `"${tableName}"`;
+  await sequelize.query(`DROP TABLE IF EXISTS ${fullTableName} CASCADE;`);
+  return { code: 200, metaData: { message: `Đã xóa bảng ${tableName}` } };
+};
+
+// {
+//   "id": "<databaseId>",
+//   "tableName": "<tên_bảng>",
+//   "columnName": "<tên_cột>",
+//   "schema": "public" // (tùy chọn, mặc định là public)
+// }
+
 module.exports = {
   test,
   createSchema,
   getAllTables,
   getAllDdlText,
-  getCountColumns
+  getCountColumns,
+  dropColumn,
+  deleteRow,
+  dropTable
 }

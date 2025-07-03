@@ -57,6 +57,7 @@ const getState = async (req, res, next) => {
     metaData: targetUser
   }).send(res)
 };
+
 const logout = async (req, res, next) => {
   res.cookie("refreshToken", "", {
     httpOnly: true,

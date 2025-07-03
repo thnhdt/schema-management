@@ -154,16 +154,27 @@ const Database = () => {
           >
             Xem chi tiết
           </Button>
-          {record.status === 'active' ? (
-            <Button
-              danger
-              onClick={() => handleDisconnect(record)}
-              loading={disconnectingId === record._id}
-              disabled={disconnectingId === record._id}
-            >
-              Ngắt kết nối
-            </Button>
-          ) : (
+          {record.status === 'active' && (
+            <>
+              <Button
+                danger
+                onClick={() => handleDisconnect(record)}
+                loading={disconnectingId === record._id}
+                disabled={disconnectingId === record._id}
+              >
+                Ngắt kết nối
+              </Button>
+              <Button
+                type="primary"
+                onClick={() => handleConnect(record)}
+                loading={connectingId === record._id}
+                disabled={connectingId === record._id}
+              >
+                Kết nối lại
+              </Button>
+            </>
+          )}
+          {record.status !== 'active' && (
             <Button
               type="primary"
               onClick={() => handleConnect(record)}

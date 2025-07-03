@@ -7,7 +7,13 @@ const getAllFunctions = async (req, res, next) => {
     metaData: targetData
   }).send(res)
 };
+
+const dropFunction = async (req, res, next) => {
+  const result = await functionService.dropFunction(req.body);
+  new SucessReponse({ metaData: result }).send(res);
+};
+
 module.exports = {
   getAllFunctions,
-
+  dropFunction
 }

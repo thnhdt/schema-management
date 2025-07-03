@@ -26,6 +26,15 @@ ORDER  BY sequence_schema, sequence_name;`,
   }
 }
 
+const dropSequence = async ({ id, sequenceName, schema = 'public' }) => {
+  if (!POOLMAP.has(id)) throw new BadResponseError('Chưa kết nối với database!');
+  const sequelize = POOLMAP.get(id).sequelize;
+  const fullSequenceName = schema ? `"${schema}"."${sequenceName}"` : `"${sequenceName}"`;
+  await sequelize.query(`DROP SEQUENCE IF EXISTS ${fullSequenceName};`);
+  return { code: 200, metaData: { message: `Đã xóa sequence ${sequenceName}` } };
+};
+
 module.exports = {
-  getAllSequences
+  getAllSequences,
+  dropSequence
 }
