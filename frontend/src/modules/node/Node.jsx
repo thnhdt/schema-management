@@ -11,9 +11,9 @@ import { useNavigate } from 'react-router-dom';
 import { getAllNodes, createNode, editNode, deleteNode } from '../../api';
 import '../../App.css';
 import AddDatabaseInNode from '../database/ModalAddDatabase';
+import { useSelector } from 'react-redux';
 
 const { Title, Text } = Typography;
-
 
 const Node = () => {
   const [nodes, setNodes] = useState([]);
@@ -27,7 +27,7 @@ const Node = () => {
   const [nodeIdAddDatabase, setNodeIdAddDatabase] = useState(null);
   const [databases, setDatabases] = useState([]);
   const [urlString, setUrlString] = useState([]);
-  const roles = JSON.parse(sessionStorage.getItem('roles') || '[]');
+  const roles = useSelector(state => state.user.roles);
   const isAdmin = roles.includes('admin');
 
   useEffect(() => {

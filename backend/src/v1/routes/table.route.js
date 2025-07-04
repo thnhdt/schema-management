@@ -19,5 +19,7 @@ tableRouter.route('/delete-row')
   .post(handlerError(tableController.deleteRow))
 tableRouter.route('/drop-table')
   .post(handlerError(tableController.dropTable))
+tableRouter.route('/get-columns')
+  .get(handlerError(tableController.getColumns))
 
 module.exports = tableRouter

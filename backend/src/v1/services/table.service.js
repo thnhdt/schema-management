@@ -129,6 +129,19 @@ const dropTable = async ({ id, tableName, schema = 'public' }) => {
   return { code: 200, metaData: { message: `Đã xóa bảng ${tableName}` } };
 };
 
+const getColumns = async ({ id, tableName, schema = 'public' }) => {
+  if (!POOLMAP.has(id)) throw new BadResponseError('Chưa kết nối với database!');
+  const sequelize = POOLMAP.get(id).sequelize;
+  const columns = await sequelize.query(
+    `SELECT column_name FROM information_schema.columns WHERE table_schema = :schema AND table_name = :tableName;`,
+    {
+      replacements: { schema, tableName },
+      type: QueryTypes.SELECT
+    }
+  );
+  return { code: 200, metaData: { columns: columns.map(col => col.column_name) } };
+};
+
 // {
 //   "id": "<databaseId>",
 //   "tableName": "<tên_bảng>",
@@ -144,5 +157,6 @@ module.exports = {
   getCountColumns,
   dropColumn,
   deleteRow,
-  dropTable
+  dropTable,
+  getColumns
 }

@@ -3,6 +3,8 @@ import { Button, message, Card, Typography, Space, Input } from 'antd';
 import '../../App.css'
 import { useRef } from 'react';
 import { login, signUp } from '../../api/index.js';
+import { useDispatch } from 'react-redux';
+import { setCredentials } from './userSlice';
 
 function Register() {
   // const [name, setName] = useState('');
@@ -12,6 +14,7 @@ function Register() {
   const emailRef = useRef(null);
   const nameRef = useRef(null);
   const [messageApi, contextHolder] = message.useMessage();
+  const dispatch = useDispatch();
 
   const handleSubmit = async () => {
     try {
@@ -49,9 +52,12 @@ function Register() {
       });
       try {
         const loginData = await login(email, password);
-        sessionStorage.setItem('token', loginData.metaData.metaData.tokens.accessToken);
-        sessionStorage.setItem('username', loginData.metaData.metaData.user.name);
-        sessionStorage.setItem('userId', loginData.metaData.metaData.user.userId);
+        const user = loginData.metaData.metaData.user;
+        const token = loginData.metaData.metaData.tokens.accessToken;
+        const userId = user.userId;
+        const username = user.name;
+        const roles = Array.isArray(user.roles) ? user.roles : [];
+        dispatch(setCredentials({ token, roles, userId, username }));
         setTimeout(() => {
           navigate('/node');
         }, 1500);

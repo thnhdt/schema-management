@@ -39,6 +39,10 @@ const dropTable = async (req, res, next) => {
   const result = await tableService.dropTable(req.body);
   new SucessReponse({ metaData: result }).send(res);
 };
+const getColumns = async (req, res, next) => {
+  const result = await tableService.getColumns(req.query);
+  new SucessReponse({ metaData: result }).send(res);
+};
 module.exports = {
   test,
   createSchema,
@@ -46,5 +50,6 @@ module.exports = {
   getAllDdlText,
   dropColumn,
   deleteRow,
-  dropTable
+  dropTable,
+  getColumns
 }

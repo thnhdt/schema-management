@@ -1,18 +1,23 @@
 import api from './base';
+import { store } from '../store';
 
 export const login = async (email, password) => {
   const response = await api.post('/user/login', { email, password });
   const user = response.data?.metaData?.metaData?.user;
-  if (user && Array.isArray(user.roles)) {
-    sessionStorage.setItem('roles', JSON.stringify(user.roles));
-  } else {
-    sessionStorage.removeItem('roles');
-  }
+  const token = response.data?.metaData?.metaData?.tokens?.accessToken;
+  const userId = user?.userId;
+  const username = user?.name;
+  const roles = Array.isArray(user?.roles) ? user.roles : [];
+  store.dispatch({
+    type: 'user/setCredentials',
+    payload: { token, roles, userId, username },
+  });
   return response.data;
 };
 
 export const logout = async () => {
   const response = await api.post('/user/logout', undefined, { requiresAuth: true });
+  store.dispatch({ type: 'user/logout' });
   return response.data;
 };
 

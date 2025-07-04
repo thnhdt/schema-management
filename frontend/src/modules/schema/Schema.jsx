@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Tabs, Card, Space, Button, Typography, message, Tooltip, Popconfirm, Input, Row, Col, Statistic } from 'antd';
+import { Tabs, Card, Space, Button, Typography, message, Tooltip, Popconfirm, Input, Row, Col, Statistic, Select, Modal } from 'antd';
 import Highlighter from 'react-highlight-words';
 import {
   DatabaseOutlined,
@@ -19,7 +19,7 @@ import '../../App.css';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { TableComponent } from '../../util/helper';
-import { getAllFunctions, getTables, getAllSequences, dropTable, dropFunction, dropSequence } from '../../api';
+import { getAllFunctions, getTables, getAllSequences, dropTable, dropFunction, dropSequence, getColumns, dropColumn } from '../../api';
 
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
@@ -41,6 +41,8 @@ function Schema() {
   const [selectedTable, setSelectedTable] = useState(null);
   const [selectedSequence, setSelectedSequence] = useState(null);
   const [activeTab, setActiveTab] = useState('table');
+  const [dropColumnModal, setDropColumnModal] = useState({ visible: false, table: null, columns: [], loading: false });
+  const [selectedColumn, setSelectedColumn] = useState(null);
 
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();
@@ -224,6 +226,32 @@ function Schema() {
     }
   };
 
+  const handleOpenDropColumn = async (table) => {
+    setDropColumnModal({ visible: true, table, columns: [], loading: true });
+    try {
+      const res = await getColumns(id, table.table_name, schemas);
+      setDropColumnModal({ visible: true, table, columns: res.metaData.metaData.columns, loading: false });
+    } catch (err) {
+      messageApi.error('Không lấy được danh sách cột!');
+      setDropColumnModal({ visible: false, table: null, columns: [], loading: false });
+    }
+  };
+
+  const handleDropColumn = async () => {
+    if (!selectedColumn) return;
+    setDropColumnModal(dc => ({ ...dc, loading: true }));
+    try {
+      await dropColumn(id, dropColumnModal.table.table_name, selectedColumn, schemas);
+      messageApi.success(`Đã xóa cột ${selectedColumn}!`);
+      setDropColumnModal({ visible: false, table: null, columns: [], loading: false });
+      setSelectedColumn(null);
+      fetchAll();
+    } catch (err) {
+      messageApi.error('Xóa cột thất bại!');
+      setDropColumnModal(dc => ({ ...dc, loading: false }));
+    }
+  };
+
   const renderTables = () => {
     const columns = [
       Object.assign(
@@ -258,9 +286,12 @@ function Schema() {
             >
               <Button type="primary" danger icon={<DeleteOutlined />} />
             </Popconfirm>
+            <Button type="dashed" onClick={() => handleOpenDropColumn(record)}>
+              Xóa cột
+            </Button>
           </Space>
         ),
-        width: 120
+        width: 180
       }
     ];
     return (
@@ -603,6 +634,30 @@ function Schema() {
           </div>
         </div>
       </div>
+      
+      <Modal
+        open={dropColumnModal.visible}
+        title={`Xóa cột trong bảng ${dropColumnModal.table?.table_name || ''}`}
+        onCancel={() => { setDropColumnModal({ visible: false, table: null, columns: [], loading: false }); setSelectedColumn(null); }}
+        onOk={handleDropColumn}
+        okButtonProps={{ disabled: !selectedColumn, loading: dropColumnModal.loading }}
+        cancelButtonProps={{ disabled: dropColumnModal.loading }}
+      >
+        <Select
+          style={{ width: '100%' }}
+          placeholder="Chọn cột để xóa"
+          loading={dropColumnModal.loading}
+          value={selectedColumn}
+          onChange={setSelectedColumn}
+        >
+          {dropColumnModal.columns.map(col => (
+            <Select.Option key={col} value={col}>{col}</Select.Option>
+          ))}
+        </Select>
+        <div style={{ marginTop: 12, color: 'red' }}>
+          Lưu ý: Xóa cột là thao tác không thể hoàn tác!
+        </div>
+      </Modal>
     </div>
   );
 }

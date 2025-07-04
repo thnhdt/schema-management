@@ -11,6 +11,8 @@ import {
 import { Button, Layout, Menu, theme, Avatar, Flex, Divider, Typography } from 'antd';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { logout } from './api';
+import { useSelector, useDispatch } from 'react-redux';
+import { logout as logoutAction } from './modules/user/userSlice';
 
 const { Header, Sider, Content } = Layout;
 
@@ -22,18 +24,16 @@ const AppLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
-  const username = sessionStorage.getItem("username");
+  const username = useSelector(state => state.user.username);
+  const dispatch = useDispatch();
   const handleLogOut = async () => {
     try {
       await logout();
-      sessionStorage.removeItem('username');
-      sessionStorage.removeItem('token');
-      sessionStorage.removeItem('userId');
+      dispatch(logoutAction());
       window.location = '/';
     } catch (error) {
       console.error("Logout ko thành công!", error.message);
     }
-
   }
   return (
     <Layout className="app-layout" style={{ minHeight: '100vh' }}>

@@ -3,6 +3,7 @@ import { message, Button, Popconfirm, Space, Form, Input, Select, Tag } from 'an
 import { DeleteOutlined, UserOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
 import { getAllUsers, updateUser, deleteUser } from '../../api';
 import { TableComponent } from '../../util/helper';
+import { useSelector } from 'react-redux';
 
 const { Option } = Select;
 
@@ -10,21 +11,14 @@ const User = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [messageApi, contextHolder] = message.useMessage();
-  const [isAdmin, setIsAdmin] = useState(false);
   const [addingRow, setAddingRow] = useState(null);
   const [editingKey, setEditingKey] = useState('');
+  const roles = useSelector(state => state.user.roles);
+  const isAdmin = roles.includes('admin');
   
   useEffect(() => {
     fetchUsers();
   }, []);
-  
-  useEffect(() => {
-    try {
-      setIsAdmin(JSON.parse(sessionStorage.getItem('roles') || '[]').includes('admin'));
-    } catch {
-      setIsAdmin(false);
-    }
-  }, [users]);
   
   const fetchUsers = async () => {
     try {

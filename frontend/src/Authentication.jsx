@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from './api';
 import { message } from 'antd';
+import { useSelector } from 'react-redux';
 export default function AxiosInterceptor({ children }) {
   const navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage();
@@ -20,9 +21,6 @@ export default function AxiosInterceptor({ children }) {
           });
           // await logout();
           setTimeout(() => {
-            sessionStorage.removeItem('username');
-            sessionStorage.removeItem('token');
-            sessionStorage.removeItem('userId');
             navigate('/', { replace: true });
           }, 2000);
         }
@@ -43,16 +41,15 @@ export default function AxiosInterceptor({ children }) {
 }
 
 export const RequireUsername = () => {
-  const hasUsername = !!sessionStorage.getItem("userId");
-
+  const userId = useSelector(state => state.user.userId);
+  const hasUsername = !!userId;
   return hasUsername ? <Outlet /> : <Navigate to="/" replace />;
 };
 
-
 export const AlreadyLogined = ({ children }) => {
-  const hasUserId = !!sessionStorage.getItem("userId");
+  const userId = useSelector(state => state.user.userId);
+  const hasUserId = !!userId;
   const location = useLocation();
-
   if (hasUserId && location.pathname === "/") {
     return <Navigate to="/node" replace />;
   }

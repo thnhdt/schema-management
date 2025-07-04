@@ -3,7 +3,8 @@ import { Select, Button, message, Card, Typography, Space, Input } from 'antd';
 import '../../App.css'
 import { useRef } from 'react';
 import { login } from '../../api/index.js';
-import { useGlobalUser } from '../../App.jsx';
+import { useDispatch } from 'react-redux';
+import { setCredentials } from './userSlice';
 import Register from './Register';
 
 function Main() {
@@ -11,14 +12,16 @@ function Main() {
   const passwordRef = useRef(null);
   const emailRef = useRef(null);
   const [messageApi, contextHolder] = message.useMessage();
-  const { _ , setUser } = useGlobalUser();
+  const dispatch = useDispatch();
   const handleSubmit = async () => {
     try {
       const data = await login(emailRef.current.input.value, passwordRef.current.input.value);
-      setUser(data.metaData.metaData.user);
-      sessionStorage.setItem('token', data.metaData.metaData.tokens.accessToken);
-      sessionStorage.setItem('username', data.metaData.metaData.user.name);
-      sessionStorage.setItem('userId', data.metaData.metaData.user.userId);
+      const user = data.metaData.metaData.user;
+      const token = data.metaData.metaData.tokens.accessToken;
+      const userId = user.userId;
+      const username = user.name;
+      const roles = Array.isArray(user.roles) ? user.roles : [];
+      dispatch(setCredentials({ token, roles, userId, username }));
       navigate('/node', { replace: true });
     } catch (error) {
       messageApi.open({

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { store } from '../store';
 
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
@@ -8,11 +9,11 @@ const api = axios.create({
   },
 });
 
-// Add token to requests if available
 api.interceptors.request.use(
   (config) => {
-    const token = sessionStorage.getItem('token');
-    const userId = sessionStorage.getItem('userId');
+    const state = store.getState();
+    const token = state.user.token;
+    const userId = state.user.userId;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -65,16 +66,15 @@ api.interceptors.response.use(
       try {
         const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/user/refresh-token`, null, { withCredentials: true });
         const newToken = res.data.metaData.tokens.accessToken;
-        sessionStorage.setItem('token', newToken);
+        const state = store.getState();
+        const userId = state.user.userId;
+        if (userId) sessionStorage.setItem('userId', userId);
         processQueue(null, newToken);
-
         original.headers.Authorization = `Bearer ${newToken}`;
         return api(original);
       } catch (err) {
         processQueue(err);
-        sessionStorage.removeItem('username');
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('userId');
+        store.dispatch({ type: 'user/logout' });
         window.location.replace('/');
         return Promise.reject(err);
       } finally {
@@ -83,9 +83,7 @@ api.interceptors.response.use(
     }
     else if (error.response?.status === 403) {
       setTimeout(() => {
-        sessionStorage.removeItem('username');
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('userId');
+        store.dispatch({ type: 'user/logout' });
         window.location.replace('/');
       }, 1000);
     }

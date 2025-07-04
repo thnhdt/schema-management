@@ -23,4 +23,9 @@ export const dropColumn = async (id, tableName, columnName, schema = 'public') =
 export const deleteRow = async (id, tableName, where, schema = 'public') => {
   const response = await api.post('/table/delete-row', { id, tableName, where, schema }, { requiresAuth: true });
   return response.data;
+};
+
+export const getColumns = async (id, tableName, schema = 'public') => {
+  const response = await api.get('/table/get-columns', { params: { id, tableName, schema }, requiresAuth: true });
+  return response.data;
 }; 

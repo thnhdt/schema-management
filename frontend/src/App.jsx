@@ -16,17 +16,17 @@ import { AlreadyLogined } from './Authentication';
 import User from './modules/user/User';
 import AxiosInterceptor from './Authentication';
 import { getState } from './api';
+import { useSelector } from 'react-redux';
 
 const GlobalContext = createContext();
 export const useGlobalUser = () => useContext(GlobalContext);
 
 function App() {
   const [user, setUser] = useState(null);
-  // const userId = sessionStorage.getItem('userId');
+  const userId = useSelector(state => state.user.userId);
   const [isInitializing, setIsInitializing] = useState(true);
   useEffect(() => {
-    const userId = sessionStorage.getItem('userId');
-    if (!userId && !user) {
+    if (!userId) {
       setIsInitializing(false);
       return;
     }
@@ -40,7 +40,7 @@ function App() {
         setIsInitializing(false);
       }
     })();
-  }, []);
+  }, [userId]);
 
   const value = { user, setUser };
   if (isInitializing) {
