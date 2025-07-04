@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { store } from '../store';
+import { message } from 'antd';
 
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
@@ -74,6 +75,7 @@ api.interceptors.response.use(
         return api(original);
       } catch (err) {
         processQueue(err);
+        queue = [];
         store.dispatch({ type: 'user/logout' });
         window.location.replace('/');
         return Promise.reject(err);
@@ -82,10 +84,18 @@ api.interceptors.response.use(
       }
     }
     else if (error.response?.status === 403) {
+      message.error('Hết phiên đăng nhập. Sẽ quay lại trang đăng nhập!');
+      processQueue(error);
       setTimeout(() => {
         store.dispatch({ type: 'user/logout' });
         window.location.replace('/');
-      }, 1000);
+      }, 2000);
+    }
+    else if (!error.response) {
+      return Promise.reject({
+        ...error,
+        message: 'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng hoặc thử lại sau.'
+      });
     }
     return Promise.reject(error);
   }

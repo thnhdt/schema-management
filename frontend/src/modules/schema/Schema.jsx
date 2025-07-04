@@ -233,6 +233,7 @@ function Schema() {
       setDropColumnModal({ visible: true, table, columns: res.metaData.metaData.columns, loading: false });
     } catch (err) {
       messageApi.error('Không lấy được danh sách cột!');
+      console.error(err);
       setDropColumnModal({ visible: false, table: null, columns: [], loading: false });
     }
   };
@@ -248,6 +249,7 @@ function Schema() {
       fetchAll();
     } catch (err) {
       messageApi.error('Xóa cột thất bại!');
+      console.error(err);
       setDropColumnModal(dc => ({ ...dc, loading: false }));
     }
   };
@@ -634,7 +636,7 @@ function Schema() {
           </div>
         </div>
       </div>
-      
+
       <Modal
         open={dropColumnModal.visible}
         title={`Xóa cột trong bảng ${dropColumnModal.table?.table_name || ''}`}
