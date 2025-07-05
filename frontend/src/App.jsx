@@ -11,6 +11,8 @@ import Schema from './modules/schema/Schema';
 // import ReactFlowTest from './components/garbage/ReactFlowTest';
 // import SQLToERD from './components/garbage/SQLToERD';
 import Register from './modules/user/Register';
+import CompareComponent from './components/Compare/Compare';
+import FunctionCompareComponent from './components/Compare/Function';
 
 import { AlreadyLogined } from './Authentication';
 import User from './modules/user/User';
@@ -61,6 +63,8 @@ function App() {
               <Route path='/schema' element={<Schema />} />
               <Route path='/schema/:id' element={<Schema />} />
               <Route path='/user' element={<User />} />
+              <Route path='/compare/detail' element={<CompareComponent />} />
+              <Route path='/compare/function' element={<FunctionCompareComponent />} />
             </Route>
             {/* </Route> */}
             <Route path="*" element={<h6>Không có đường dẫn...</h6>} />

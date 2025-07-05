@@ -33,7 +33,9 @@ const authentication = handlerError(async (req, res, next) => {
   const checkRefreshToken = req.cookies.refreshToken;
 
   const authHeader = req.headers[HEADER.AUTHORIZATION];
+
   const accessToken = authHeader.split(' ')[1];
+  console.log(accessToken);
   if (!checkRefreshToken) throw new ForbiddenError("Phiên đăng nhập hết hạn!");
   if (!accessToken) throw new AuthFailureError("Access token hết hạn!");
   try {

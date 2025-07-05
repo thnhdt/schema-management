@@ -8,4 +8,9 @@ export const getAllFunctions = async (schema, id) => {
 export const dropFunction = async (schema, id, functionName, args = '') => {
   const response = await api.post('/function/drop-function', { id, functionName, args, schema }, { requiresAuth: true });
   return response.data;
-}; 
+};
+
+export const getAllUpdateFunction = async (currentDatabaseId, targetDatabaseId) => {
+  const response = await api.post('/function/all-update-functions', { currentDatabaseId, targetDatabaseId }, { requiresAuth: true });
+  return response.data;
+}

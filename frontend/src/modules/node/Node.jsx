@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, message, Button, Card, Space, Tag, Table, Tooltip, Popconfirm, Badge } from 'antd';
+import { Typography, message, Button, Card, Space, Tag, Table, Tooltip, Popconfirm, Badge, Flex } from 'antd';
 import {
   DatabaseOutlined,
   PlusOutlined,
@@ -12,6 +12,7 @@ import { getAllNodes, createNode, editNode, deleteNode } from '../../api';
 import '../../App.css';
 import AddDatabaseInNode from '../database/ModalAddDatabase';
 import { useSelector } from 'react-redux';
+import ModalCompareFunction from '../../components/Compare/Modal-Compare-Function';
 
 const { Title, Text } = Typography;
 
@@ -29,6 +30,7 @@ const Node = () => {
   const [urlString, setUrlString] = useState([]);
   const roles = useSelector(state => state.user.roles);
   const isAdmin = roles.includes('admin');
+  const [openCompareFunction, setOpenCompareFunction] = useState(false);
 
   useEffect(() => {
     fetchNode();
@@ -56,7 +58,7 @@ const Node = () => {
       setLoading(false);
     }
   };
-  
+
   const handleAddNode = () => {
     setEditingNode(null);
     setIsAddModalVisible(true);
@@ -238,13 +240,25 @@ const Node = () => {
       <Card
         title="Danh Sách PostgreSQL Nodes"
         extra={
-          (roles.includes('admin')) && <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleAddNode}
-          >
-            Thêm Node
-          </Button>
+          <Space.Compact block>
+            {(roles.includes('admin')) &&
+              <Tooltip title={'Thêm Host'}>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleAddNode}
+                />
+
+              </Tooltip>
+
+            }
+            <Tooltip title={'So sánh function'}>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setOpenCompareFunction(true)} />
+            </Tooltip>
+          </Space.Compact>
         }
       >
         <Table
@@ -359,6 +373,10 @@ const Node = () => {
         urlStringDefault={urlString}
         fetchNode={fetchNode}
         nodes={nodes}
+      />
+      <ModalCompareFunction
+        visible={openCompareFunction}
+        onCancel={() => setOpenCompareFunction(false)}
       />
     </div>
   );
