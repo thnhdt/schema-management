@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Tabs, Card, Space, Button, Typography, message, Tooltip, Popconfirm, Input, Row, Col, Statistic, Select, Modal } from 'antd';
+import { useSelector } from 'react-redux';
 import Highlighter from 'react-highlight-words';
 import {
   DatabaseOutlined,
@@ -43,6 +44,9 @@ function Schema() {
   const [activeTab, setActiveTab] = useState('table');
   const [dropColumnModal, setDropColumnModal] = useState({ visible: false, table: null, columns: [], loading: false });
   const [selectedColumn, setSelectedColumn] = useState(null);
+  
+  const roles = useSelector(state => state.user.roles);
+  const isAdmin = roles.includes('admin');
 
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();
@@ -188,6 +192,10 @@ function Schema() {
     }, 1000);
   };
   const handleDeleteTable = async (tableName) => {
+    if (!isAdmin) {
+      messageApi.error('Bạn phải là admin mới được xóa bảng!');
+      return;
+    }
     try {
       setLoading(true);
       await dropTable(schemas, id, tableName);
@@ -201,6 +209,10 @@ function Schema() {
   };
 
   const handleDeleteFunction = async (functionName, args) => {
+    if (!isAdmin) {
+      messageApi.error('Bạn phải là admin mới được xóa function!');
+      return;
+    }
     try {
       setLoading(true);
       await dropFunction(schemas, id, functionName, args);
@@ -214,6 +226,10 @@ function Schema() {
   };
 
   const handleDeleteSequence = async (sequenceName) => {
+    if (!isAdmin) {
+      messageApi.error('Bạn phải là admin mới được xóa sequence!');
+      return;
+    }
     try {
       setLoading(true);
       await dropSequence(schemas, id, sequenceName);
@@ -239,6 +255,10 @@ function Schema() {
   };
 
   const handleDropColumn = async () => {
+    if (!isAdmin) {
+      messageApi.error('Bạn phải là admin mới được xóa cột!');
+      return;
+    }
     if (!selectedColumn) return;
     setDropColumnModal(dc => ({ ...dc, loading: true }));
     try {
@@ -279,18 +299,22 @@ function Schema() {
         key: 'actions',
         render: (_, record) => (
           <Space>
-            <Popconfirm
-              title="Xác nhận xóa"
-              description={`Bạn có chắc chắn muốn xóa bảng "${record.table_name}"?`}
-              onConfirm={() => handleDeleteTable(record.table_name)}
-              okText="Xóa"
-              cancelText="Hủy"
-            >
-              <Button type="primary" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-            <Button type="dashed" onClick={() => handleOpenDropColumn(record)}>
-              Xóa cột
-            </Button>
+            {isAdmin && (
+              <>
+                <Popconfirm
+                  title="Xác nhận xóa"
+                  description={`Bạn có chắc chắn muốn xóa bảng "${record.table_name}"?`}
+                  onConfirm={() => handleDeleteTable(record.table_name)}
+                  okText="Xóa"
+                  cancelText="Hủy"
+                >
+                  <Button type="primary" danger icon={<DeleteOutlined />} />
+                </Popconfirm>
+                <Button type="dashed" onClick={() => handleOpenDropColumn(record)}>
+                  Xóa cột
+                </Button>
+              </>
+            )}
           </Space>
         ),
         width: 180
@@ -351,15 +375,17 @@ function Schema() {
         key: 'actions',
         render: (_, record) => (
           <Space>
-            <Popconfirm
-              title="Xác nhận xóa"
-              description={`Bạn có chắc chắn muốn xóa function "${record.functionName}"?`}
-              onConfirm={() => handleDeleteFunction(record.functionName, record.functionArguments)}
-              okText="Xóa"
-              cancelText="Hủy"
-            >
-              <Button type="primary" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
+            {isAdmin && (
+              <Popconfirm
+                title="Xác nhận xóa"
+                description={`Bạn có chắc chắn muốn xóa function "${record.functionName}"?`}
+                onConfirm={() => handleDeleteFunction(record.functionName, record.functionArguments)}
+                okText="Xóa"
+                cancelText="Hủy"
+              >
+                <Button type="primary" danger icon={<DeleteOutlined />} />
+              </Popconfirm>
+            )}
           </Space>
         ),
         width: 120
@@ -429,15 +455,17 @@ function Schema() {
         key: 'actions',
         render: (_, record) => (
           <Space>
-            <Popconfirm
-              title="Xác nhận xóa"
-              description={`Bạn có chắc chắn muốn xóa sequence "${record.sequence_name}"?`}
-              onConfirm={() => handleDeleteSequence(record.sequence_name)}
-              okText="Xóa"
-              cancelText="Hủy"
-            >
-              <Button type="primary" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
+            {isAdmin && (
+              <Popconfirm
+                title="Xác nhận xóa"
+                description={`Bạn có chắc chắn muốn xóa sequence "${record.sequence_name}"?`}
+                onConfirm={() => handleDeleteSequence(record.sequence_name)}
+                okText="Xóa"
+                cancelText="Hủy"
+              >
+                <Button type="primary" danger icon={<DeleteOutlined />} />
+              </Popconfirm>
+            )}
           </Space>
         ),
         width: 120

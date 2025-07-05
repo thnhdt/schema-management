@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { Modal, message, Spin, Button, Switch, Popconfirm, Input, InputNumber } from "antd";
+import { useSelector } from "react-redux";
 import { editDatabase, createDatabase, deleteDatabase } from "../../api";
 import { ModalComponent, TableComponent } from "../../util/helper";
 import { CheckOutlined, CloseOutlined, DeleteOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
@@ -12,8 +13,15 @@ const AddDatabaseInNode = (props) => {
   const addDatabaseRef = useRef();
   const addUsernameRef = useRef();
   const addPasswordRef = useRef();
+  
+  const roles = useSelector(state => state.user.roles);
+  const isAdmin = roles.includes('admin');
 
   const handleDelete = async (id) => {
+    if (!isAdmin) {
+      message.error('Bạn phải là admin mới được xóa database!');
+      return;
+    }
     try {
       await deleteDatabase(id);
       await fetchNode(idNode);
@@ -27,6 +35,10 @@ const AddDatabaseInNode = (props) => {
   const isEditing = (record) => record._id === editingKey;
 
   const edit = (record) => {
+    if (!isAdmin) {
+      message.error('Bạn phải là admin mới được chỉnh sửa database!');
+      return;
+    }
     setEditingKey(record._id);
   };
 
@@ -35,6 +47,10 @@ const AddDatabaseInNode = (props) => {
   };
 
   const save = async (_id) => {
+    if (!isAdmin) {
+      message.error('Bạn phải là admin mới được chỉnh sửa database!');
+      return;
+    }
     try {
       const row = document.getElementById(`edit-row-${_id}`);
       const data = {
@@ -53,12 +69,20 @@ const AddDatabaseInNode = (props) => {
   };
 
   const handleAddNewInline = () => {
+    if (!isAdmin) {
+      message.error('Bạn phải là admin mới được thêm database!');
+      return;
+    }
     if (addingRow) return;
     setAddingRow({ _id: 'new' });
     setEditingKey('new');
   };
 
   const saveNew = async () => {
+    if (!isAdmin) {
+      message.error('Bạn phải là admin mới được thêm database!');
+      return;
+    }
     try {
       const createdData = {
         name: addNameRef.current.value.trim(),
@@ -193,22 +217,26 @@ const AddDatabaseInNode = (props) => {
         </span>
       ) : (
         <span>
-          <Button
-            icon={<EditOutlined />}
-            size="small"
-            type="text"
-            disabled={editingKey !== ''}
-            onClick={() => edit(record)}
-            style={{ marginRight: 8 }}
-          />
-          <Popconfirm
-            title="Bạn có chắc muốn xoá database này?"
-            onConfirm={() => handleDelete(record._id)}
-            okText="Xoá"
-            cancelText="Huỷ"
-          >
-            <Button danger icon={<DeleteOutlined />} size="small" />
-          </Popconfirm>
+          {isAdmin && (
+            <>
+              <Button
+                icon={<EditOutlined />}
+                size="small"
+                type="text"
+                disabled={editingKey !== ''}
+                onClick={() => edit(record)}
+                style={{ marginRight: 8 }}
+              />
+              <Popconfirm
+                title="Bạn có chắc muốn xoá database này?"
+                onConfirm={() => handleDelete(record._id)}
+                okText="Xoá"
+                cancelText="Huỷ"
+              >
+                <Button danger icon={<DeleteOutlined />} size="small" />
+              </Popconfirm>
+            </>
+          )}
         </span>
       );
     },
@@ -233,16 +261,18 @@ const AddDatabaseInNode = (props) => {
             data={dataSource}
             loading={false}
           />
-          <div style={{ marginTop: '16px', textAlign: 'right' }}>
-            <Button
-              type="dashed"
-              shape="circle"
-              icon={<PlusOutlined />}
-              size="medium"
-              onClick={handleAddNewInline}
-              disabled={!!addingRow}
-            />
-          </div>
+          {isAdmin && (
+            <div style={{ marginTop: '16px', textAlign: 'right' }}>
+              <Button
+                type="dashed"
+                shape="circle"
+                icon={<PlusOutlined />}
+                size="medium"
+                onClick={handleAddNewInline}
+                disabled={!!addingRow}
+              />
+            </div>
+          )}
         </div>
       )}
     />

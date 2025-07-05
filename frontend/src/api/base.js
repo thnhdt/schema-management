@@ -69,6 +69,14 @@ api.interceptors.response.use(
         const newToken = res.data.metaData.tokens.accessToken;
         const state = store.getState();
         const userId = state.user.userId;
+        const username = state.user.username;
+        const roles = state.user.roles;
+        
+        store.dispatch({
+          type: 'user/setCredentials',
+          payload: { token: newToken, roles, userId, username },
+        });
+        
         if (userId) sessionStorage.setItem('userId', userId);
         processQueue(null, newToken);
         original.headers.Authorization = `Bearer ${newToken}`;

@@ -28,6 +28,19 @@ export const signUp = async (createdData) => {
 
 export const refreshToken = async () => {
   const response = await api.post('/user/refresh-token', null, { withCredentials: true });
+  const newToken = response.data?.metaData?.tokens?.accessToken;
+  
+  if (newToken) {
+    const state = store.getState();
+    const userId = state.user.userId;
+    const username = state.user.username;
+    const roles = state.user.roles;
+    store.dispatch({
+      type: 'user/setCredentials',
+      payload: { token: newToken, roles, userId, username },
+    });
+  }
+  
   return response.data;
 };
 

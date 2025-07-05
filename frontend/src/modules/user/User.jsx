@@ -101,6 +101,7 @@ const User = () => {
                 name="name"
                 className="form-control"
                 placeholder="Nhập tên người dùng"
+                defaultValue={record.name}
                 required
               />
             </form>
@@ -130,8 +131,8 @@ const User = () => {
                 className="form-select"
                 required
               >
-                <option value="user">user</option>
-                <option value="admin">admin</option>
+                <option value="user" selected={roles && roles.includes('user')}>user</option>
+                <option value="admin" selected={roles && roles.includes('admin')}>admin</option>
               </select>
             </form>
           );

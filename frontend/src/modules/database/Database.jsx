@@ -5,6 +5,7 @@ import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { getAllDatabaseInHost, connectToDatabase, disconnectToDatabase } from '../../api';
 import '../../App.css'
 import ModalAddDatabase from './ModalAddDatabase';
@@ -25,6 +26,9 @@ const Database = () => {
   const id = searchParams.get('id');
   const nodeData = location.state?.nodeData;
   const [showAddModal, setShowAddModal] = useState(false);
+  
+  const roles = useSelector(state => state.user.roles);
+  const isAdmin = roles.includes('admin');
 
   useEffect(() => {
     fetchDatabases();
@@ -232,9 +236,11 @@ const Database = () => {
         </Space>
       </div>
       <Space style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={() => setShowAddModal(true)}>
-          Thêm database
-        </Button>
+        {isAdmin && (
+          <Button type="primary" onClick={() => setShowAddModal(true)}>
+            Thêm database
+          </Button>
+        )}
       </Space>
       <Tabs
         activeKey={activeTab}
@@ -282,14 +288,16 @@ const Database = () => {
           },
         ]}
       />
-      <ModalAddDatabase
-        visible={showAddModal}
-        onCancel={() => setShowAddModal(false)}
-        idNode={id}
-        fetchNode={fetchDatabases}
-        databases={[...activeDatabases, ...inactiveDatabases]}
-        nodes={nodeData ? [nodeData] : []}
-      />
+      {isAdmin && (
+        <ModalAddDatabase
+          visible={showAddModal}
+          onCancel={() => setShowAddModal(false)}
+          idNode={id}
+          fetchNode={fetchDatabases}
+          databases={[...activeDatabases, ...inactiveDatabases]}
+          nodes={nodeData ? [nodeData] : []}
+        />
+      )}
     </div>
   );
 };
