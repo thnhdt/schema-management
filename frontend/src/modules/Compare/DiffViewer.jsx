@@ -5,7 +5,6 @@ import { createTwoFilesPatch } from "diff";
 import '../../App.css';
 
 const DiffViewer = ({ oldText, newText, filePrimeTitle = 'Before', fileSecondTitle = 'After' }) => {
-  // Tạo unified diff
   let diffText = createTwoFilesPatch(
     filePrimeTitle,
     fileSecondTitle,
@@ -15,7 +14,6 @@ const DiffViewer = ({ oldText, newText, filePrimeTitle = 'Before', fileSecondTit
     { context: Number.MAX_SAFE_INTEGER }
   );;
 
-  // Xử lý để loại bỏ các dòng không chuẩn (nếu có)
   diffText = diffText
     .split("\n")
     .filter((line) => !line.startsWith("==="))

@@ -24,7 +24,6 @@ const CompareComponent = () => {
           </Title>
 
           <Row gutter={[24, 24]} align="stretch">
-            {/* Diff panel */}
             <Col xs={24} md={16} style={{ display: 'flex' }}>
               <Card
                 title="So sánh function"

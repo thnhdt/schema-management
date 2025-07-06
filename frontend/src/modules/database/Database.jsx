@@ -61,7 +61,6 @@ const Database = () => {
     try {
       await connectToDatabase({ id: record._id });
       messageApi.success(`Đã kết nối thành công đến database ${record.name}`);
-      // Refresh danh sách database để cập nhật trạng thái
       await fetchDatabases();
     } catch (error) {
       console.error('Error connecting to database:', error);

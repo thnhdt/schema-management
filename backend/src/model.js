@@ -27,7 +27,7 @@ export const getAllUsers = async (arg) => {
         FETCH ALL  from  mycursor;
         COMMIT;`, {
     replacements: [arg],
-    raw: true // Use replacements to safely pass parameters
+    raw: true 
   })
   close()
   results[0].shift()
@@ -41,7 +41,7 @@ export const getAllUsers1 = async (arg, arg1) => {
         FETCH ALL  from  mycursor;
         COMMIT;`, {
     replacements: [arg, arg1],
-    raw: true // Use replacements to safely pass parameters
+    raw: true
   })
   close()
   results[0].shift()
