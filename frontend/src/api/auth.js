@@ -16,8 +16,9 @@ export const login = async (email, password) => {
 };
 
 export const logout = async () => {
-  const response = await api.post('/user/logout', undefined, { requiresAuth: true });
+  const response = await api.post('/user/logout', undefined);
   store.dispatch({ type: 'user/logout' });
+  sessionStorage.removeItem('userId');
   return response.data;
 };
 
@@ -27,7 +28,7 @@ export const signUp = async (createdData) => {
 };
 
 export const refreshToken = async () => {
-  const response = await api.post('/user/refresh-token', null, { withCredentials: true });
+  const response = await api.post('/user/refresh-token', {}, { withCredentials: true });
   const newToken = response.data?.metaData?.tokens?.accessToken;
   
   if (newToken) {

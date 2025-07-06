@@ -11,6 +11,8 @@ userRouter.route('/signup')
   .post(handlerError(UserController.signUp));
 userRouter.route('/login')
   .post(handlerError(UserController.login));
+userRouter.route('/logout')
+  .post(handlerError(UserController.logout));
 
 userRouter.use(authentication);
 userRouter.route('/get-all-users')
@@ -21,8 +23,6 @@ userRouter.route('/update-user')
 
 userRouter.route('/get-state')
   .get(handlerError(UserController.getState));
-userRouter.route('/logout')
-  .post(handlerError(UserController.logout));
 
 userRouter.route('/delete-user')
   .delete(handlerError(UserController.deleteUser));

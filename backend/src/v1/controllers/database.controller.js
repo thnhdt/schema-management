@@ -8,7 +8,7 @@ const createDatabase = async (req, res, next) => {
   }).send(res)
 };
 const connectToDatabase = async (req, res, next) => {
-  const connectedDatabase = await databaseService.connectToDatabase(req.body)
+  const connectedDatabase = await databaseService.connectToDatabaseForResponse(req.body)
   new CreatedResponse({
     message: 'Truy cập thành công!',
     metaData: connectedDatabase

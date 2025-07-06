@@ -2,17 +2,16 @@ import React, { useState } from 'react';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
-  UnorderedListOutlined,
   FileExcelOutlined,
-  TableOutlined,
   UserOutlined,
-  LogoutOutlined
+  LogoutOutlined,
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Flex, Divider, Typography } from 'antd';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { logout } from './api';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout as logoutAction } from './modules/user/userSlice';
+import { persistor } from './store';
 
 const { Header, Sider, Content } = Layout;
 
@@ -26,14 +25,12 @@ const AppLayout = () => {
   const currentPath = location.pathname;
   const username = useSelector(state => state.user.username);
   const dispatch = useDispatch();
-  const handleLogOut = async () => {
-    try {
-      await logout();
-      dispatch(logoutAction());
-      window.location = '/';
-    } catch (error) {
-      console.error("Logout ko thành công!", error.message);
-    }
+  const handleLogOut = () => {
+    dispatch(logoutAction());
+    sessionStorage.removeItem('userId');
+    persistor.purge();
+    navigate('/', { replace: true });
+    logout().catch(() => {});
   }
   return (
     <Layout className="app-layout" style={{ minHeight: '100vh' }}>
@@ -45,28 +42,14 @@ const AppLayout = () => {
         onCollapse={setCollapsed}
         breakpoint="md"
         onBreakpoint={(broken) => setCollapsed(broken)}
-        style={{
-          position: 'fixed',
+        style={{ position: 'fixed',
           height: '100vh',
           left: 0,
           top: 0,
           zIndex: 1000,
         }}
       >
-        <div
-          style={{
-            color: 'white',
-            padding: '1.5rem',
-            fontWeight: 'bold',
-            fontSize: collapsed ? '0' : '16px',
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'start',
-            gap: '10px',
-          }}
-        >
+        <div style={{ color: 'white', padding: '1.5rem', fontWeight: 'bold', fontSize: collapsed ? '0' : '16px', overflow: 'hidden', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'start', gap: '10px', }}>
           <Avatar style={{ backgroundColor: '#1677FF' }} icon={<UserOutlined />} />
           {!collapsed && <Typography.Text style={{ color: 'white' }} strong>{username}</Typography.Text>}
         </div>

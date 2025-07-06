@@ -6,8 +6,8 @@ const login = async (req, res, next) => {
   const loginUser = await userService.login(req.body)
   res.cookie("refreshToken", loginUser.metaData.tokens.refreshToken, {
     httpOnly: true,
-    secure: false,
-    sameSite: "Strict",
+    secure: true,
+    sameSite: "None",
     maxAge: 24 * 60 * 60 * 1000,
   });
   new SucessReponse({
@@ -62,7 +62,7 @@ const logout = async (req, res, next) => {
   res.cookie("refreshToken", "", {
     httpOnly: true,
     secure: true,
-    sameSite: "none",
+    sameSite: "None",
     expires: new Date(1)
   });
   new SucessReponse({

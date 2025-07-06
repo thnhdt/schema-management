@@ -26,7 +26,6 @@ const verifyJWT = (refreshToken, scretKey) => {
 }
 
 const authentication = handlerError(async (req, res, next) => {
-  // check userId 
   const userId = req.headers[HEADER.CLIENT_ID];
   if (!userId) throw new ForbiddenError("Invalid request !");
 

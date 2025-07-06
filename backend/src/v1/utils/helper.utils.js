@@ -34,18 +34,19 @@ function unescapeSqlString(str) {
 }
 
 const ddl = async (schema, table, client) => {
-  /* ---------- COLUMNS TYPE ------------------------------------------------ */
-  const cols = await client.query(
-    `SELECT *
-     FROM information_schema.columns
-    WHERE table_schema = :schema
-      AND table_name   = :table
-    ORDER BY ordinal_position`,
-    {
-      replacements: { schema, table },
-      type: QueryTypes.SELECT
-    }
-  );
+  try {
+    /* ---------- COLUMNS TYPE ------------------------------------------------ */
+    const cols = await client.query(
+      `SELECT *
+       FROM information_schema.columns
+      WHERE table_schema = :schema
+        AND table_name   = :table
+      ORDER BY ordinal_position`,
+      {
+        replacements: { schema, table },
+        type: QueryTypes.SELECT
+      }
+    );
   /* ---------- PRIMARY KEY ------------------------------------------------ */
   const pk = await client.query(
     `SELECT tc.constraint_name,
@@ -159,6 +160,10 @@ const ddl = async (schema, table, client) => {
     language: 'postgresql'
   });
   return formattedSql;
+  } catch (error) {
+    console.error(`Error generating DDL for ${schema}.${table}:`, error.message);
+    throw new Error(`Failed to generate DDL for table ${table}: ${error.message}`);
+  }
 }
 
 module.exports = {

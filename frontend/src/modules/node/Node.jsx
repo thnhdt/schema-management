@@ -12,7 +12,7 @@ import { getAllNodes, createNode, editNode, deleteNode } from '../../api';
 import '../../App.css';
 import AddDatabaseInNode from '../database/ModalAddDatabase';
 import { useSelector } from 'react-redux';
-import ModalCompareFunction from '../../components/Compare/Modal-Compare-Function';
+import ModalCompareFunction from '../../modules/Compare/Modal-Compare-Function';
 
 const { Title, Text } = Typography;
 

@@ -6,12 +6,10 @@ const databaseService = require('../services/database.service');
 
 const test = async (reqBody) => {
   const { id } = reqBody;
-  const sequelizeDatatabase = await databaseService.connectToDatabase({ id });
-  // const [rows] = await POOLMAP.get(id).sequelize.query(
-  const [rows] = await sequelizeDatatabase.query(
+  const sequelizeDatabase = await databaseService.connectToDatabase({ id });
+  const [rows] = await sequelizeDatabase.query(
     `SELECT * from users;`
   );
-  await sequelizeDatatabase.close();
   return {
     code: 200,
     metaData: {
@@ -19,13 +17,11 @@ const test = async (reqBody) => {
     }
   }
 }
-// get schema cho từng table
+
 const createSchema = async (reqBody) => {
   const { schema, tableName, id } = reqBody;
-  // if (!POOLMAP.has(id)) throw new BadResponseError("Chưa kết nối với database!");
   const sequelizeDatatabase = await databaseService.connectToDatabase({ id });
   const ddlText = await ddl(schema, tableName, sequelizeDatatabase);
-  await sequelizeDatatabase.close();
   return {
     code: 200,
     metaData: {
@@ -33,12 +29,10 @@ const createSchema = async (reqBody) => {
     }
   }
 }
+
 const getAllTables = async (reqBody) => {
   const { schema, id } = reqBody;
-  // const client = POOLMAP.get(id).sequelize;
-  // if (!client) throw new BadResponseError("Chưa kết nối với database!");
   const client = await databaseService.connectToDatabase({ id });
-  // kết quả sẽ là {table_name, columns}
   const allTables = await client.query(
     `SELECT
   table_name,         
@@ -52,9 +46,13 @@ const getAllTables = async (reqBody) => {
       type: QueryTypes.SELECT
     }
   );
-  const allSqlSchema = await Promise.all(allTables.map(async table => ({ ...table, text: await ddl("public", table.table_name, client) })));
-  // const allSqlSchema = await Promise.all(allTables.map(async table => ({ tableName: table, columns: await getCountColumns({ schema: 'public', tableName: table, id }) })));
-  await client.close();
+  
+  const allSqlSchema = [];
+  for (const table of allTables) {
+    const text = await ddl("public", table.table_name, client);
+    allSqlSchema.push({ ...table, text });
+  }
+  
   return {
     code: 200,
     metaData: {
@@ -65,8 +63,6 @@ const getAllTables = async (reqBody) => {
 
 const getAllDdlText = async (reqBody) => {
   const { schema, id } = reqBody;
-  // const client = POOLMAP.get(id).sequelize;
-  // if (!client) throw new BadResponseError("Chưa kết nối đến database !");
   const client = await databaseService.connectToDatabase({ id });
   const allTables = await client.query(
     `SELECT table_name as \"tableName\"
@@ -78,9 +74,13 @@ const getAllDdlText = async (reqBody) => {
       type: QueryTypes.SELECT
     }
   );
-  const allSqlSchema = await Promise.all(allTables.map(table => ddl("public", table.tableName, client)));
+  
+  const allSqlSchema = [];
+  for (const table of allTables) {
+    const ddlText = await ddl("public", table.tableName, client);
+    allSqlSchema.push(ddlText);
+  }
   const schemaSql = allSqlSchema.join('\n');
-  await client.close();
   return {
     code: 200,
     metaData: {
@@ -90,8 +90,6 @@ const getAllDdlText = async (reqBody) => {
 };
 const getCountColumns = async (reqBody) => {
   const { schema, tableName, id } = reqBody;
-  // const client = POOLMAP.get(id).sequelize;
-  // if (!client) throw new BadResponseError("Chưa kết nối đến database !");
   const client = await databaseService.connectToDatabase({ id });
   const countColumns = await client.query(
     `SELECT
@@ -105,24 +103,17 @@ const getCountColumns = async (reqBody) => {
       type: QueryTypes.SELECT
     }
   );
-  await client.close();
   return countColumns[0];
 };
 
 const dropColumn = async ({ id, tableName, columnName, schema = 'public' }) => {
-  // if (!POOLMAP.has(id)) throw new BadResponseError('Chưa kết nối với database!');
-  // const sequelize = POOLMAP.get(id).sequelize;
   const sequelize = await databaseService.connectToDatabase({ id });
-  // Sử dụng schema nếu có
   const fullTableName = schema ? `"${schema}"."${tableName}"` : `"${tableName}"`;
   await sequelize.query(`ALTER TABLE ${fullTableName} DROP COLUMN "${columnName}";`);
-  await sequelize.close();
   return { code: 200, metaData: { message: `Đã xóa cột ${columnName} khỏi bảng ${tableName}` } };
 };
 
 const deleteRow = async ({ id, tableName, schema = 'public', where }) => {
-  // if (!POOLMAP.has(id)) throw new BadResponseError('Chưa kết nối với database!');
-  // const sequelize = POOLMAP.get(id).sequelize;
   const sequelize = await databaseService.connectToDatabase({ id });
   const fullTableName = schema ? `"${schema}"."${tableName}"` : `"${tableName}"`;
   const keys = Object.keys(where);
@@ -132,23 +123,17 @@ const deleteRow = async ({ id, tableName, schema = 'public', where }) => {
     `DELETE FROM ${fullTableName} WHERE ${conditions};`,
     { replacements: where }
   );
-  await sequelize.close();
   return { code: 200, metaData: { message: `Đã xóa hàng trong bảng ${tableName}` } };
 };
 
 const dropTable = async ({ id, tableName, schema = 'public' }) => {
-  // if (!POOLMAP.has(id)) throw new BadResponseError('Chưa kết nối với database!');
-  // const sequelize = POOLMAP.get(id).sequelize;
   const sequelize = await databaseService.connectToDatabase({ id });
   const fullTableName = schema ? `"${schema}"."${tableName}"` : `"${tableName}"`;
   await sequelize.query(`DROP TABLE IF EXISTS ${fullTableName} CASCADE;`);
-  await sequelize.close();
   return { code: 200, metaData: { message: `Đã xóa bảng ${tableName}` } };
 };
 
 const getColumns = async ({ id, tableName, schema = 'public' }) => {
-  // if (!POOLMAP.has(id)) throw new BadResponseError('Chưa kết nối với database!');
-  // const sequelize = POOLMAP.get(id).sequelize;
   const sequelize = await databaseService.connectToDatabase({ id });
   const columns = await sequelize.query(
     `SELECT column_name FROM information_schema.columns WHERE table_schema = :schema AND table_name = :tableName;`,
@@ -157,16 +142,8 @@ const getColumns = async ({ id, tableName, schema = 'public' }) => {
       type: QueryTypes.SELECT
     }
   );
-  await sequelize.close();
   return { code: 200, metaData: { columns: columns.map(col => col.column_name) } };
 };
-
-// {
-//   "id": "<databaseId>",
-//   "tableName": "<tên_bảng>",
-//   "columnName": "<tên_cột>",
-//   "schema": "public" // (tùy chọn, mặc định là public)
-// }
 
 module.exports = {
   test,

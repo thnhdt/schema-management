@@ -9,11 +9,8 @@ const databaseModel = require('../models/database.model');
 
 const getAllFunctions = async (reqBody) => {
   const { schema, id } = reqBody;
-  // if (!POOLMAP.has(id)) throw new BadResponseError("Chưa kết nối với database!");
-  const sequelizeDatatabase = await databaseService.connectToDatabase({ id });
-
-  // const allFunction = await POOLMAP.get(id).sequelize.query(
-  const allFunction = await sequelizeDatatabase.query(
+  const sequelizeDatabase = await databaseService.connectToDatabase({ id });
+  const allFunction = await sequelizeDatabase.query(
     `WITH func AS (
     SELECT
         p.oid,
@@ -54,7 +51,6 @@ ORDER BY "functionSchema", "functionName";`,
     }
   );
   const targetAllFunction = allFunction.map(item => ({ ...item, definition: item.definition.replace(/\r\n/g, '\n') }));
-  await sequelizeDatatabase.close();
   return {
     code: 200,
     metaData: {
@@ -64,12 +60,9 @@ ORDER BY "functionSchema", "functionName";`,
 };
 
 const dropFunction = async ({ id, functionName, args = '', schema = 'public' }) => {
-  // if (!POOLMAP.has(id)) throw new BadResponseError('Chưa kết nối với database!');
-  // const sequelize = POOLMAP.get(id).sequelize;
-  const sequelizeDatatabase = await databaseService.connectToDatabase({ id });
+  const sequelizeDatabase = await databaseService.connectToDatabase({ id });
   const fullFunctionName = schema ? `"${schema}"."${functionName}"` : `"${functionName}"`;
-  await sequelizeDatatabase.query(`DROP FUNCTION IF EXISTS ${fullFunctionName}(${args});`);
-  await sequelizeDatatabase.close();
+  await sequelizeDatabase.query(`DROP FUNCTION IF EXISTS ${fullFunctionName}(${args});`);
   return { code: 200, metaData: { message: `Đã xóa function ${functionName}` } };
 };
 

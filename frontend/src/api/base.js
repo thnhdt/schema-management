@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { store } from '../store';
 import { message } from 'antd';
+import { createBrowserHistory } from 'history';
+import { persistor } from '../store';
 
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_BACKEND_URL}/api`,
@@ -30,6 +32,7 @@ api.interceptors.request.use(
 
 let isRefreshing = false;
 let queue = [];
+const history = createBrowserHistory();
 
 const processQueue = (error, token = null) => {
   queue.forEach(prom => {
@@ -65,7 +68,7 @@ api.interceptors.response.use(
 
       isRefreshing = true;
       try {
-        const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/user/refresh-token`, null, { withCredentials: true });
+        const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/user/refresh-token`, {}, { withCredentials: true });
         const newToken = res.data.metaData.tokens.accessToken;
         const state = store.getState();
         const userId = state.user.userId;
@@ -85,7 +88,9 @@ api.interceptors.response.use(
         processQueue(err);
         queue = [];
         store.dispatch({ type: 'user/logout' });
-        window.location.replace('/');
+        sessionStorage.removeItem('userId');
+        persistor.purge();
+        history.replace('/');
         return Promise.reject(err);
       } finally {
         isRefreshing = false;
@@ -96,7 +101,9 @@ api.interceptors.response.use(
       processQueue(error);
       setTimeout(() => {
         store.dispatch({ type: 'user/logout' });
-        window.location.replace('/');
+        sessionStorage.removeItem('userId');
+        persistor.purge();
+        history.replace('/');
       }, 2000);
     }
     else if (!error.response) {

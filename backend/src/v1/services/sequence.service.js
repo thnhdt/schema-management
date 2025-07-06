@@ -2,9 +2,9 @@ const { POOLMAP } = require('./database.service');
 const { BadResponseError } = require('../cores/error.response');
 const { QueryTypes } = require('sequelize');
 const databaseService = require('../services/database.service');
+
 const getAllSequences = async (reqBody) => {
   const { schema, id } = reqBody;
-  // if (!POOLMAP.has(id)) throw new BadResponseError("Chưa kết nối với database!");
   const sequelizeDatabase = await databaseService.connectToDatabase({ id });
   const allSequence = await sequelizeDatabase.query(
     `SELECT sequence_schema,
@@ -20,7 +20,6 @@ ORDER  BY sequence_schema, sequence_name;`,
       type: QueryTypes.SELECT
     }
   );
-  await sequelizeDatabase.close();
   return {
     code: 200,
     metaData: {
@@ -30,12 +29,9 @@ ORDER  BY sequence_schema, sequence_name;`,
 }
 
 const dropSequence = async ({ id, sequenceName, schema = 'public' }) => {
-  // if (!POOLMAP.has(id)) throw new BadResponseError('Chưa kết nối với database!');
-  // const sequelize = POOLMAP.get(id).sequelize;
   const sequelize = await databaseService.connectToDatabase({ id });
   const fullSequenceName = schema ? `"${schema}"."${sequenceName}"` : `"${sequenceName}"`;
   await sequelize.query(`DROP SEQUENCE IF EXISTS ${fullSequenceName};`);
-  await sequelize.close();
   return { code: 200, metaData: { message: `Đã xóa sequence ${sequenceName}` } };
 };
 
