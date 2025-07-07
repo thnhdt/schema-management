@@ -17,8 +17,8 @@ const ModalCompareComponent = (props) => {
   const [selectedCurrentDb, setSelectedCurrentDb] = useState(null);
   const [compareType, setCompareType] = useState('function');
   const compareTypeOptions = [
+    { value: 'function', label: 'Functions' },
     { value: 'table', label: 'Tables' },
-    { value: 'function', label: 'Functions' }
   ];
   const onOk = () => {
     navigate(
@@ -87,7 +87,7 @@ const ModalCompareComponent = (props) => {
               <span>Database Diff</span>
             </Space>
           }
-          style={{ maxWidth: "100%", margin: '1.5rem auto', boxShadow: '0 4px 20px rgba(0,0,0,.05)' }}
+          style={{ width: "100%", margin: '1.5rem auto', boxShadow: '0 4px 20px rgba(0,0,0,.05)' }}
         >
           <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>
             Chọn <strong>database hiện tại</strong> và <strong>database đích</strong> để tiếp tục thao tác.
@@ -102,6 +102,7 @@ const ModalCompareComponent = (props) => {
                     options={compareTypeOptions}
                     onChange={setCompareType}
                     dropdownStyle={{ borderRadius: 12 }}
+                    style={{ maxWidth: '8rem' }}
                   />
                 </Form.Item>
               </Col>
@@ -113,8 +114,9 @@ const ModalCompareComponent = (props) => {
                   label="Current Database"
                   rules={[{ required: true, message: 'Bắt buộc chọn!' }]}
                 >
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <Select
+                      style={{ flex: 1, minWidth: 0 }}
                       size="medium"
                       placeholder="Chọn host đích"
                       suffixIcon={<DatabaseOutlined />}
@@ -126,6 +128,7 @@ const ModalCompareComponent = (props) => {
                       onChange={(value) => handleChangeCurrentDb(value)}
                     />
                     <Select
+                      style={{ flex: 1, minWidth: 0 }}
                       size="medium"
                       placeholder="Chọn database đích"
                       suffixIcon={<DatabaseOutlined />}
@@ -146,9 +149,9 @@ const ModalCompareComponent = (props) => {
                   label="Target Database"
                   rules={[{ required: true, message: 'Bắt buộc chọn!' }]}
                 >
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <Select
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, minWidth: 0 }}
                       size="medium"
                       placeholder="Chọn host hiện tại"
                       suffixIcon={<DatabaseOutlined />}
@@ -160,7 +163,7 @@ const ModalCompareComponent = (props) => {
                       onChange={(value) => handleChangeTargetDb(value)}
                     />
                     <Select
-                      style={{ flex: 1 }}           // chiếm nửa phải
+                      style={{ flex: 1, minWidth: 0 }}           // chiếm nửa phải
                       size="medium"
                       placeholder="Chọn database hiện tại"
                       suffixIcon={<DatabaseOutlined />}

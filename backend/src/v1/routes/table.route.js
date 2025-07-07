@@ -2,9 +2,12 @@ const express = require("express");
 const tableController = require('../controllers/table.controller.js');
 const tableRouter = express.Router();
 const { handlerError } = require('../utils/handle-error.util.js');
-const { authentication } = require('../utils/auth.utils.js');
+const { authentication, checkPermissionDatabase } = require('../utils/auth.utils.js');
 
-// tableRouter.use(authentication)
+tableRouter.use(authentication)
+// tableRouter.use(checkPermissionDatabase)
+
+
 tableRouter.route('/get-all-tables')
   .get(handlerError(tableController.getAllTables))
 

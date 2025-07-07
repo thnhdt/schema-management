@@ -1,8 +1,9 @@
 const jwt = require('jsonwebtoken');
 const { handlerError } = require('../utils/handle-error.util');
 const env = require('../config/environment')
-
-const { AuthFailureError, ForbiddenError } = require('../cores/error.response');
+const userModel = require('../models/user.model');
+const roleModel = require('../models/role.model');
+const { AuthFailureError, ForbiddenError, BadResponseError } = require('../cores/error.response');
 const HEADER = {
   CLIENT_ID: 'userid',
   AUTHORIZATION: 'authorization',
@@ -34,13 +35,15 @@ const authentication = handlerError(async (req, res, next) => {
   const authHeader = req.headers[HEADER.AUTHORIZATION];
 
   const accessToken = authHeader.split(' ')[1];
-  console.log(accessToken);
   if (!checkRefreshToken) throw new ForbiddenError("Phiên đăng nhập hết hạn!");
   if (!accessToken) throw new AuthFailureError("Access token hết hạn!");
   try {
     const decoder = jwt.verify(accessToken, env.SECRET_KEY);
     if (userId !== decoder.userId) throw new AuthFailureError("UserId is error !");
-    req.user = decoder
+    const userRoles = decoder.roles;
+    // const userPermissions = await Promise.all(userRoles.map(role => roleModel.findById(role)));
+    // req.user = { ...decoder, userPermissions };
+    req.user = { ...decoder };
     return (next())
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
@@ -49,8 +52,59 @@ const authentication = handlerError(async (req, res, next) => {
     throw new Error(error)
   }
 });
+
+const checkPermissionDatabase = handlerError(async (req, res, next) => {
+  const userPermissions = req.user.userPermissions;
+  try {
+    const { id } = req.body?.id ? req.body : req.query;
+    console.log(id, userPermissions);
+    if (
+      !Array.isArray(userPermissions) ||
+      !userPermissions.some(p =>
+        Array.isArray(p.permissions) &&
+        p.permissions.some(item => item?.databaseId?.toString() === id)
+      )
+    ) {
+      throw new BadResponseError("Bạn không có quyền truy cập lên database này !");
+    }
+    return (next())
+  } catch (error) {
+    throw new Error(error)
+  }
+});
+
+const checkPermissionTable = handlerError(async (req, res, next) => {
+  const userPermissions = req.user.userPermissions;
+  let permissionOnDB = {};
+  let canUpdateTable = false;
+  let canUpdateFunction = false;
+  try {
+    const { id } = req.body?.id ? req.body : req.query;
+    console.log(id, userPermissions);
+    if (
+      Array.isArray(userPermissions) &&
+      userPermissions.some(p =>
+        Array.isArray(p.permissions) &&
+        p.permissions.some(item => {
+          permissionOnDB = item;
+          return item?.databaseId?.toString() === id
+        })
+      )
+    ) {
+      canUpdateTable = permissionOnDB?.ops.include('update-table');
+      canUpdateFunction = permissionOnDB?.ops.include('update-function');
+    }
+    req.canUpdateTable = canUpdateTable
+    req.canUpdateFunction = canUpdateFunction
+    return (next())
+  } catch (error) {
+    throw new Error(error)
+  }
+});
+
 module.exports = {
   createTokenPair,
   verifyJWT,
-  authentication
+  authentication,
+  checkPermissionDatabase
 }

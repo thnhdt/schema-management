@@ -15,7 +15,8 @@ const signUp = async (dataCreated) => {
   const hashPassword = await bcrypt.hash(dataCreated.password, salt);
   const newUser = await userModel.create({ ...dataCreated, password: hashPassword });
   if (newUser) {
-    const tokens = await createTokenPair({ userId: newUser._id, email }, env.SECRET_KEY)
+    // sign access token va refresh token
+    const tokens = await createTokenPair({ userId: newUser._id, email, roles: newUser.roles }, env.SECRET_KEY)
     return {
       code: 201,
       metaData: {
@@ -44,7 +45,8 @@ const login = async ({ email, password, refreshToken = null }) => {
   if (!isMatchPassword) {
     throw new BadResponseError("Error: PassWord is incorrect !");
   }
-  const tokens = await createTokenPair({ userId: targetUser._id, email }, env.SECRET_KEY);
+  //tao 2 access token va refresh token
+  const tokens = await createTokenPair({ userId: targetUser._id, email, roles: targetUser.roles }, env.SECRET_KEY);
   return {
     metaData: {
       user: {

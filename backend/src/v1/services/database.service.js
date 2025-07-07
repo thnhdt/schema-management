@@ -8,7 +8,7 @@ const POOLMAP = new Map();
 setInterval(() => {
   const now = Date.now();
   const fiveMinutes = 5 * 60 * 1000;
-  
+
   for (const [id, connection] of POOLMAP.entries()) {
     if (now - connection.lastUsed > fiveMinutes) {
       console.log(`Cleaning up old connection for database ${id}`);
@@ -84,23 +84,6 @@ const connectToDatabase = async (reqBody) => {
   if (!targetDatabase) throw new NotFoundError("Không tồn tại database!");
   const targetNode = await nodeModel.findById(targetDatabase.nodeId).lean();
   if (!targetNode) throw new NotFoundError("Không tồn tại node!");
-  if (POOLMAP.has(id)) {
-    const poolConnection = POOLMAP.get(id);
-    try {
-      await poolConnection.sequelize.authenticate();
-      poolConnection.lastUsed = Date.now();
-      return poolConnection.sequelize;
-    } catch (error) {
-      console.log('Connection validation failed, removing from pool:', error.message);
-      try {
-        await poolConnection.sequelize.close();
-      } catch (closeError) {
-        console.log('Error closing invalid connection:', closeError.message);
-      }
-      POOLMAP.delete(id);
-    }
-  }
-  
   const sequelize = new Sequelize(
     targetDatabase.database,
     targetDatabase.username,
@@ -109,35 +92,21 @@ const connectToDatabase = async (reqBody) => {
       host: targetNode.host,
       port: Number(targetNode.port),
       dialect: 'postgres',
-      pool: { 
-        max: 5, 
-        min: 0, 
-        idle: 30000,
-        acquire: 60000,
-        evict: 30000
-      },
+      pool: { max: 10, min: 0, idle: 10_000 },
       logging: false,
-      retry: {
-        max: 3,
-        timeout: 10000
-      }
     }
   );
-  
-  try {
-    await sequelize.authenticate();
-    POOLMAP.set(id, { sequelize, lastUsed: Date.now() });
-    await databaseModel.findOneAndUpdate(
-      { _id: new mongoose.Types.ObjectId(id) }, 
-      { status: 'active' }, 
-      { new: true }
-    );
-    
-    return sequelize;
-  } catch (error) {
-    console.error('Failed to connect to database:', error.message);
-    throw new BadResponseError(`Không thể kết nối đến database: ${error.message}`);
-  }
+  await sequelize.authenticate();
+  // await POOLMAP.set(id, { sequelize, lastUsed: Date.now() });
+  // const updateDatabase = await databaseModel.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, { status: 'active' }, { new: true });
+  // return {
+  //   code: 200,
+  //   metaData: {
+  //     message: "Connect thành công!",
+  //     updateData: updateDatabase
+  //   }
+  // }
+  return sequelize;
 };
 
 const connectToDatabaseForResponse = async (reqBody) => {
@@ -146,7 +115,7 @@ const connectToDatabaseForResponse = async (reqBody) => {
   if (!targetDatabase) throw new NotFoundError("Không tồn tại database!");
   const targetNode = await nodeModel.findById(targetDatabase.nodeId).lean();
   if (!targetNode) throw new NotFoundError("Không tồn tại node!");
-  
+
   const sequelize = new Sequelize(
     targetDatabase.database,
     targetDatabase.username,
@@ -162,11 +131,11 @@ const connectToDatabaseForResponse = async (reqBody) => {
   await sequelize.authenticate();
   POOLMAP.set(id, { sequelize, lastUsed: Date.now() });
   const updateDatabase = await databaseModel.findOneAndUpdate(
-    { _id: new mongoose.Types.ObjectId(id) }, 
-    { status: 'active' }, 
+    { _id: new mongoose.Types.ObjectId(id) },
+    { status: 'active' },
     { new: true }
   );
-  
+
   return {
     code: 200,
     metaData: {

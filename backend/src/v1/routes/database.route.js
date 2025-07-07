@@ -2,9 +2,10 @@ const express = require("express");
 const databaseController = require('../controllers/database.controller.js');
 const databaseRouter = express.Router();
 const { handlerError } = require('../utils/handle-error.util.js');
-const { authentication } = require('../utils/auth.utils.js');
+const { authentication, checkPermissionDatabase } = require('../utils/auth.utils.js');
 
-// databaseRouter.use(authentication);
+databaseRouter.use(authentication);
+// databaseRouter.use(checkPermissionDatabase);
 
 databaseRouter.route('/connect-database')
   .post(handlerError(databaseController.connectToDatabase))

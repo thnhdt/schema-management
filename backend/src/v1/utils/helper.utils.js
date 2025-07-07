@@ -49,9 +49,9 @@ const ddl = async (schema, table, client) => {
         type: QueryTypes.SELECT
       }
     );
-  /* ---------- PRIMARY KEY ------------------------------------------------ */
-  const pk = await client.query(
-    `SELECT tc.constraint_name,
+    /* ---------- PRIMARY KEY ------------------------------------------------ */
+    const pk = await client.query(
+      `SELECT tc.constraint_name,
           string_agg(kcu.column_name, ', ') AS cols
      FROM information_schema.table_constraints      tc
      JOIN information_schema.key_column_usage       kcu
@@ -61,15 +61,15 @@ const ddl = async (schema, table, client) => {
       AND tc.table_name     = :table
       AND tc.constraint_type = 'PRIMARY KEY'
     GROUP BY tc.constraint_name`,
-    {
-      replacements: { schema, table },
-      type: QueryTypes.SELECT
-    }
-  );
+      {
+        replacements: { schema, table },
+        type: QueryTypes.SELECT
+      }
+    );
 
-  /* ---------- UNIQUE CONSTRAINTS ---------------------------------------- */
-  const uniq = await client.query(
-    `SELECT tc.constraint_name,
+    /* ---------- UNIQUE CONSTRAINTS ---------------------------------------- */
+    const uniq = await client.query(
+      `SELECT tc.constraint_name,
           string_agg(kcu.column_name, ', ') AS cols
      FROM information_schema.table_constraints      tc
      JOIN information_schema.key_column_usage       kcu
@@ -79,15 +79,15 @@ const ddl = async (schema, table, client) => {
       AND tc.table_name     = :table
       AND tc.constraint_type = 'UNIQUE'
     GROUP BY tc.constraint_name`,
-    {
-      replacements: { schema, table },
-      type: QueryTypes.SELECT
-    }
-  );
+      {
+        replacements: { schema, table },
+        type: QueryTypes.SELECT
+      }
+    );
 
-  /* ---------- FOREIGN KEYS ---------------------------------------------- */
-  const fks = await client.query(
-    `SELECT tc.constraint_name,
+    /* ---------- FOREIGN KEYS ---------------------------------------------- */
+    const fks = await client.query(
+      `SELECT tc.constraint_name,
           string_agg(kcu.column_name, ', ') AS cols,
           ccu.table_schema                  AS ref_schema,
           ccu.table_name                    AS ref_table,
@@ -103,15 +103,15 @@ const ddl = async (schema, table, client) => {
       AND tc.table_name     = :table
       AND tc.constraint_type = 'FOREIGN KEY'
     GROUP BY tc.constraint_name, ccu.table_schema, ccu.table_name`,
-    {
-      replacements: { schema, table },
-      type: QueryTypes.SELECT
-    }
-  );
+      {
+        replacements: { schema, table },
+        type: QueryTypes.SELECT
+      }
+    );
 
-  /* ---------- CHECK CONSTRAINTS ----------------------------------------- */
-  const checks = await client.query(
-    `SELECT cc.constraint_name,
+    /* ---------- CHECK CONSTRAINTS ----------------------------------------- */
+    const checks = await client.query(
+      `SELECT cc.constraint_name,
           cc.check_clause
      FROM information_schema.table_constraints tc
      JOIN information_schema.check_constraints cc
@@ -120,48 +120,48 @@ const ddl = async (schema, table, client) => {
     WHERE tc.table_schema   = :schema
       AND tc.table_name     = :table
       AND tc.constraint_type = 'CHECK'`,
-    {
-      replacements: { schema, table },
-      type: QueryTypes.SELECT
-    }
-  );
+      {
+        replacements: { schema, table },
+        type: QueryTypes.SELECT
+      }
+    );
 
-  const colLines = cols.map((c) => {
-    const parts = [
-      `  "${c.column_name}"`,
-      fmtType(c),
-      c.column_default ? `DEFAULT ${c.column_default}` : "",
-      c.is_nullable === "NO" ? "NOT NULL" : "",
-    ].filter(Boolean);
-    return parts.join(" ");
-  });
+    const colLines = cols.map((c) => {
+      const parts = [
+        `  "${c.column_name}"`,
+        fmtType(c),
+        c.column_default ? `DEFAULT ${c.column_default}` : "",
+        c.is_nullable === "NO" ? "NOT NULL" : "",
+      ].filter(Boolean);
+      return parts.join(" ");
+    });
 
-  const pkLines = pk.map((r) =>
-    `  CONSTRAINT "${r.constraint_name}" PRIMARY KEY (${r.cols})`
-  );
+    const pkLines = pk.map((r) =>
+      `  CONSTRAINT "${r.constraint_name}" PRIMARY KEY (${r.cols})`
+    );
 
-  const uniqLines = uniq.map((r) =>
-    `  CONSTRAINT "${r.constraint_name}" UNIQUE (${r.cols})`
-  );
+    const uniqLines = uniq.map((r) =>
+      `  CONSTRAINT "${r.constraint_name}" UNIQUE (${r.cols})`
+    );
 
-  const fkLines = fks.map((r) =>
-    `  CONSTRAINT "${r.constraint_name}" FOREIGN KEY (${r.cols}) REFERENCES "${r.ref_schema}"."${r.ref_table}" (${r.ref_cols})`
-  );
+    const fkLines = fks.map((r) =>
+      `  CONSTRAINT "${r.constraint_name}" FOREIGN KEY (${r.cols}) REFERENCES "${r.ref_schema}"."${r.ref_table}" (${r.ref_cols})`
+    );
 
-  const chkLines = checks.map((r) =>
-    `  CONSTRAINT "${r.constraint_name}" CHECK (${r.check_clause})`
-  );
+    const chkLines = checks.map((r) =>
+      `  CONSTRAINT "${r.constraint_name}" CHECK (${r.check_clause})`
+    );
 
-  const lines = [...colLines, ...pkLines, ...uniqLines, ...fkLines, ...chkLines];
-  const ddl = `CREATE TABLE "${schema}"."${table}" (
+    const lines = [...colLines, ...pkLines, ...uniqLines, ...fkLines, ...chkLines];
+    const ddl = `CREATE TABLE "${schema}"."${table}" (
 ` + lines.join(',') + `);`;
 
-  const rawSql = unescapeSqlString(ddl.replace(/^"|"$/g, ''));
+    const rawSql = unescapeSqlString(ddl.replace(/^"|"$/g, ''));
 
-  const formattedSql = format(rawSql, {
-    language: 'postgresql'
-  });
-  return formattedSql;
+    const formattedSql = format(rawSql, {
+      language: 'postgresql'
+    });
+    return formattedSql;
   } catch (error) {
     console.error(`Error generating DDL for ${schema}.${table}:`, error.message);
     throw new Error(`Failed to generate DDL for table ${table}: ${error.message}`);
@@ -224,7 +224,6 @@ const getAllUpdateBetweenDatabases = (
 });
 
 const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapTables) => {
-  console.log("mapTables", mapTables);
   const targetDatabaseUrl = await getStringUrl(targetDatabaseId);
   const currentDatabaseUrl = await getStringUrl(currentDatabaseId);
   // console.log(targetDatabaseUrl, currentDatabaseUrl);
@@ -249,7 +248,6 @@ const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapT
       }
     }
   }
-  console.log("hehehe", targetDatabaseUrl.database, currentDatabaseUrl.database)
   return {
     mapTables,
     targetDatabase: targetDatabaseUrl.database,

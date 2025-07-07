@@ -67,13 +67,13 @@ const getAllTables = async (reqBody) => {
       type: QueryTypes.SELECT
     }
   );
-  
+
   const allSqlSchema = [];
   for (const table of allTables) {
     const text = await ddl("public", table.table_name, client);
     allSqlSchema.push({ ...table, text });
   }
-  
+
   return {
     code: 200,
     metaData: {
@@ -114,7 +114,7 @@ const getAllDdlText = async (reqBody) => {
       type: QueryTypes.SELECT
     }
   );
-  
+
   const allSqlSchema = [];
   for (const table of allTables) {
     const ddlText = await ddl("public", table.tableName, client);

@@ -27,7 +27,7 @@ const TableCompareComponent = () => {
   const currentDatabaseId = searchParams.get('currentDatabaseId');
   const { Title, Paragraph, Text } = Typography;
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [updateData, setUpdateData] = useState([]);
   const [currentDatabase, setCurrentDatabase] = useState(null);
   const [targetDatabase, setTargetDatabase] = useState(null);
