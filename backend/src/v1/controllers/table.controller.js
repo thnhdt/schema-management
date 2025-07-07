@@ -41,7 +41,7 @@ const dropTable = async (req, res, next) => {
 };
 const getColumns = async (req, res, next) => {
   const result = await tableService.getColumns(req.query);
-  new SucessReponse({ metaData: reslut }).send(res);
+  new SucessReponse({ metaData: result }).send(res);
 };
 const getAllUpdateOnTables = async (req, res, next) => {
   const result = await tableService.getAllUpdateOnTables(req.body);

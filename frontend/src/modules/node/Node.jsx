@@ -177,23 +177,22 @@ const Node = () => {
               onClick={() => handleViewDatabase(record)}
             />
           </Tooltip> */}
+          <Tooltip title="Thêm và xem database">
+            <Button
+              type="primary"
+              icon={<EyeOutlined />}
+              onClick={() => {
+                setNodeIdAddDatabase(record._id);
+                setVisible(true);
+                setDatabases(record.databases);
+                setUrlString(
+                  `postgres://${record.username}:${record.password}@${record.host}:${record.port}`,
+                );
+              }}
+            />
+          </Tooltip>
           {isAdmin && (
             <>
-              <Tooltip title="Thêm và xem database">
-                <Button
-                  type="primary"
-                  icon={<EyeOutlined />}
-                  onClick={() => {
-                    setNodeIdAddDatabase(record._id);
-                    setVisible(true);
-                    setDatabases(record.databases);
-                    setUrlString(
-                      `postgres://${record.username}:${record.password}@${record.host}:${record.port}`,
-                    );
-                  }}
-                />
-              </Tooltip>
-
               <Tooltip title="Chỉnh sửa">
                 <Button
                   color="green"
