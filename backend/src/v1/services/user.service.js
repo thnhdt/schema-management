@@ -104,6 +104,9 @@ const deleteUser = async (_id) => {
   return deleted;
 }
 
+
+// permission : mảng các id của database, có thể set quyền host -> username + tên databaese  -> UI, do quyền chỉnh sửa 
+// DB dựa trên quyền của user name GRANT quyền ở dưới DB
 module.exports = {
   signUp,
   login,

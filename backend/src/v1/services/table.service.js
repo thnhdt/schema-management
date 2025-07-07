@@ -3,6 +3,28 @@ const { BadResponseError } = require('../cores/error.response');
 const { ddl } = require('../utils/helper.utils');
 const { QueryTypes } = require('sequelize');
 const databaseService = require('../services/database.service');
+const { getAllUpdateOnTableUtil } = require('../utils/helper.utils');
+
+const mergeTables = (arrTableTarget, arrTableCurrent) => {
+  const map = new Map();
+
+  for (const fn of arrTableTarget) {
+    const key = `${fn.table_name}`;
+    map.set(key, { left: fn, right: null });
+  }
+
+  for (const fn of arrTableCurrent) {
+    const key = `${fn.table_name}`;
+    if (map.has(key)) {
+      map.get(key).right = fn;
+    }
+    else {
+      map.set(key, { left: null, right: fn });
+    }
+  }
+  // return Array.from(map.values());
+  return map;
+}
 
 const test = async (reqBody) => {
   const { id } = reqBody;
@@ -60,7 +82,26 @@ const getAllTables = async (reqBody) => {
     }
   }
 };
-
+const getAllUpdateOnTables = async (reqBody) => {
+  const { targetDatabaseId, currentDatabaseId } = reqBody;
+  const defaultAllTablesInTargetDB = await getAllTables({ schema: 'public', id: targetDatabaseId });
+  const defaultAllTablesInCurrentDB = await getAllTables({ schema: 'public', id: currentDatabaseId });
+  const allTablesInTargetDB = defaultAllTablesInTargetDB.metaData.data;
+  const allTablesInCurrentDB = defaultAllTablesInCurrentDB.metaData.data;
+  const mapTables = mergeTables(allTablesInTargetDB, allTablesInCurrentDB);
+  const sqlUpdateSchemaTables = await getAllUpdateOnTableUtil(targetDatabaseId, currentDatabaseId, mapTables);
+  const result = Array.from(sqlUpdateSchemaTables.mapTables, ([key, value]) => ({
+    key,
+    ...value
+  }));
+  console.log("hahahahaha", sqlUpdateSchemaTables.targetTable, sqlUpdateSchemaTables.currentTable)
+  return {
+    code: 200,
+    allUpdate: result,
+    targetDB: sqlUpdateSchemaTables.targetDatabase,
+    currentDB: sqlUpdateSchemaTables.currentDatabase
+  }
+}
 const getAllDdlText = async (reqBody) => {
   const { schema, id } = reqBody;
   const client = await databaseService.connectToDatabase({ id });
@@ -154,5 +195,6 @@ module.exports = {
   dropColumn,
   deleteRow,
   dropTable,
-  getColumns
+  getColumns,
+  getAllUpdateOnTables
 }

@@ -135,3 +135,19 @@ body,
 .custom-diff-table .diff-line td:nth-child(3) {
   border-left: 0.4rem solid #5d6062;
 }
+
+.dark-btn.ant-btn {
+  background: #1f1f1f;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
+  transition: background .25s;
+}
+
+
+.dark-btn.ant-btn:hover,
+.dark-btn.ant-btn:focus {
+  background: #3d3d3d !important;
+  color: #f7f7f7 !important;
+}

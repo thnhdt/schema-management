@@ -9,8 +9,8 @@ const CompareComponent = () => {
   const location = useLocation();
   const {
     key,
-    ddlPrimeFunction = '',
-    ddlSecondFunction = '',
+    ddlPrime = '',
+    ddlSecond = '',
     patch = '',
     targetDatabase = '',
     currentDatabase = ''
@@ -26,14 +26,13 @@ const CompareComponent = () => {
           <Row gutter={[24, 24]} align="stretch">
             <Col xs={24} md={16} style={{ display: 'flex' }}>
               <Card
-                title="So sánh function"
                 bordered={false}
                 style={{ flex: 1 }}
                 bodyStyle={{ height: '100%', overflow: 'auto', padding: 0 }}
               >
                 <DiffViewer useDarkTheme={false}
-                  oldText={ddlPrimeFunction}
-                  newText={ddlSecondFunction}
+                  oldText={ddlPrime}
+                  newText={ddlSecond}
                   filePrimeTitle={targetDatabase}
                   fileSecondTitle={currentDatabase}
                   styles={{

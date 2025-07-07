@@ -9,62 +9,108 @@ const SOURCE = 'postgres://guest:12345@localhost:5432/project_intern';
 const TARGET = 'postgres://guest:12345@localhost:5432/postgres';
 const SCHEMA = 'public';
 
-const keepTables = ['orders'];
-const keepFuncs = ['get_all_users_by_email_into_cursor_1'];
+// const keepFuncs = ['get_all_users_by_email_into_cursor_1'];
 const OUTPUT_SQL = 'migrate_selected.sql';
 
-const allLines = [];
-dbdiff.logger = (msg) => allLines.push(msg);
 
-dbdiff.compareDatabases(
-  {
-    current: { conn: TARGET, schema: SCHEMA },
-    target: { conn: SOURCE, schema: SCHEMA }
-  },
-  async (err) => {
-    if (err) { console.error('So sánh lỗi:', err); process.exit(1); }
+// function extractTable(line) {
+//   const patterns = [
+//     /(?:create|alter|drop)\s+table\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i,
+//     // /insert\s+into\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i,
+//     /update\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i,
+//     // /delete\s+from\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i
+//   ];
+//   for (const p of patterns) {
+//     const m = line.match(p);
+//     if (m) return m[1].toLowerCase();
+//   }
+//   return null;
+// };
+// const keepTables = ['orders'];
+// const keepSet = new Set(keepTables.map(t => t.toLowerCase()));
+const ddlPatterns = [
+  // ----- TABLE -----
+  { type: 'CREATE', re: /create\s+table\s+(?:if\s+not\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'DELETE', re: /drop\s+table\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'UPDATE', re: /alter\s+table\s+(?:only\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
 
-    const filtered = allLines.filter((l) => {
-      const low = l.toLowerCase();
-      return keepTables.some(t => low.includes(` ${t.toLowerCase()} `) || low.includes(`"${t.toLowerCase()}"`))
-        || keepFuncs.some(f => low.includes(f.toLowerCase()));
-    });
+  // ----- INDEX (→ bảng sau ON) -----
+  { type: 'CREATE', re: /create\s+(?:unique\s+|bitmap\s+)?index\s+["`]?[\w]+["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'DELETE', re: /drop\s+index\s+(?:concurrently\s+)?(?:if\s+exists\s+)?["`]?[\w]+["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
 
-    if (!filtered.length) {
-      console.log('Không có diff cho bảng/hàm được chỉ định.');
-      return;
-    }
+  // ----- SEQUENCE -----
+  { type: 'CREATE', re: /create\s+sequence\s+(?:if\s+not\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'DELETE', re: /drop\s+sequence\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
 
-    fs.writeFileSync(OUTPUT_SQL, filtered.join('\n') + '\n');
-    console.log(` Đã ghi ${filtered.length} dòng SQL vào ${OUTPUT_SQL}`);
+  // ----- VIEW (tuỳ chọn) -----
+  { type: 'CREATE', re: /create\s+view\s+(?:if\s+not\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'DELETE', re: /drop\s+view\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i }
+];
 
-    try {
-      await runSqlOnTarget(filtered);
-      console.log('🎉 Đã migrate xong 2 bảng & 2 hàm.');
-    } catch (e) {
-      console.error('Lỗi khi chạy migrate:', e);
-    } finally {
-      process.exit();
-    }
+const PRIORITY = { CREATE: 3, DELETE: 2, UPDATE: 1 };
+function parseDDL(line) {
+  for (const { re, type } of ddlPatterns) {
+    const m = line.match(re);
+    if (m) return { table: m[1], type };
   }
-);
-async function runSqlOnTarget(sqlArr) {
-  const client = new Client({ connectionString: TARGET });
-  await client.connect();
-  try {
-    await client.query('BEGIN');
-    for (const stmt of sqlArr) {
-      console.log('>>', stmt);
-      // await client.query(stmt);
-    }
-    // await client.query('COMMIT');
-  } catch (err) {
-    // await client.query('ROLLBACK');
-    throw err;
-  } finally {
-    await client.end();
-  }
+  return null;   // không phải DDL (hoặc không khớp)
 }
+
+const getAllUpdateBetweenDatabases = (
+  targetDatabaseId,
+  currentDatabaseId,
+  schema = 'public'
+) => new Promise((resolve, reject) => {
+
+  const allLines = [];
+  dbdiff.logger = msg => allLines.push(msg);
+
+  dbdiff.compareDatabases(
+    {
+      current: { conn: currentDatabaseId, schema },
+      target: { conn: targetDatabaseId, schema }
+    },
+    (err) => {
+      if (err) return reject(err);
+      resolve(allLines);
+    }
+  );
+});
+
+
+const getAllUpdateOnTable = async (targetDatabaseId, currentDatabaseId) => {
+  const allUpdate = await getAllUpdateBetweenDatabases(
+    targetDatabaseId, currentDatabaseId
+  );
+  const tableInTargetDatabase = ['users', 'orders', 'SequelizeMeta'];
+  const tableInCurrentDatabase = ['orders'];
+  const allTables = new Set(
+    [...tableInTargetDatabase, ...tableInCurrentDatabase]
+  );
+  const resultAllUpdates = {};
+  for (const line of allUpdate) {
+    const info = parseDDL(line);
+    if (!info) continue;
+    const { table, type } = info;
+    if (!allTables.has(table)) continue;
+
+    // Khởi tạo entry nếu chưa có
+    if (!resultAllUpdates[table]) resultAllUpdates[table] = { type, stmts: [line] };
+    else {
+      resultAllUpdates[table].stmts.push(line);
+      if (PRIORITY[type] > PRIORITY[resultAllUpdates[table].type]) {
+        resultAllUpdates[table].type = type;
+      }
+    }
+  }
+
+  console.log('resultAllUpdates', resultAllUpdates);
+  return resultAllUpdates;
+}
+
+// getAllUpdateOnTables(SOURCE, TARGET);
+getAllUpdateOnTables(TARGET, SOURCE);
+
 // const comparison = {
 //   current: { conn: 'postgres://guest:12345@localhost:5432/postgres', schema: 'public' },
 //   target: { conn: 'postgres://guest:12345@localhost:5432/project_intern', schema: 'public' }

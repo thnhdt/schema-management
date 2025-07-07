@@ -1,6 +1,8 @@
 const { QueryTypes } = require('sequelize');
 const { format } = require('sql-formatter');
-
+const dbdiff = require('./pg-schema-diff');
+const databaseModel = require('../models/database.model');
+const nodeModel = require('../models/node.model');
 function fmtType(r) {
   if (r.data_type === 'character varying')
     return r.character_maximum_length
@@ -165,7 +167,96 @@ const ddl = async (schema, table, client) => {
     throw new Error(`Failed to generate DDL for table ${table}: ${error.message}`);
   }
 }
+//////////////////////////////////////////////////
+const ddlPatterns = [
+  // ----- TABLE -----
+  { type: 'CREATE', re: /create\s+table\s+(?:if\s+not\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'DELETE', re: /drop\s+table\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'UPDATE', re: /alter\s+table\s+(?:only\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
 
+  // ----- INDEX -----
+  { type: 'CREATE', re: /create\s+(?:unique\s+|bitmap\s+)?index\s+["`]?[\w]+["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'DELETE', re: /drop\s+index\s+(?:concurrently\s+)?(?:if\s+exists\s+)?["`]?[\w]+["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+
+  // ----- SEQUENCE -----
+  { type: 'CREATE', re: /create\s+sequence\s+(?:if\s+not\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'DELETE', re: /drop\s+sequence\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+];
+
+const PRIORITY = { CREATE: 3, DELETE: 2, UPDATE: 1 };
+function parseDDL(line) {
+  for (const { re, type } of ddlPatterns) {
+    const m = line.match(re);
+    if (m) return { table: m[1], type };
+  }
+  return null;
+}
+
+
+const getStringUrl = async (id) => {
+  const targetDatabase = await databaseModel.findById(id).lean();
+  if (!targetDatabase) throw new NotFoundError("Không tồn tại database!");
+  const targetNode = await nodeModel.findById(targetDatabase.nodeId).lean();
+  if (!targetNode) throw new NotFoundError("Không tồn tại node!");
+  // 'postgres://guest:12345@localhost:5432/postgres';
+  const stringConnectPGUrl = `postgres://${targetDatabase.username}:${targetDatabase.password}@${targetNode.host}:${Number(targetNode.port)}/${targetDatabase.database}`
+  return { stringConnectPGUrl, database: `${targetDatabase.username}:${targetDatabase.database}` };
+}
+const getAllUpdateBetweenDatabases = (
+  targetDatabaseId,
+  currentDatabaseId,
+  schema = 'public'
+) => new Promise((resolve, reject) => {
+
+  const allLines = [];
+  dbdiff.logger = msg => allLines.push(msg);
+
+  dbdiff.compareDatabases(
+    {
+      current: { conn: currentDatabaseId, schema },
+      target: { conn: targetDatabaseId, schema }
+    },
+    (err) => {
+      if (err) return reject(err);
+      resolve(allLines);
+    }
+  );
+});
+
+const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapTables) => {
+  console.log("mapTables", mapTables);
+  const targetDatabaseUrl = await getStringUrl(targetDatabaseId);
+  const currentDatabaseUrl = await getStringUrl(currentDatabaseId);
+  // console.log(targetDatabaseUrl, currentDatabaseUrl);
+  const allUpdate = await getAllUpdateBetweenDatabases(
+    targetDatabaseUrl.stringConnectPGUrl, currentDatabaseUrl.stringConnectPGUrl
+  );
+  for (const line of allUpdate) {
+    const info = parseDDL(line);
+    if (!info) continue;
+    const { table, type } = info;
+    // if (!allTables.has(table)) continue;
+    if (!mapTables.has(table)) continue;
+    const objectTabel = mapTables.get(table);
+    if (!objectTabel?.stmts && !objectTabel?.type) {
+      objectTabel.stmts = [line];
+      objectTabel.type = type;
+    }
+    else {
+      objectTabel.stmts.push(line);
+      if (PRIORITY[type] > PRIORITY[objectTabel.type]) {
+        objectTabel.type = type;
+      }
+    }
+  }
+  console.log("hehehe", targetDatabaseUrl.database, currentDatabaseUrl.database)
+  return {
+    mapTables,
+    targetDatabase: targetDatabaseUrl.database,
+    currentDatabase: currentDatabaseUrl.database,
+  };
+}
 module.exports = {
-  ddl
+  ddl,
+  getAllUpdateOnTableUtil
 }

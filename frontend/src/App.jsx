@@ -13,7 +13,7 @@ import FunctionCompareComponent from './modules/Compare/Function';
 import { AlreadyLogined, RequireUsername } from './Authentication';
 import User from './modules/user/User';
 import { useSelector } from 'react-redux';
-
+import TableCompareComponent from './components/Compare/Table';
 function App() {
   const userId = useSelector(state => state.user.userId);
   const [isInitializing, setIsInitializing] = useState(true);
@@ -41,7 +41,7 @@ function App() {
                 < Register />
               </AlreadyLogined>} />
             <Route element={<RequireUsername />}>
-              <Route element={<AppLayout />}> 
+              <Route element={<AppLayout />}>
                 <Route path='/node' element={<Node />} />
                 <Route path='/database' element={<Database />} />
                 <Route path='/schema' element={<Schema />} />
@@ -49,6 +49,7 @@ function App() {
                 <Route path='/user' element={<User />} />
                 <Route path='/compare/detail' element={<CompareComponent />} />
                 <Route path='/compare/function' element={<FunctionCompareComponent />} />
+                <Route path='/compare/table' element={<TableCompareComponent />} />
               </Route>
             </Route>
             <Route path="*" element={<h6>Không có đường dẫn...</h6>} />

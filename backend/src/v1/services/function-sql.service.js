@@ -134,7 +134,7 @@ const getAllUpdate = async (reqBody) => {
           sameParameters: fn.sameParameters
         });
         if (!cmp.hasChange) return null;
-        const key = fn.left ? `Cập nhật trên hàm ${fn.left.functionName}(${fn.left.functionArguments})` : `Cập nhật trên hàm ${fn.right.functionName}(${fn.right.functionArguments})`
+        const key = fn.left ? `${fn.left.functionName}(${fn.left.functionArguments})` : `${fn.right.functionName}(${fn.right.functionArguments})`
 
         return {
           key: key,

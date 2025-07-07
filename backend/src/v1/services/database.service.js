@@ -71,7 +71,6 @@ const getAllDatabaseInHost = async (reqQuery) => {
   else {
     allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost) }).lean();
   }
-
   return {
     code: 200,
     metaData: {
@@ -79,7 +78,7 @@ const getAllDatabaseInHost = async (reqQuery) => {
     }
   }
 };
-
+// Thêm check quyền ở đây có thể viết hàm
 const connectToDatabase = async (reqBody) => {
   const { id } = reqBody;
   const targetDatabase = await databaseModel.findById(id).lean();

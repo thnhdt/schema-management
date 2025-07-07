@@ -5,7 +5,7 @@ import { getAllNodes, getAllDatabaseInHost } from "../../api";
 import { ModalComponent } from "../../util/helper";
 import { SwapOutlined, DatabaseOutlined } from '@ant-design/icons';
 
-const ModalCompareFunction = (props) => {
+const ModalCompareComponent = (props) => {
   const { onCancel, visible } = props;
   const navigate = useNavigate();
   const [optionHost, setOptionHost] = useState([]);
@@ -15,9 +15,16 @@ const ModalCompareFunction = (props) => {
   const [_, setSelectedTargetHost] = useState(null);
   const [selectedTargetDb, setSelectedTargetDb] = useState(null);
   const [selectedCurrentDb, setSelectedCurrentDb] = useState(null);
-
+  const [compareType, setCompareType] = useState('function');
+  const compareTypeOptions = [
+    { value: 'table', label: 'Tables' },
+    { value: 'function', label: 'Functions' }
+  ];
   const onOk = () => {
-    navigate(`/compare/function?targetDatabaseId=${selectedTargetDb}&currentDatabaseId=${selectedCurrentDb}`);
+    navigate(
+      `/compare/${compareType}?` +
+      `targetDatabaseId=${selectedTargetDb}&currentDatabaseId=${selectedCurrentDb}`
+    );
     console.log("Chuyển tới trang so sánh");
   }
   useEffect(() => {
@@ -40,7 +47,7 @@ const ModalCompareFunction = (props) => {
       const response = await getAllDatabaseInHost(value);
       const data = response.metaData.metaData.database.map(item => ({
         value: item._id,
-        label: `${item.name}`
+        label: `${item.username}:${item.name}`
       }));
       setOptionCurrentDatabase(data);
       setSelectedCurrentHost(value)
@@ -54,7 +61,7 @@ const ModalCompareFunction = (props) => {
       const response = await getAllDatabaseInHost(value);
       let data = response.metaData.metaData.database.map(item => ({
         value: item._id,
-        label: `${item.name}`
+        label: `${item.username}:${item.name}`
       }));
       if (selectedCurrentHost === value) {
         data = data.filter(item => item.value !== selectedCurrentDb);
@@ -71,23 +78,34 @@ const ModalCompareFunction = (props) => {
       width={'60%'}
       onOk={onOk}
       open={visible}
-      title={'So sánh functions'}
       okText={'So sánh'}
       Component={(
         <Card
           title={
             <Space>
               <SwapOutlined style={{ fontSize: 20 }} />
-              <span>Database Mapping</span>
+              <span>Database Diff</span>
             </Space>
           }
-          style={{ maxWidth: "100%", margin: '0 auto', boxShadow: '0 4px 20px rgba(0,0,0,.05)' }}
+          style={{ maxWidth: "100%", margin: '1.5rem auto', boxShadow: '0 4px 20px rgba(0,0,0,.05)' }}
         >
           <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>
             Chọn <strong>database hiện tại</strong> và <strong>database đích</strong> để tiếp tục thao tác.
           </Typography.Paragraph>
 
           <Form layout="vertical">
+            <Row gutter={[16, 16]}>
+              <Col xs={24}>
+                <Form.Item label="Loại so sánh">
+                  <Select
+                    value={compareType}
+                    options={compareTypeOptions}
+                    onChange={setCompareType}
+                    dropdownStyle={{ borderRadius: 12 }}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
             <Row gutter={[16, 16]} >
               <Col xs={24} sm={12}>
                 <Form.Item
@@ -164,4 +182,4 @@ const ModalCompareFunction = (props) => {
   );
 };
 
-export default ModalCompareFunction
+export default ModalCompareComponent

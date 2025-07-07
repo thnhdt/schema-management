@@ -1,11 +1,12 @@
 import {
   UnorderedListOutlined,
-  LoadingOutlined, DatabaseOutlined
+  LoadingOutlined,
+  DatabaseOutlined
 } from '@ant-design/icons';
 import '../../App.css';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react'
-import { getAllUpdateFunction } from '../../api';
+import { getAllUpdateTables } from '../../api';
 import { Card, List, Typography, Spin, Flex, Tag, Space, Divider } from 'antd';
 
 const enumTypeColor = {
@@ -14,11 +15,11 @@ const enumTypeColor = {
   "DELETE": 'red'
 }
 const enumTypeTitle = {
-  'CREATE': 'Thêm hàm',
-  'UPDATE': 'Cập nhật trên hàm',
-  "DELETE": 'Xóa hàm'
+  'CREATE': 'Thêm Bảng',
+  'UPDATE': 'Cập nhật trên bảng',
+  "DELETE": 'Xóa bảng'
 }
-const FunctionCompareComponent = () => {
+const TableCompareComponent = () => {
   // Thêm hàm tiện ích để bổ sung columnCount cho tables
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -32,12 +33,12 @@ const FunctionCompareComponent = () => {
   const [targetDatabase, setTargetDatabase] = useState(null);
 
 
-  const handleGetDetailUpdate = (key, ddlPrimeFunction, ddlSecondFunction, patch, currentDatabase, targetDatabase) => {
+  const handleGetDetailUpdate = (key, ddlTargetTable, ddlCurrentTable, patch, currentDatabase, targetDatabase) => {
     navigate('/compare/detail', {
       state: {
         key,
-        ddlSecond: ddlSecondFunction,
-        ddlPrime: ddlPrimeFunction,
+        ddlPrime: ddlTargetTable,
+        ddlSecond: ddlCurrentTable,
         patch,
         currentDatabase,
         targetDatabase
@@ -50,10 +51,10 @@ const FunctionCompareComponent = () => {
   const fetchUpdate = async () => {
     try {
       //thêm datbase id vào
-      const data = await getAllUpdateFunction(targetDatabaseId, currentDatabaseId);
-      setUpdateData(data.metaData.resultUpdate);
-      setCurrentDatabase(data.metaData.currentDatabase);
-      setTargetDatabase(data.metaData.targetDatabase);
+      const data = await getAllUpdateTables(targetDatabaseId, currentDatabaseId);
+      setUpdateData(data.metaData.allUpdate);
+      setCurrentDatabase(data.metaData.currentDB);
+      setTargetDatabase(data.metaData.targetDB);
     } catch (error) {
       console.error(error.message)
     } finally {
@@ -75,7 +76,7 @@ const FunctionCompareComponent = () => {
       <Space direction="vertical" size={2} style={{ width: '100%', marginBottom: 32 }}>
         <Title level={2} style={{ display: 'flex', alignItems: 'center', marginBottom: '0.7rem' }}>
           <UnorderedListOutlined style={{ marginRight: 8, color: '#1677ff' }} />
-          Danh sách cập nhật Funtion
+          Danh sách cập nhật Table
         </Title>
 
         <Text type="secondary">
@@ -83,7 +84,6 @@ const FunctionCompareComponent = () => {
           <DatabaseOutlined /> Hiện tại: <strong>{currentDatabase}</strong>
         </Text>
 
-        {/* Gạch chia nhẹ */}
         <Divider style={{ margin: '12px 0 0' }} />
       </Space>
       <Card title="Những cập nhật gần đây">
@@ -96,9 +96,9 @@ const FunctionCompareComponent = () => {
             <List.Item
               key={item.key}
               onClick={() => handleGetDetailUpdate(item.key,
-                item.ddlPrimeFunction,
-                item.ddlSecondFunction,
-                item.patch,
+                item.right?.text ?? '',
+                item.left?.text ?? '',
+                item.stmts.join('\n'),
                 currentDatabase,
                 targetDatabase)}
               className="hover-overlay shadow-sm rounded mb-4"
@@ -127,7 +127,7 @@ const FunctionCompareComponent = () => {
                     ellipsis={{ rows: 4 }}
                     style={{ marginBottom: 0 }}
                   >
-                    {item.patch}
+                    {item.stmts.join('\n')}
                   </Paragraph>
                 </div>
               </div>
@@ -135,9 +135,9 @@ const FunctionCompareComponent = () => {
           )}
         />
       </Card>
-    </div>
+    </div >
 
   );
 }
 
-export default FunctionCompareComponent;
+export default TableCompareComponent;

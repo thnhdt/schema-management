@@ -6,13 +6,14 @@ import {
   EditOutlined,
   DeleteOutlined,
   EyeOutlined,
+  DiffOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { getAllNodes, createNode, editNode, deleteNode } from '../../api';
 import '../../App.css';
 import AddDatabaseInNode from '../database/ModalAddDatabase';
 import { useSelector } from 'react-redux';
-import ModalCompareFunction from '../../modules/Compare/Modal-Compare-Function';
+import ModalCompareComponent from '../../components/Compare/Modal-Compare-Component';
 
 const { Title, Text } = Typography;
 
@@ -230,7 +231,7 @@ const Node = () => {
 
       <div style={{ marginBottom: 20 }}>
         <Title level={2}>
-          <DatabaseOutlined /> PostgreSQL Database Nodes
+          <DatabaseOutlined /> PostgreSQL Database Instance
         </Title>
         <Text type="secondary">
           Quản lý các kết nối PostgreSQL database và chuyển đổi giữa các môi trường
@@ -240,25 +241,31 @@ const Node = () => {
       <Card
         title="Danh Sách PostgreSQL Nodes"
         extra={
-          <Space.Compact block>
+          <Space style={{ gap: '1rem' }}>
             {(roles.includes('admin')) &&
-              <Tooltip title={'Thêm Host'}>
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={handleAddNode}
-                />
-
-              </Tooltip>
-
-            }
-            <Tooltip title={'So sánh function'}>
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={() => setOpenCompareFunction(true)} />
-            </Tooltip>
-          </Space.Compact>
+                onClick={handleAddNode}
+              >
+                Thêm Instance
+              </Button>
+
+
+            }
+            {/* <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setOpenCompareFunction(true)} /> */}
+            <Button
+              // type="default"
+              className="dark-btn"
+              icon={<DiffOutlined />}
+              onClick={() => setOpenCompareFunction(true)}
+            >
+              So sánh
+            </Button>
+          </Space>
         }
       >
         <Table
@@ -318,19 +325,18 @@ const Node = () => {
           </div>
         </div>
       )}
-      {/* Modal Chỉnh sửa Node bằng Bootstrap thuần */}
       {isEditModalVisible && (
         <div className="modal show d-block" tabIndex="-1" role="dialog">
           <div className="modal-dialog" role="document">
             <div className="modal-content">
               <div className="modal-header">
-                <h5 className="modal-title">Chỉnh Sửa PostgreSQL Node</h5>
+                <h5 className="modal-title">Chỉnh Sửa PostgreSQL Instance</h5>
                 <button type="button" className="btn-close" aria-label="Close" onClick={() => setIsEditModalVisible(false)}></button>
               </div>
               <div className="modal-body">
                 <form onSubmit={onEditSubmit}>
                   <div className="mb-3">
-                    <label className="form-label">Tên Node</label>
+                    <label className="form-label">Tên Instance</label>
                     <input type="text" name="name" className="form-control" placeholder="Ví dụ: PostgreSQL Production" required defaultValue={editingNode?.name} />
                   </div>
                   <div className="mb-3">
@@ -374,7 +380,7 @@ const Node = () => {
         fetchNode={fetchNode}
         nodes={nodes}
       />
-      <ModalCompareFunction
+      <ModalCompareComponent
         visible={openCompareFunction}
         onCancel={() => setOpenCompareFunction(false)}
       />
