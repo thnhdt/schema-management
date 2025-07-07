@@ -8,7 +8,7 @@ import {
   EyeOutlined,
   DiffOutlined
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 import { getAllNodes, createNode, editNode, deleteNode } from '../../api';
 import '../../App.css';
 import AddDatabaseInNode from '../database/ModalAddDatabase';
@@ -24,7 +24,7 @@ const Node = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingNode, setEditingNode] = useState(null);
   const [messageApi, contextHolder] = message.useMessage();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
   const [nodeIdAddDatabase, setNodeIdAddDatabase] = useState(null);
   const [databases, setDatabases] = useState([]);
@@ -87,7 +87,6 @@ const Node = () => {
     const username = form.username.value.trim();
     const password = form.password.value.trim();
     const database = form.database.value.trim();
-    const description = form.description.value.trim();
     if (!name || !host || !port || !username || !password || !database) {
       messageApi.error('Vui lòng điền đầy đủ thông tin!');
       return;
@@ -101,7 +100,6 @@ const Node = () => {
         password,
         database
       },
-      description
     };
     await createNode(newNode);
     const updatedNodes = [newNode, ...nodes];
@@ -116,14 +114,11 @@ const Node = () => {
     const name = form.name.value.trim();
     const host = form.host.value.trim();
     const port = form.port.value.trim();
-    const username = form.username.value.trim();
-    const password = form.password.value.trim();
-    const description = form.description.value.trim();
-    if (!name || !host || !port || !username || !password) {
+    if (!name || !host || !port) {
       messageApi.error('Vui lòng điền đầy đủ thông tin!');
       return;
     }
-    const values = { name, host, port, username, password, description };
+    const values = { name, host, port };
     const updatedNodes = nodes.map(node =>
       node._id === editingNode._id
         ? { ...node, ...values }
@@ -136,14 +131,14 @@ const Node = () => {
     messageApi.success('Cập nhật node thành công!');
   };
 
-  const handleViewDatabase = (node) => {
-    navigate(`/database?id=${node._id}`, {
-      state: {
-        nodeData: node,
-        nodeName: node.name
-      }
-    });
-  };
+  // const handleViewDatabase = (node) => {
+  //   navigate(`/database?id=${node._id}`, {
+  //     state: {
+  //       nodeData: node,
+  //       nodeName: node.name
+  //     }
+  //   });
+  // };
 
   const columns = [
     {
@@ -175,19 +170,19 @@ const Node = () => {
       key: 'actions',
       render: (_, record) => (
         <Space.Compact block size="large">
-          <Tooltip title="Xem Database">
+          {/* <Tooltip title="Xem Database">
             <Button
               type="primary"
               icon={<EyeOutlined />}
               onClick={() => handleViewDatabase(record)}
             />
-          </Tooltip>
+          </Tooltip> */}
           {isAdmin && (
             <>
-              <Tooltip title="Thêm database">
+              <Tooltip title="Thêm và xem database">
                 <Button
                   type="primary"
-                  icon={<PlusOutlined />}
+                  icon={<EyeOutlined />}
                   onClick={() => {
                     setNodeIdAddDatabase(record._id);
                     setVisible(true);
@@ -279,7 +274,7 @@ const Node = () => {
       </Card>
       {isAddModalVisible && (
         <div className="modal show d-block" tabIndex="-1" role="dialog">
-          <div className="modal-dialog" role="document">
+          <div className="modal-dialog modal-dialog-centered" role="document" style={{ maxWidth: '500px' }}>
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Thêm PostgreSQL Node</h5>
@@ -311,10 +306,6 @@ const Node = () => {
                     <label className="form-label">Database kết nối</label>
                     <input type="text" name="database" className="form-control" placeholder="Tên database" required />
                   </div>
-                  <div className="mb-3">
-                    <label className="form-label">Mô Tả</label>
-                    <textarea name="description" className="form-control" placeholder="Mô tả về database node này..." rows={3} />
-                  </div>
                   <div className="d-flex justify-content-end gap-2">
                     <button type="submit" className="btn btn-primary">Thêm</button>
                     <button type="button" className="btn btn-secondary" onClick={() => setIsAddModalVisible(false)}>Hủy</button>
@@ -327,7 +318,7 @@ const Node = () => {
       )}
       {isEditModalVisible && (
         <div className="modal show d-block" tabIndex="-1" role="dialog">
-          <div className="modal-dialog" role="document">
+          <div className="modal-dialog modal-dialog-centered" role="document" style={{ maxWidth: '500px' }}>
             <div className="modal-content">
               <div className="modal-header">
                 <h5 className="modal-title">Chỉnh Sửa PostgreSQL Instance</h5>
@@ -346,18 +337,6 @@ const Node = () => {
                   <div className="mb-3">
                     <label className="form-label">Port</label>
                     <input type="text" name="port" className="form-control" placeholder="5432" required defaultValue={editingNode?.port} />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Username</label>
-                    <input type="text" name="username" className="form-control" placeholder="Username" required defaultValue={editingNode?.username} />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Mật khẩu</label>
-                    <input type="password" name="password" className="form-control" placeholder="Mật khẩu" required defaultValue={editingNode?.password} />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Mô Tả</label>
-                    <textarea name="description" className="form-control" placeholder="Mô tả về database node này..." rows={3} defaultValue={editingNode?.description} />
                   </div>
                   <div className="d-flex justify-content-end gap-2">
                     <button type="submit" className="btn btn-primary">Cập Nhật</button>

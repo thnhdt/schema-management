@@ -22,7 +22,6 @@ const mergeTables = (arrTableTarget, arrTableCurrent) => {
       map.set(key, { left: null, right: fn });
     }
   }
-  // return Array.from(map.values());
   return map;
 }
 
@@ -94,10 +93,10 @@ const getAllUpdateOnTables = async (reqBody) => {
     key,
     ...value
   }));
-  console.log("hahahahaha", sqlUpdateSchemaTables.targetTable, sqlUpdateSchemaTables.currentTable)
+  const allUpdate = result.filter(item => item?.stmts);
   return {
     code: 200,
-    allUpdate: result,
+    allUpdate: allUpdate,
     targetDB: sqlUpdateSchemaTables.targetDatabase,
     currentDB: sqlUpdateSchemaTables.currentDatabase
   }

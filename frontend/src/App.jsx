@@ -1,6 +1,5 @@
 import './App.css';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 import Main from './modules/user/Main'
 import AppLayout from './Layout';
 import Node from './modules/node/Node';
@@ -12,21 +11,8 @@ import FunctionCompareComponent from './modules/Compare/Function';
 
 import { AlreadyLogined, RequireUsername } from './Authentication';
 import User from './modules/user/User';
-import { useSelector } from 'react-redux';
 import TableCompareComponent from './components/Compare/Table';
 function App() {
-  const userId = useSelector(state => state.user.userId);
-  const [isInitializing, setIsInitializing] = useState(true);
-  useEffect(() => {
-    if (!userId) {
-      setIsInitializing(false);
-      return;
-    }
-  }, [userId]);
-
-  if (isInitializing) {
-    return <div>Đang tải thông tin người dùng...</div>;
-  }
   return (
     <BrowserRouter>
       <div className="App">

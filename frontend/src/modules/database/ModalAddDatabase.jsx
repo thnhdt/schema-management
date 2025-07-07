@@ -1,9 +1,10 @@
 import React, { useState, useRef } from "react";
-import { Modal, message, Spin, Button, Switch, Popconfirm, Input, InputNumber } from "antd";
+import { message, Button, Popconfirm, Tooltip } from "antd";
 import { useSelector } from "react-redux";
+import { useNavigate } from 'react-router-dom';
 import { editDatabase, createDatabase, deleteDatabase } from "../../api";
 import { ModalComponent, TableComponent } from "../../util/helper";
-import { CheckOutlined, CloseOutlined, DeleteOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
 
 const AddDatabaseInNode = (props) => {
   const { visible, onCancel, idNode, onOk, databases, fetchNode } = props;
@@ -13,6 +14,7 @@ const AddDatabaseInNode = (props) => {
   const addDatabaseRef = useRef();
   const addUsernameRef = useRef();
   const addPasswordRef = useRef();
+  const navigate = useNavigate();
   
   const roles = useSelector(state => state.user.roles);
   const isAdmin = roles.includes('admin');
@@ -30,6 +32,10 @@ const AddDatabaseInNode = (props) => {
       console.error('Error deleting item:', error);
       message.error('Không thể xóa database');
     }
+  };
+
+  const handleViewSchema = (record) => {
+    navigate(`/schema/${record._id}`);
   };
 
   const isEditing = (record) => record._id === editingKey;
@@ -57,7 +63,6 @@ const AddDatabaseInNode = (props) => {
         name: row.elements.name.value.trim(),
         database: row.elements.database.value.trim(),
         username: row.elements.username.value.trim(),
-        password: row.elements.password.value.trim(),
       };
       await editDatabase(_id, data);
       await fetchNode(idNode);
@@ -108,7 +113,7 @@ const AddDatabaseInNode = (props) => {
 
   const columns = [
     {
-      title: 'Tên Database',
+      title: 'Tên',
       dataIndex: 'name',
       key: 'name',
       width: '20%',
@@ -182,14 +187,14 @@ const AddDatabaseInNode = (props) => {
       render: (text, record) => {
         if (record._id === 'new') {
           return (
-            <input type="password" name="password" className="form-control" placeholder="Password" required ref={addPasswordRef} />
-          );
-        }
-        if (isEditing(record)) {
-          return (
-            <form id={`edit-row-${record._id}`}>
-              <input type="password" name="password" className="form-control" placeholder="Password" required defaultValue={record.password} />
-            </form>
+            <input
+              type="password"
+              name="password"
+              className="form-control"
+              placeholder="Password"
+              required
+              ref={addPasswordRef}
+            />
           );
         }
         return <span>******</span>;
@@ -198,7 +203,7 @@ const AddDatabaseInNode = (props) => {
   ];
 
   columns.push({
-    title: 'Xóa',
+    title: 'Thao tác',
     key: 'action',
     width: '15%',
     render: (_, record) => {
@@ -233,10 +238,17 @@ const AddDatabaseInNode = (props) => {
                 okText="Xoá"
                 cancelText="Huỷ"
               >
-                <Button danger icon={<DeleteOutlined />} size="small" />
+                <Button danger icon={<DeleteOutlined />} size="small" style={{ marginRight: 8 }}/>
               </Popconfirm>
             </>
           )}
+            <Tooltip title="Xem chi tiết">
+              <Button
+                icon={<EyeOutlined />}
+                onClick={() => handleViewSchema(record)}
+                size="small"
+              />
+            </Tooltip>
         </span>
       );
     },
@@ -250,7 +262,7 @@ const AddDatabaseInNode = (props) => {
       width={'60%'}
       onOk={onOk}
       open={visible}
-      title={'Thêm Database'}
+      title={'Thêm và xem Database'}
       okText={'Đóng'}
       Component={(
         <div style={{ padding: '24px' }}>

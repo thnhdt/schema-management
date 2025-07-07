@@ -5,7 +5,6 @@ const { Sequelize } = require('sequelize');
 const mongoose = require('mongoose');
 const POOLMAP = new Map();
 
-// Cleanup old connections every 5 minutes
 setInterval(() => {
   const now = Date.now();
   const fiveMinutes = 5 * 60 * 1000;
@@ -21,7 +20,7 @@ setInterval(() => {
       POOLMAP.delete(id);
     }
   }
-}, 5 * 60 * 1000); // 5 minutes
+}, 5 * 60 * 1000);
 
 const createPhysicalDB = async (dbName, username, password, host, port) => {
   const sequelize = new Sequelize('postgres', username, password, {
@@ -78,15 +77,13 @@ const getAllDatabaseInHost = async (reqQuery) => {
     }
   }
 };
-// Thêm check quyền ở đây có thể viết hàm
+
 const connectToDatabase = async (reqBody) => {
   const { id } = reqBody;
   const targetDatabase = await databaseModel.findById(id).lean();
   if (!targetDatabase) throw new NotFoundError("Không tồn tại database!");
   const targetNode = await nodeModel.findById(targetDatabase.nodeId).lean();
   if (!targetNode) throw new NotFoundError("Không tồn tại node!");
-  
-  // Check if connection exists and is still valid
   if (POOLMAP.has(id)) {
     const poolConnection = POOLMAP.get(id);
     try {
@@ -104,7 +101,6 @@ const connectToDatabase = async (reqBody) => {
     }
   }
   
-  // Create new connection
   const sequelize = new Sequelize(
     targetDatabase.database,
     targetDatabase.username,
