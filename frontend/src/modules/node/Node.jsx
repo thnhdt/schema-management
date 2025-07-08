@@ -235,11 +235,12 @@ const Node = () => {
           <Space style={{ gap: '1rem' }}>
             {(isAdmin || canUpdateNodeAndDb) &&
               <Button
+                className='add-btn'
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={handleAddNode}
               >
-                Thêm Instance
+                Thêm
               </Button>
             }
             {/* <Button

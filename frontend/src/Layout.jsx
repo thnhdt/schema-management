@@ -64,7 +64,7 @@ const AppLayout = () => {
             {
               key: '/node',
               icon: <FileExcelOutlined />,
-              label: 'Nodes',
+              label: 'Instance',
             },
             {
               key: '/user',

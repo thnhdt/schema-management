@@ -357,38 +357,85 @@ function constraintDescription(constraint) {
   */
 }
 
+// function constraintNames(db) {
+//   return db.constraints.map(function (constraint) {
+//     return constraint.constraint_name
+//   }).sort()
+// }
+
+// function compareConstraints(db1, db2) {
+//   var constraintNames1 = constraintNames(db1)
+//   var constraintNames2 = constraintNames(db2)
+
+//   var diff1 = _.difference(constraintNames1, constraintNames2)
+//   var diff2 = _.difference(constraintNames2, constraintNames1)
+
+//   diff1.forEach(function (constraintName) {
+//     dbdiff.log('-- Need to DROP CONSTRAINT "%s" - not in target database', constraintName)
+//   })
+
+//   diff2.forEach(function (constraintName) {
+//     var constraint = _.findWhere(db2.constraints, { constraint_name: constraintName })
+//     dbdiff.log(constraintDescription(constraint))
+//   })
+
+//   var inter = _.intersection(constraintNames1, constraintNames2)
+//   inter.forEach(function (constraintName) {
+//     var constraint1 = _.findWhere(db1.constraints, { constraint_name: constraintName })
+//     var constraint2 = _.findWhere(db2.constraints, { constraint_name: constraintName })
+
+//     var desc1 = constraintDescription(constraint1)
+//     var desc2 = constraintDescription(constraint2)
+
+//     if (desc2 !== desc1) {
+//       dbdiff.log('-- Need to DROP CONSTRAINT "%s" - not in target database', constraintName)
+//       dbdiff.log(desc2)
+//     }
+//   })
+// }
+
 function constraintNames(db) {
   return db.constraints.map(function (constraint) {
-    return constraint.constraint_name
-  }).sort()
+    return {
+      constraint_name: constraint.constraint_name,
+      table_name: constraint.table_name,
+      definition: constraint.definition
+    }
+  }).sort();
 }
-
 function compareConstraints(db1, db2) {
-  var constraintNames1 = constraintNames(db1)
-  var constraintNames2 = constraintNames(db2)
+  var constraints1 = constraintNames(db1)
+  var constraints2 = constraintNames(db2)
 
-  var diff1 = _.difference(constraintNames1, constraintNames2)
-  var diff2 = _.difference(constraintNames2, constraintNames1)
+  var names1 = constraints1.map(c => c.constraint_name)
+  var names2 = constraints2.map(c => c.constraint_name)
 
-  diff1.forEach(function (constraintName) {
-    dbdiff.log('-- Need to DROP CONSTRAINT "%s" - not in target database', constraintName)
+  var onlyInDb1Names = _.difference(names1, names2)
+  var onlyInDb2Names = _.difference(names2, names1)
+  var inBothNames = _.intersection(names1, names2)
+
+  var onlyInDb1 = constraints1.filter(c => onlyInDb1Names.includes(c.constraint_name))
+  var onlyInDb2 = constraints2.filter(c => onlyInDb2Names.includes(c.constraint_name))
+  var inBoth = constraints1.filter(c => inBothNames.includes(c.constraint_name))
+
+  onlyInDb1.forEach(function (c) {
+    dbdiff.log('ALTER TABLE "public"."%s" DROP CONSTRAINT %s %s;',
+      c.table_name,
+      c.constraint_name,
+      c.definition)
   })
 
-  diff2.forEach(function (constraintName) {
-    var constraint = _.findWhere(db2.constraints, { constraint_name: constraintName })
-    dbdiff.log(constraintDescription(constraint))
+  onlyInDb2.forEach(function (c) {
+    dbdiff.log(constraintDescription(c))
   })
 
-  var inter = _.intersection(constraintNames1, constraintNames2)
-  inter.forEach(function (constraintName) {
-    var constraint1 = _.findWhere(db1.constraints, { constraint_name: constraintName })
-    var constraint2 = _.findWhere(db2.constraints, { constraint_name: constraintName })
+  inBoth.forEach(function (c1) {
+    var c2 = _.findWhere(db2.constraints, { constraint_name: c1.constraint_name })
 
-    var desc1 = constraintDescription(constraint1)
-    var desc2 = constraintDescription(constraint2)
+    var desc1 = constraintDescription(c1)
+    var desc2 = constraintDescription(c2)
 
     if (desc2 !== desc1) {
-      dbdiff.log('-- Need to DROP CONSTRAINT "%s" - not in target database', constraintName)
       dbdiff.log(desc2)
     }
   })

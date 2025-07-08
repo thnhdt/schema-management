@@ -6,16 +6,16 @@ const { authentication, checkPermissonAddHost } = require('../utils/auth.utils.j
 
 nodeRouter.use(authentication);
 
-nodeRouter.use(checkPermissonAddHost);
-nodeRouter.route('/create-node')
-  .post(handlerError(nodeController.createNode))
+
 
 nodeRouter.route('/get-all-nodes')
   .get(handlerError(nodeController.getAllNodes))
 
+nodeRouter.use(checkPermissonAddHost);
+nodeRouter.route('/create-node')
+  .post(handlerError(nodeController.createNode))
 nodeRouter.route('/')
   .put(handlerError(nodeController.editNode))
 nodeRouter.route('/:id')
   .delete(handlerError(nodeController.deleteNode))
-
 module.exports = nodeRouter

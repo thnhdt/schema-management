@@ -126,7 +126,7 @@ const checkPermissionFunction = handlerError(async (req, res, next) => {
           })
         )
       ) {
-        canUpdateFunction = permissionOnDB?.ops.include('update-function');
+        canUpdateFunction = permissionOnDB?.ops.includes('update-function');
       }
     }
     else {

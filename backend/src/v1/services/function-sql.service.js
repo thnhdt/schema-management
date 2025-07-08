@@ -195,14 +195,14 @@ const compareFunctionInPosgresql = async (reqBody) => {
   let type;
   if (ddlSecondFunction && ddlPrimeFunction) {
     if (sameParmameters) {
-      patch = ddlPrimeFunction.replace(/CREATE FUNCTION/i, 'CREATE OR REPLACE FUNCTION');
+      patch = ddlSecondFunction.replace(/CREATE FUNCTION/i, 'CREATE OR REPLACE FUNCTION');
       type = "UPDATE";
     }
     else {
       const functionName = primeFunction.functionName;
       const functionArgs = primeFunction.functionArguments;
       const dropStmt = `DROP FUNCTION ${functionName}(${functionArgs});`;
-      const createStmt = ddlPrimeFunction.replace(/CREATE FUNCTION/i, 'CREATE OR REPLACE FUNCTION');
+      const createStmt = ddlSecondFunction.replace(/CREATE FUNCTION/i, 'CREATE OR REPLACE FUNCTION');
       patch = `${dropStmt}\n${createStmt}`;
       type = "UPDATE";
     }
