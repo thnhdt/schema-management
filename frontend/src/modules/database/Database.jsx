@@ -5,7 +5,6 @@ import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
 import { getAllDatabaseInHost, connectToDatabase, disconnectToDatabase } from '../../api';
 import '../../App.css'
 import ModalAddDatabase from './ModalAddDatabase';

@@ -42,7 +42,8 @@ const authentication = handlerError(async (req, res, next) => {
     if (userId !== decoder.userId) throw new AuthFailureError("UserId is error !");
     const userRoles = decoder.roles;
     const userPermissions = await Promise.all(userRoles.map(role => roleModel.findById(role).lean()));
-    req.user = { ...decoder, userPermissions };
+  const isAdmin = userPermissions.some(item => item.name === 'admin');
+    req.user = { ...decoder, userPermissions, isAdmin };
     return (next())
   } catch (error) {
     if (error.name === 'TokenExpiredError') {

@@ -55,28 +55,35 @@ const createDatabase = async (dataCreated) => {
   }
 };
 const getAllDatabaseInHost = async (reqQuery, user) => {
-  const { idHost, status } = reqQuery;
-  // console.log("66", user);
-  const permissionsDB = user.userPermissions;
-  const dbIdSet = new Set(
-    permissionsDB.flatMap(role =>
-      role.permissions
-        .filter(p => p.databaseId)
-        .map(p => String(p.databaseId))
-    )
-  );
-  const dbIds = [...dbIdSet].map(id =>
-    mongoose.isValidObjectId(id) && typeof id === 'string'
-      ? new mongoose.Types.ObjectId(id)
-      : id
-  );
   let allDatabase = [];
+  const { idHost, status } = reqQuery;
+
+  const permissionsDB = user.userPermissions;
+
+
+
   if (status) {
     allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost), status: status }).lean();
   }
   else {
-    allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost), _id: { $in: dbIds } }).lean();
-
+    if (user.isAdmin) {
+      allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost) }).lean();
+    }
+    else {
+      const dbIdSet = new Set(
+        permissionsDB.flatMap(role =>
+          role.permissions
+            .filter(p => p.databaseId)
+            .map(p => String(p.databaseId))
+        )
+      );
+      const dbIds = [...dbIdSet].map(id =>
+        mongoose.isValidObjectId(id) && typeof id === 'string'
+          ? new mongoose.Types.ObjectId(id)
+          : id
+      );
+      allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost), _id: { $in: dbIds } }).lean();
+    }
   }
   return {
     code: 200,

@@ -108,8 +108,10 @@ const mergeFunctions = (arrFunctionPrime, arrFunctionSecond) => {
 
 const getAllUpdate = async (reqBody, user) => {
   const { currentDatabaseId, targetDatabaseId } = reqBody;
-  const permissions = user.userPermissions.some(role => role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) && role?.permissions.some(p => p.databaseId.toString() === currentDatabaseId));
-  if (!permissions) throw new BadResponseError("Bạn không có quyền truy cập một trong hai DB !")
+  if(!user.isAdmin){
+    const permissions = user.userPermissions.some(role => role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) && role?.permissions.some(p => p.databaseId.toString() === currentDatabaseId));
+    if (!permissions) throw new BadResponseError("Bạn không có quyền truy cập một trong hai DB !");
+  }
   const currentDatabase = await databaseModel.findById(currentDatabaseId).lean();
   const targetDatabase = await databaseModel.findById(targetDatabaseId).lean();
   if (!currentDatabase || !targetDatabase) throw new BadResponseError("Một trong hai database không tồn tại !")

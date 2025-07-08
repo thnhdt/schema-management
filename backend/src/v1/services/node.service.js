@@ -27,8 +27,23 @@ const createNode = async (dataCreated) => {
   }
 }
 const getAllNode = async (user) => {
+  let allNodes = [];
   const permissionsDB = user.userPermissions;
-  const dbIdSet = new Set(
+  if(user.isAdmin){
+    allNodes = await nodeModel.aggregate([
+      { $sort: { createdAt: -1 } },
+      {
+        $lookup: {
+          from: 'Databases',
+          localField: '_id',
+          foreignField: 'nodeId',
+          as: 'databases'
+        }
+      }
+    ]);
+  }
+  else{
+    const dbIdSet = new Set(
     permissionsDB.flatMap(role =>
       role.permissions
         .filter(p => p.databaseId)
@@ -40,7 +55,7 @@ const getAllNode = async (user) => {
       ? new mongoose.Types.ObjectId(id)
       : id
   );
-  const allNodes = await nodeModel.aggregate([
+  allNodes = await nodeModel.aggregate([
     { $sort: { createdAt: -1 } },
     {
       $lookup: {
@@ -63,6 +78,8 @@ const getAllNode = async (user) => {
     },
     { $match: { 'databases.0': { $exists: true } } }
   ]);
+  }
+  
 
   return {
     code: 200,
