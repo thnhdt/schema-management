@@ -22,6 +22,8 @@ const AddDatabaseInNode = (props) => {
   // console.log(canUpdateNodeAndDb);
   const isAdmin = store.getState().user.isAdmin;
 
+  const [editingRowData, setEditingRowData] = useState(null);
+
   const handleDelete = async (id) => {
     if (!isAdmin || !canUpdateNodeAndDb) {
       message.error('Bạn phải là admin mới được xóa database!');
@@ -49,10 +51,21 @@ const AddDatabaseInNode = (props) => {
       return;
     }
     setEditingKey(record._id);
+    setEditingRowData({
+      name: record.name,
+      database: record.database,
+      username: record.username,
+    });
   };
 
   const cancel = () => {
     setEditingKey('');
+    setEditingRowData(null);
+  };
+
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditingRowData(prev => ({ ...prev, [name]: value }));
   };
 
   const save = async (_id) => {
@@ -62,17 +75,16 @@ const AddDatabaseInNode = (props) => {
       return;
     }
     try {
-      const row = document.getElementById(`edit-row-${_id}`);
-      console.log(row.elements.name.value);
       const data = {
-        name: row.elements.name.value.trim(),
-        database: row.elements.database.value.trim(),
-        username: row.elements.username.value.trim(),
+        name: editingRowData.name.trim(),
+        database: editingRowData.database.trim(),
+        username: editingRowData.username.trim(),
       };
 
       await editDatabase(_id, data);
       await fetchNode(idNode);
       setEditingKey('');
+      setEditingRowData(null);
       message.success('Cập nhật thành công');
     } catch (err) {
       message.error('Cập nhật thất bại', err.message);
@@ -132,9 +144,7 @@ const AddDatabaseInNode = (props) => {
         }
         if (isEditing(record)) {
           return (
-            <form id={`edit-row-${record._id}`}>
-              <input type="text" name="name" className="form-control" placeholder="Tên database" required defaultValue={record.name} />
-            </form>
+            <input type="text" name="name" className="form-control" placeholder="Tên database" required value={editingRowData?.name || ''} onChange={handleEditInputChange}/>
           );
         }
         return text;
@@ -154,9 +164,7 @@ const AddDatabaseInNode = (props) => {
         }
         if (isEditing(record)) {
           return (
-            <form id={`edit-row-${record._id}`}>
-              <input type="text" name="database" className="form-control" placeholder="Tên DB" required defaultValue={record.database} />
-            </form>
+            <input type="text" name="database" className="form-control" placeholder="Tên DB" required value={editingRowData?.database || ''} onChange={handleEditInputChange}/>
           );
         }
         return text;
@@ -176,9 +184,7 @@ const AddDatabaseInNode = (props) => {
         }
         if (isEditing(record)) {
           return (
-            <form id={`edit-row-${record._id}`}>
-              <input type="text" name="username" className="form-control" placeholder="Username" required defaultValue={record.username} />
-            </form>
+            <input type="text" name="username" className="form-control" placeholder="Username" required value={editingRowData?.username || ''} onChange={handleEditInputChange}/>
           );
         }
         return text;

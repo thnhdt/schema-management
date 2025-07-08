@@ -267,80 +267,86 @@ const Node = () => {
         />
       </Card>
       {isAddModalVisible && (
-        <div className="modal show d-block" tabIndex="-1" role="dialog">
-          <div className="modal-dialog modal-dialog-centered" role="document" style={{ maxWidth: '500px' }}>
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Thêm PostgreSQL Node</h5>
-                <button type="button" className="btn-close" aria-label="Close" onClick={() => setIsAddModalVisible(false)}></button>
-              </div>
-              <div className="modal-body">
-                <form onSubmit={onAddSubmit}>
-                  <div className="mb-3">
-                    <label className="form-label">Tên Node</label>
-                    <input type="text" name="name" className="form-control" placeholder="Ví dụ: PostgreSQL Production" required />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Host</label>
-                    <input type="text" name="host" className="form-control" placeholder="localhost hoặc IP address" required />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Port</label>
-                    <input type="text" name="port" className="form-control" placeholder="5432" required />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Username</label>
-                    <input type="text" name="username" className="form-control" placeholder="Username" required />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Mật khẩu</label>
-                    <input type="password" name="password" className="form-control" placeholder="Mật khẩu" required />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Database kết nối</label>
-                    <input type="text" name="database" className="form-control" placeholder="Tên database" required />
-                  </div>
-                  <div className="d-flex justify-content-end gap-2">
-                    <button type="submit" className="btn btn-primary">Thêm</button>
-                    <button type="button" className="btn btn-secondary" onClick={() => setIsAddModalVisible(false)}>Hủy</button>
-                  </div>
-                </form>
+        <>
+          <div className="custom-modal-overlay"></div>
+          <div className="modal show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-dialog-centered" role="document" style={{ maxWidth: '500px' }}>
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Thêm PostgreSQL Node</h5>
+                  <button type="button" className="btn-close" aria-label="Close" onClick={() => setIsAddModalVisible(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <form onSubmit={onAddSubmit}>
+                    <div className="mb-3">
+                      <label className="form-label">Tên Node</label>
+                      <input type="text" name="name" className="form-control" placeholder="Ví dụ: PostgreSQL Production" required />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Host</label>
+                      <input type="text" name="host" className="form-control" placeholder="localhost hoặc IP address" required />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Port</label>
+                      <input type="text" name="port" className="form-control" placeholder="5432" required />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Username</label>
+                      <input type="text" name="username" className="form-control" placeholder="Username" required />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Mật khẩu</label>
+                      <input type="password" name="password" className="form-control" placeholder="Mật khẩu" required />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Database kết nối</label>
+                      <input type="text" name="database" className="form-control" placeholder="Tên database" required />
+                    </div>
+                    <div className="d-flex justify-content-end gap-2">
+                      <button type="submit" className="btn btn-primary">Thêm</button>
+                      <button type="button" className="btn btn-secondary" onClick={() => setIsAddModalVisible(false)}>Hủy</button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
       {isEditModalVisible && (
-        <div className="modal show d-block" tabIndex="-1" role="dialog">
-          <div className="modal-dialog modal-dialog-centered" role="document" style={{ maxWidth: '500px' }}>
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Chỉnh Sửa PostgreSQL Instance</h5>
-                <button type="button" className="btn-close" aria-label="Close" onClick={() => setIsEditModalVisible(false)}></button>
-              </div>
-              <div className="modal-body">
-                <form onSubmit={onEditSubmit}>
-                  <div className="mb-3">
-                    <label className="form-label">Tên Instance</label>
-                    <input type="text" name="name" className="form-control" placeholder="Ví dụ: PostgreSQL Production" required defaultValue={editingNode?.name} />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Host</label>
-                    <input type="text" name="host" className="form-control" placeholder="localhost hoặc IP address" required defaultValue={editingNode?.host} />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Port</label>
-                    <input type="text" name="port" className="form-control" placeholder="5432" required defaultValue={editingNode?.port} />
-                  </div>
-                  <div className="d-flex justify-content-end gap-2">
-                    <button type="submit" className="btn btn-primary">Cập Nhật</button>
-                    <button type="button" className="btn btn-secondary" onClick={() => setIsEditModalVisible(false)}>Hủy</button>
-                  </div>
-                </form>
+        <>
+          <div className="custom-modal-overlay"></div>
+          <div className="modal show d-block" tabIndex="-1" role="dialog">
+            <div className="modal-dialog modal-dialog-centered" role="document" style={{ maxWidth: '500px' }}>
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">Chỉnh Sửa PostgreSQL Instance</h5>
+                  <button type="button" className="btn-close" aria-label="Close" onClick={() => setIsEditModalVisible(false)}></button>
+                </div>
+                <div className="modal-body">
+                  <form onSubmit={onEditSubmit}>
+                    <div className="mb-3">
+                      <label className="form-label">Tên Instance</label>
+                      <input type="text" name="name" className="form-control" placeholder="Ví dụ: PostgreSQL Production" required defaultValue={editingNode?.name} />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Host</label>
+                      <input type="text" name="host" className="form-control" placeholder="localhost hoặc IP address" required defaultValue={editingNode?.host} />
+                    </div>
+                    <div className="mb-3">
+                      <label className="form-label">Port</label>
+                      <input type="text" name="port" className="form-control" placeholder="5432" required defaultValue={editingNode?.port} />
+                    </div>
+                    <div className="d-flex justify-content-end gap-2">
+                      <button type="submit" className="btn btn-primary">Cập Nhật</button>
+                      <button type="button" className="btn btn-secondary" onClick={() => setIsEditModalVisible(false)}>Hủy</button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       <AddDatabaseInNode
