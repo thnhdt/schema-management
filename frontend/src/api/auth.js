@@ -30,7 +30,7 @@ export const signUp = async (createdData) => {
 export const refreshToken = async () => {
   const response = await api.post('/user/refresh-token', {}, { withCredentials: true });
   const newToken = response.data?.metaData?.tokens?.accessToken;
-  
+
   if (newToken) {
     const state = store.getState();
     const userId = state.user.userId;
@@ -41,12 +41,11 @@ export const refreshToken = async () => {
       payload: { token: newToken, roles, userId, username },
     });
   }
-  
+
   return response.data;
 };
 
 export const getState = async (userId) => {
-  console.log('getState called with', userId);
   const response = await api.get(`/user/get-state`, {
     params: { userId },
     requiresAuth: true,

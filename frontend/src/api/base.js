@@ -74,12 +74,12 @@ api.interceptors.response.use(
         const userId = state.user.userId;
         const username = state.user.username;
         const roles = state.user.roles;
-        
+        const isAdmin = state.user.isAdmin;
         store.dispatch({
           type: 'user/setCredentials',
-          payload: { token: newToken, roles, userId, username },
+          payload: { token: newToken, roles, userId, username, isAdmin },
         });
-        
+
         if (userId) sessionStorage.setItem('userId', userId);
         processQueue(null, newToken);
         original.headers.Authorization = `Bearer ${newToken}`;

@@ -22,7 +22,8 @@ const disconnectToDatabase = async (req, res, next) => {
   }).send(res)
 };
 const getAllDatabaseInHost = async (req, res, next) => {
-  const allDatabases = await databaseService.getAllDatabaseInHost(req.query)
+  const allDatabases = await databaseService.getAllDatabaseInHost(req.query, req.user);
+
   new SucessReponse({
     message: 'get all databases thành công!',
     metaData: allDatabases

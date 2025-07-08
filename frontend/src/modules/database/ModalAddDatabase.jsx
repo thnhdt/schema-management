@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { editDatabase, createDatabase, deleteDatabase } from "../../api";
 import { ModalComponent, TableComponent } from "../../util/helper";
 import { DeleteOutlined, PlusOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
+import { store } from "../../store";
 
 const AddDatabaseInNode = (props) => {
   const { visible, onCancel, idNode, onOk, databases, fetchNode } = props;
@@ -15,12 +16,14 @@ const AddDatabaseInNode = (props) => {
   const addUsernameRef = useRef();
   const addPasswordRef = useRef();
   const navigate = useNavigate();
-  
+
   const roles = useSelector(state => state.user.roles);
-  const isAdmin = roles.includes('admin');
+  const canUpdateNodeAndDb = roles.some(p => p?.isCreate);
+  // console.log(canUpdateNodeAndDb);
+  const isAdmin = store.getState().user.isAdmin;
 
   const handleDelete = async (id) => {
-    if (!isAdmin) {
+    if (!isAdmin || !canUpdateNodeAndDb) {
       message.error('Bạn phải là admin mới được xóa database!');
       return;
     }
@@ -41,7 +44,7 @@ const AddDatabaseInNode = (props) => {
   const isEditing = (record) => record._id === editingKey;
 
   const edit = (record) => {
-    if (!isAdmin) {
+    if (!isAdmin && !canUpdateNodeAndDb) {
       message.error('Bạn phải là admin mới được chỉnh sửa database!');
       return;
     }
@@ -53,17 +56,20 @@ const AddDatabaseInNode = (props) => {
   };
 
   const save = async (_id) => {
-    if (!isAdmin) {
+
+    if (!isAdmin && !canUpdateNodeAndDb) {
       message.error('Bạn phải là admin mới được chỉnh sửa database!');
       return;
     }
     try {
       const row = document.getElementById(`edit-row-${_id}`);
+      console.log(row.elements.name.value);
       const data = {
         name: row.elements.name.value.trim(),
         database: row.elements.database.value.trim(),
         username: row.elements.username.value.trim(),
       };
+
       await editDatabase(_id, data);
       await fetchNode(idNode);
       setEditingKey('');
@@ -74,7 +80,7 @@ const AddDatabaseInNode = (props) => {
   };
 
   const handleAddNewInline = () => {
-    if (!isAdmin) {
+    if (!isAdmin && !canUpdateNodeAndDb) {
       message.error('Bạn phải là admin mới được thêm database!');
       return;
     }
@@ -84,7 +90,7 @@ const AddDatabaseInNode = (props) => {
   };
 
   const saveNew = async () => {
-    if (!isAdmin) {
+    if (!isAdmin && !canUpdateNodeAndDb) {
       message.error('Bạn phải là admin mới được thêm database!');
       return;
     }
@@ -222,7 +228,7 @@ const AddDatabaseInNode = (props) => {
         </span>
       ) : (
         <span>
-          {isAdmin && (
+          {(isAdmin || canUpdateNodeAndDb) && (
             <>
               <Button
                 icon={<EditOutlined />}
@@ -238,17 +244,17 @@ const AddDatabaseInNode = (props) => {
                 okText="Xoá"
                 cancelText="Huỷ"
               >
-                <Button danger icon={<DeleteOutlined />} size="small" style={{ marginRight: 8 }}/>
+                <Button danger icon={<DeleteOutlined />} size="small" style={{ marginRight: 8 }} />
               </Popconfirm>
             </>
           )}
-            <Tooltip title="Xem chi tiết">
-              <Button
-                icon={<EyeOutlined />}
-                onClick={() => handleViewSchema(record)}
-                size="small"
-              />
-            </Tooltip>
+          <Tooltip title="Xem chi tiết">
+            <Button
+              icon={<EyeOutlined />}
+              onClick={() => handleViewSchema(record)}
+              size="small"
+            />
+          </Tooltip>
         </span>
       );
     },
@@ -272,8 +278,9 @@ const AddDatabaseInNode = (props) => {
             columns={columns}
             data={dataSource}
             loading={false}
+            scroll={{ x: 'max-content' }}
           />
-          {isAdmin && (
+          {(isAdmin || canUpdateNodeAndDb) && (
             <div style={{ marginTop: '16px', textAlign: 'right' }}>
               <Button
                 type="dashed"

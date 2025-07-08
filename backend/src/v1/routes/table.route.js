@@ -2,12 +2,14 @@ const express = require("express");
 const tableController = require('../controllers/table.controller.js');
 const tableRouter = express.Router();
 const { handlerError } = require('../utils/handle-error.util.js');
-const { authentication, checkPermissionDatabase } = require('../utils/auth.utils.js');
+const { authentication, checkPermissionDatabase, checkPermissionTable } = require('../utils/auth.utils.js');
 
 tableRouter.use(authentication)
-// tableRouter.use(checkPermissionDatabase)
 
+tableRouter.route('/all-update-tables')
+  .post(handlerError(tableController.getAllUpdateOnTables))
 
+tableRouter.use(checkPermissionDatabase)
 tableRouter.route('/get-all-tables')
   .get(handlerError(tableController.getAllTables))
 
@@ -23,6 +25,7 @@ tableRouter.route('/create-schema')
 tableRouter.route('/drop-column')
   .post(handlerError(tableController.dropColumn))
 
+tableRouter.use(checkPermissionTable)
 tableRouter.route('/delete-row')
   .post(handlerError(tableController.deleteRow))
 
@@ -31,8 +34,5 @@ tableRouter.route('/drop-table')
 
 tableRouter.route('/get-columns')
   .get(handlerError(tableController.getColumns))
-
-tableRouter.route('/all-update-tables')
-  .post(handlerError(tableController.getAllUpdateOnTables))
 
 module.exports = tableRouter

@@ -41,13 +41,6 @@ const createDatabase = async (dataCreated) => {
   if (checkNameAlready.length > 0) throw new BadResponseError('Tên Database đã tồn tại!');
   const node = await nodeModel.findById(dataCreated.nodeId).lean();
   if (!node) throw new BadResponseError('Node không tồn tại!');
-  await createPhysicalDB(
-    dataCreated.database,
-    dataCreated.username,
-    dataCreated.password,
-    node.host,
-    node.port
-  );
 
   const dataCreate = {
     ...dataCreated,
@@ -61,14 +54,29 @@ const createDatabase = async (dataCreated) => {
     }
   }
 };
-const getAllDatabaseInHost = async (reqQuery) => {
+const getAllDatabaseInHost = async (reqQuery, user) => {
   const { idHost, status } = reqQuery;
+  // console.log("66", user);
+  const permissionsDB = user.userPermissions;
+  const dbIdSet = new Set(
+    permissionsDB.flatMap(role =>
+      role.permissions
+        .filter(p => p.databaseId)
+        .map(p => String(p.databaseId))
+    )
+  );
+  const dbIds = [...dbIdSet].map(id =>
+    mongoose.isValidObjectId(id) && typeof id === 'string'
+      ? new mongoose.Types.ObjectId(id)
+      : id
+  );
   let allDatabase = [];
   if (status) {
     allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost), status: status }).lean();
   }
   else {
-    allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost) }).lean();
+    allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost), _id: { $in: dbIds } }).lean();
+
   }
   return {
     code: 200,

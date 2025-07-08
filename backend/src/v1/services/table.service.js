@@ -81,8 +81,10 @@ const getAllTables = async (reqBody) => {
     }
   }
 };
-const getAllUpdateOnTables = async (reqBody) => {
+const getAllUpdateOnTables = async (reqBody, user) => {
   const { targetDatabaseId, currentDatabaseId } = reqBody;
+  const permissions = user.userPermissions.some(role => role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) && role?.permissions.some(p => p.databaseId.toString() === currentDatabaseId));
+  if (!permissions) throw new BadResponseError("Bạn không có quyền truy cập một trong hai DB !")
   const defaultAllTablesInTargetDB = await getAllTables({ schema: 'public', id: targetDatabaseId });
   const defaultAllTablesInCurrentDB = await getAllTables({ schema: 'public', id: currentDatabaseId });
   const allTablesInTargetDB = defaultAllTablesInTargetDB.metaData.data;

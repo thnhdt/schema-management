@@ -8,12 +8,11 @@ import {
   EyeOutlined,
   DiffOutlined
 } from '@ant-design/icons';
-// import { useNavigate } from 'react-router-dom';
 import { getAllNodes, createNode, editNode, deleteNode } from '../../api';
 import '../../App.css';
 import AddDatabaseInNode from '../database/ModalAddDatabase';
-import { useSelector } from 'react-redux';
 import ModalCompareComponent from '../../components/Compare/Modal-Compare-Component';
+import { store } from '../../store';
 
 const { Title, Text } = Typography;
 
@@ -24,14 +23,13 @@ const Node = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingNode, setEditingNode] = useState(null);
   const [messageApi, contextHolder] = message.useMessage();
-  // const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
   const [nodeIdAddDatabase, setNodeIdAddDatabase] = useState(null);
   const [databases, setDatabases] = useState([]);
   const [urlString, setUrlString] = useState([]);
-  const roles = useSelector(state => state.user.roles);
-  const isAdmin = roles.includes('admin');
+  const isAdmin = store.getState().user.isAdmin;
   const [openCompareFunction, setOpenCompareFunction] = useState(false);
+  const canUpdateNodeAndDb = store.getState().user.roles.some(p => p?.isCreate);
 
   useEffect(() => {
     fetchNode();
@@ -43,7 +41,6 @@ const Node = () => {
       setNodes(response.metaData.metaData.node);
       if (idNode) {
         const targetNode = response.metaData.metaData.node.filter(item => item._id === idNode);
-        console.log(targetNode[0].databases);
         setDatabases(targetNode[0].databases);
       }
     } catch (error) {
@@ -191,7 +188,7 @@ const Node = () => {
               }}
             />
           </Tooltip>
-          {isAdmin && (
+          {(isAdmin || canUpdateNodeAndDb) && (
             <>
               <Tooltip title="Chỉnh sửa">
                 <Button
@@ -236,7 +233,7 @@ const Node = () => {
         title="Danh Sách PostgreSQL Nodes"
         extra={
           <Space style={{ gap: '1rem' }}>
-            {(roles.includes('admin')) &&
+            {(isAdmin || canUpdateNodeAndDb) &&
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
@@ -244,8 +241,6 @@ const Node = () => {
               >
                 Thêm Instance
               </Button>
-
-
             }
             {/* <Button
                 type="primary"

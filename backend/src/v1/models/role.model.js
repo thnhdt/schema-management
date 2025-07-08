@@ -20,7 +20,8 @@ const userSchema = new Schema({
   permissions: {
     type: Array,
     default: []
-  }
+  },
+  isCreate: { type: Boolean, default: false }
 }, {
   collection: COLLECTION_NAME,
   timestamps: true

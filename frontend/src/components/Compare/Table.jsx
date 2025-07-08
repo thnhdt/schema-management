@@ -7,8 +7,8 @@ import '../../App.css';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react'
 import { getAllUpdateTables } from '../../api';
-import { Card, List, Typography, Spin, Flex, Tag, Space, Divider } from 'antd';
-
+import { Card, List, Typography, Spin, Flex, Tag, Space, Divider, Tabs } from 'antd';
+import FunctionCompareComponent from '../../modules/Compare/Function';
 const enumTypeColor = {
   'CREATE': 'green',
   'UPDATE': 'purple',
@@ -31,7 +31,7 @@ const TableCompareComponent = () => {
   const [updateData, setUpdateData] = useState([]);
   const [currentDatabase, setCurrentDatabase] = useState(null);
   const [targetDatabase, setTargetDatabase] = useState(null);
-
+  const [activeTab, setActiveTab] = useState('table');
 
   const handleGetDetailUpdate = (key, ddlTargetTable, ddlCurrentTable, patch, currentDatabase, targetDatabase) => {
     navigate('/compare/detail', {
@@ -72,11 +72,11 @@ const TableCompareComponent = () => {
       </>);
   }
   return (
-    <div>
-      <Space direction="vertical" size={2} style={{ width: '100%', marginBottom: 32 }}>
-        <Title level={2} style={{ display: 'flex', alignItems: 'center', marginBottom: '0.7rem' }}>
+    <div style={{ maxHeight: '100vh' }}>
+      <Space direction="vertical" size={2} style={{ width: '100%', marginBottom: 8 }}>
+        <Title level={2} style={{ display: 'flex', alignItems: 'center' }}>
           <UnorderedListOutlined style={{ marginRight: 8, color: '#1677ff' }} />
-          Danh sách cập nhật Table
+          Danh sách cập nhật gần đây
         </Title>
 
         <Text type="secondary">
@@ -86,56 +86,91 @@ const TableCompareComponent = () => {
 
         <Divider style={{ margin: '12px 0 0' }} />
       </Space>
-      <Card title="Những cập nhật gần đây">
-        <List
-          itemLayout="vertical"
-          size="large"
-          pagination={false}
-          dataSource={updateData}
-          renderItem={item => (
-            <List.Item
-              key={item.key}
-              onClick={() => handleGetDetailUpdate(item.key,
-                item.right?.text ?? '',
-                item.left?.text ?? '',
-                item.stmts.join('\n'),
-                currentDatabase,
-                targetDatabase)}
-              className="hover-overlay shadow-sm rounded mb-4"
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '3rem',
-                  width: '100%',
-                  marginLeft: '1rem'
-                }}
-              >
-                <Tag
-                  color={enumTypeColor[item.type]}
-                  style={{ margin: 0, flexShrink: 0 }}
-                >
-                  {item.type}
-                </Tag>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        type="card"
+        items={[
+          {
+            key: 'table',
+            label: (
+              <Space>
+                <DatabaseOutlined />
+                Table
+              </Space>
+            ),
+            children: (
+              <div style={{ maxHeight: 'calc(100vh - 330px)', overflowY: 'auto' }}>
+                <Card title="Những cập nhật trên Table" style={{ padding: '0' }}>
+                  <List
+                    itemLayout="vertical"
+                    size="large"
+                    pagination={false}
+                    dataSource={updateData}
+                    scroll={{ y: 'max-content' }}
+                    renderItem={item => (
+                      <List.Item
+                        key={item.key}
+                        onClick={() => handleGetDetailUpdate(
+                          `${enumTypeTitle[item.type]} ${item.key}`,
+                          item.right?.text ?? '',
+                          item.left?.text ?? '',
+                          item.stmts.join('\n'),
+                          currentDatabase,
+                          targetDatabase)}
+                        className="hover-overlay shadow-sm rounded mb-4"
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '3rem',
+                            width: '100%',
+                            marginLeft: '1rem'
+                          }}
+                        >
+                          <Tag
+                            color={enumTypeColor[item.type]}
+                            style={{ margin: 0, flexShrink: 0 }}
+                          >
+                            {item.type}
+                          </Tag>
 
-                <div style={{ flex: 1 }}>
-                  <List.Item.Meta
-                    title={`${enumTypeTitle[item.type]} ${item.key}`}
+                          <div style={{ flex: 1 }}>
+                            <List.Item.Meta
+                              title={`${enumTypeTitle[item.type]} ${item.key}`}
+                            />
+                            <Paragraph
+                              ellipsis={{ rows: 4 }}
+                              style={{ marginBottom: 0 }}
+                            >
+                              {item.stmts.join('\n')}
+                            </Paragraph>
+                          </div>
+                        </div>
+                      </List.Item>
+                    )}
                   />
-                  <Paragraph
-                    ellipsis={{ rows: 4 }}
-                    style={{ marginBottom: 0 }}
-                  >
-                    {item.stmts.join('\n')}
-                  </Paragraph>
-                </div>
-              </div>
-            </List.Item>
-          )}
-        />
-      </Card>
-    </div >
+                </Card>
+              </div >)
+          },
+          {
+            key: 'function',
+            label: (
+              <Space>
+                <DatabaseOutlined />
+                Function
+              </Space>
+            ),
+            children: (
+              <FunctionCompareComponent
+                targetDatabaseId={targetDatabaseId}
+                currentDatabaseId={currentDatabaseId}
+              />),
+          },
+        ]}
+      />
+    </div>
 
   );
 }

@@ -21,7 +21,7 @@ function Main() {
       const userId = user.userId;
       const username = user.name;
       const roles = Array.isArray(user.roles) ? user.roles : [];
-      dispatch(setCredentials({ token, roles, userId, username }));
+      dispatch(setCredentials({ token, roles, userId, username, isAdmin: user.isAdmin }));
       navigate('/node', { replace: true });
     } catch (error) {
       messageApi.open({

@@ -4,6 +4,7 @@ const { createTokenPair } = require('../utils/auth.utils');
 const bcrypt = require('bcrypt');
 const { AuthFailureError, ForbiddenError, BadResponseError } = require('../cores/error.response');
 const mongoose = require('mongoose');
+const roleModel = require('../models/role.model');
 
 const signUp = async (dataCreated) => {
   const { email } = dataCreated
@@ -47,13 +48,16 @@ const login = async ({ email, password, refreshToken = null }) => {
   }
   //tao 2 access token va refresh token
   const tokens = await createTokenPair({ userId: targetUser._id, email, roles: targetUser.roles }, env.SECRET_KEY);
+  const userPermissions = await Promise.all(targetUser.roles.map(role => roleModel.findById(role)));
+  const isAdmin = userPermissions.some(item => item.name === 'admin');
   return {
     metaData: {
       user: {
         userId: targetUser._id,
         name: targetUser.name,
         email: targetUser.email,
-        roles: targetUser.roles
+        roles: userPermissions,
+        isAdmin
       },
       tokens
     }
@@ -65,10 +69,12 @@ const handlerRefreshToken = async ({ user, refreshToken }) => {
   if (!refreshToken) throw new ForbiddenError("User is not login!");
   const targetUser = await userModel.findById(userId);
   if (!targetUser) throw new ForbiddenError("User is not register !");
-
+  const userPermissions = await Promise.all(targetUser.roles.map(role => roleModel.findById(role)));
+  const isAdmin = userPermissions.some(item => item.name === 'admin');
+  console.log("handlerRefreshToken:isAdmin", isAdmin);
   const tokens = await createTokenPair({ userId: targetUser._id, name: targetUser.name, roles: targetUser.roles }, env.SECRET_KEY);
   return {
-    user,
+    user: { ...user, isAdmin },
     tokens
   }
 }
@@ -79,7 +85,7 @@ const getAllUsers = async () => {
 
 const getUser = async (userId) => {
   const targetUser = await userModel.find({ _id: new mongoose.Types.ObjectId(userId) }, '_id name roles').sort({ createdAt: -1 }).lean();
-  return targetUser[0]
+  return { ...targetUser[0], isAdmin }
 }
 
 const updateUser = async (dataUpdate) => {

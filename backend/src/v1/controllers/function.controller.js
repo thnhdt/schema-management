@@ -18,7 +18,7 @@ const compareFunctionInPosgresql = async (req, res, next) => {
   }).send(res)
 }
 const getAllUpdate = async (req, res, next) => {
-  const targetData = await functionService.getAllUpdate(req.body);
+  const targetData = await functionService.getAllUpdate(req.body, req.user);
   new SucessReponse({
     metaData: targetData
   }).send(res)

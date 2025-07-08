@@ -13,7 +13,7 @@ const DiffViewer = ({ oldText, newText, filePrimeTitle = 'Before', fileSecondTit
     '', '',
     { context: Number.MAX_SAFE_INTEGER }
   );
-  
+
 
   diffText = diffText
     .split("\n")
@@ -23,7 +23,6 @@ const DiffViewer = ({ oldText, newText, filePrimeTitle = 'Before', fileSecondTit
   let files = [];
   try {
     files = parseDiff(diffText);
-    console.log(diffText);
   } catch (error) {
     console.error("Lỗi parseDiff:", error);
     return <div className="text-red-500">Lỗi khi parse diff!</div>;

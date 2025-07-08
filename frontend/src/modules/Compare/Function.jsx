@@ -18,12 +18,12 @@ const enumTypeTitle = {
   'UPDATE': 'Cập nhật trên hàm',
   "DELETE": 'Xóa hàm'
 }
-const FunctionCompareComponent = () => {
+const FunctionCompareComponent = ({ targetDatabaseId, currentDatabaseId }) => {
   // Thêm hàm tiện ích để bổ sung columnCount cho tables
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const targetDatabaseId = searchParams.get('targetDatabaseId');
-  const currentDatabaseId = searchParams.get('currentDatabaseId');
+  // const location = useLocation();
+  // const searchParams = new URLSearchParams(location.search);
+  // const targetDatabaseId = searchParams.get('targetDatabaseId');
+  // const currentDatabaseId = searchParams.get('currentDatabaseId');
   const { Title, Paragraph, Text } = Typography;
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -72,27 +72,14 @@ const FunctionCompareComponent = () => {
       </>);
   }
   return (
-    <div>
-      <Space direction="vertical" size={2} style={{ width: '100%', marginBottom: 32 }}>
-        <Title level={2} style={{ display: 'flex', alignItems: 'center', marginBottom: '0.7rem' }}>
-          <UnorderedListOutlined style={{ marginRight: 8, color: '#1677ff' }} />
-          Danh sách cập nhật Funtion
-        </Title>
-
-        <Text type="secondary">
-          <DatabaseOutlined /> Đích: <strong>{targetDatabase}</strong> &nbsp;|&nbsp;
-          <DatabaseOutlined /> Hiện tại: <strong>{currentDatabase}</strong>
-        </Text>
-
-        {/* Gạch chia nhẹ */}
-        <Divider style={{ margin: '12px 0 0' }} />
-      </Space>
-      <Card title="Những cập nhật gần đây">
+    <div style={{ maxHeight: 'calc(100vh - 330px)', overflowY: 'auto' }}>
+      <Card title="Những cập nhật trên Function" style={{ padding: 0 }}>
         <List
           itemLayout="vertical"
           size="large"
           pagination={false}
           dataSource={updateData}
+          // style={{ overflowY: 'auto' }}
           renderItem={item => (
             <List.Item
               key={item.key}

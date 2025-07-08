@@ -27,11 +27,10 @@ export const getAllUsers = async (arg) => {
         FETCH ALL  from  mycursor;
         COMMIT;`, {
     replacements: [arg],
-    raw: true 
+    raw: true
   })
   close()
   results[0].shift()
-  console.log(results[0])
   return results[0]
 }
 export const getAllUsers1 = async (arg, arg1) => {

@@ -41,9 +41,8 @@ const authentication = handlerError(async (req, res, next) => {
     const decoder = jwt.verify(accessToken, env.SECRET_KEY);
     if (userId !== decoder.userId) throw new AuthFailureError("UserId is error !");
     const userRoles = decoder.roles;
-    // const userPermissions = await Promise.all(userRoles.map(role => roleModel.findById(role)));
-    // req.user = { ...decoder, userPermissions };
-    req.user = { ...decoder };
+    const userPermissions = await Promise.all(userRoles.map(role => roleModel.findById(role).lean()));
+    req.user = { ...decoder, userPermissions };
     return (next())
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
@@ -57,15 +56,17 @@ const checkPermissionDatabase = handlerError(async (req, res, next) => {
   const userPermissions = req.user.userPermissions;
   try {
     const { id } = req.body?.id ? req.body : req.query;
-    console.log(id, userPermissions);
-    if (
-      !Array.isArray(userPermissions) ||
-      !userPermissions.some(p =>
-        Array.isArray(p.permissions) &&
-        p.permissions.some(item => item?.databaseId?.toString() === id)
-      )
-    ) {
-      throw new BadResponseError("Bạn không có quyền truy cập lên database này !");
+    const isAdmin = userPermissions.some(item => item.name === 'admin');
+    if (!isAdmin) {
+      if (
+        !Array.isArray(userPermissions) ||
+        !userPermissions.some(p =>
+          Array.isArray(p.permissions) &&
+          p.permissions.some(item => item?.databaseId?.toString() === id)
+        )
+      ) {
+        throw new BadResponseError("Bạn không có quyền truy cập lên database này !");
+      }
     }
     return (next())
   } catch (error) {
@@ -77,34 +78,85 @@ const checkPermissionTable = handlerError(async (req, res, next) => {
   const userPermissions = req.user.userPermissions;
   let permissionOnDB = {};
   let canUpdateTable = false;
-  let canUpdateFunction = false;
   try {
     const { id } = req.body?.id ? req.body : req.query;
-    console.log(id, userPermissions);
-    if (
-      Array.isArray(userPermissions) &&
-      userPermissions.some(p =>
-        Array.isArray(p.permissions) &&
-        p.permissions.some(item => {
-          permissionOnDB = item;
-          return item?.databaseId?.toString() === id
-        })
-      )
-    ) {
-      canUpdateTable = permissionOnDB?.ops.include('update-table');
-      canUpdateFunction = permissionOnDB?.ops.include('update-function');
+    const isAdmin = userPermissions.some(item => item.name === 'admin');
+    if (!isAdmin) {
+      if (
+        Array.isArray(userPermissions) &&
+        userPermissions.some(p =>
+          Array.isArray(p.permissions) &&
+          p.permissions.some(item => {
+            permissionOnDB = item;
+            return item?.databaseId?.toString() === id
+          })
+        )
+      ) {
+        canUpdateTable = permissionOnDB?.ops.includes('update-table');
+      }
     }
-    req.canUpdateTable = canUpdateTable
-    req.canUpdateFunction = canUpdateFunction
-    return (next())
+    else {
+      canUpdateTable = true;
+    }
+    if (!canUpdateTable) {
+      throw new BadResponseError("Bạn không có quyền chỉnh sửa trên table của database này !");
+    }
+    return (next());
   } catch (error) {
     throw new Error(error)
   }
 });
 
+const checkPermissionFunction = handlerError(async (req, res, next) => {
+  const userPermissions = req.user.userPermissions;
+  let permissionOnDB = {};
+  let canUpdateFunction = false;
+  try {
+    const { id } = req.body?.id ? req.body : req.query;
+    const isAdmin = userPermissions.some(item => item.name === 'admin');
+    if (!isAdmin) {
+      if (
+        Array.isArray(userPermissions) &&
+        userPermissions.some(p =>
+          Array.isArray(p.permissions) &&
+          p.permissions.some(item => {
+            permissionOnDB = item;
+            return item?.databaseId?.toString() === id
+          })
+        )
+      ) {
+        canUpdateFunction = permissionOnDB?.ops.include('update-function');
+      }
+    }
+    else {
+      canUpdateFunction = true;
+    }
+    if (!canUpdateFunction) {
+      throw new BadResponseError("Bạn không có quyền chỉnh sửa function trên database này!");
+    }
+    return (next());
+  } catch (error) {
+    throw new Error(error)
+  }
+})
+
+const checkPermissonAddHost = handlerError(async (req, res, next) => {
+  try {
+    const userPermissions = req.user.userPermissions;
+    if (!userPermissions.some(p => p?.isCreate)) {
+      throw new BadResponseError("Bạn không có quyền điều chỉnh trên Host và thêm database!")
+    }
+    return (next());
+  } catch (error) {
+    throw new Error(error)
+  }
+})
 module.exports = {
   createTokenPair,
   verifyJWT,
   authentication,
-  checkPermissionDatabase
+  checkPermissionDatabase,
+  checkPermissionTable,
+  checkPermissionFunction,
+  checkPermissonAddHost
 }

@@ -8,7 +8,7 @@ const createNode = async (req, res, next) => {
   }).send(res)
 };
 const getAllNodes = async (req, res, next) => {
-  const allNodes = await nodeService.getAllNode();
+  const allNodes = await nodeService.getAllNode(req.user);
   new SucessReponse({
     message: 'get all nodes thành công!',
     metaData: allNodes

@@ -376,7 +376,6 @@ function compareConstraints(db1, db2) {
 
   diff2.forEach(function (constraintName) {
     var constraint = _.findWhere(db2.constraints, { constraint_name: constraintName })
-    console.log(constraint);
     dbdiff.log(constraintDescription(constraint))
   })
 

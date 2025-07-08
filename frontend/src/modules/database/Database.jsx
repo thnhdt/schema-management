@@ -9,6 +9,8 @@ import { useSelector } from 'react-redux';
 import { getAllDatabaseInHost, connectToDatabase, disconnectToDatabase } from '../../api';
 import '../../App.css'
 import ModalAddDatabase from './ModalAddDatabase';
+import { store } from '../../store';
+
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 
@@ -26,9 +28,7 @@ const Database = () => {
   const id = searchParams.get('id');
   const nodeData = location.state?.nodeData;
   const [showAddModal, setShowAddModal] = useState(false);
-  
-  const roles = useSelector(state => state.user.roles);
-  const isAdmin = roles.includes('admin');
+  const isAdmin = store.getState().isAdmin;
 
   useEffect(() => {
     fetchDatabases();

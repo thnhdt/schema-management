@@ -33,9 +33,10 @@ function App() {
                 <Route path='/schema' element={<Schema />} />
                 <Route path='/schema/:id' element={<Schema />} />
                 <Route path='/user' element={<User />} />
+
+                {/* <Route path='/compare/function' element={<FunctionCompareComponent />} /> */}
+                <Route path='/compare' element={<TableCompareComponent />} />
                 <Route path='/compare/detail' element={<CompareComponent />} />
-                <Route path='/compare/function' element={<FunctionCompareComponent />} />
-                <Route path='/compare/table' element={<TableCompareComponent />} />
               </Route>
             </Route>
             <Route path="*" element={<h6>Không có đường dẫn...</h6>} />

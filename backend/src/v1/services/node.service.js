@@ -26,18 +26,44 @@ const createNode = async (dataCreated) => {
     }
   }
 }
-const getAllNode = async () => {
+const getAllNode = async (user) => {
+  const permissionsDB = user.userPermissions;
+  const dbIdSet = new Set(
+    permissionsDB.flatMap(role =>
+      role.permissions
+        .filter(p => p.databaseId)
+        .map(p => String(p.databaseId))
+    )
+  );
+  const dbIds = [...dbIdSet].map(id =>
+    mongoose.isValidObjectId(id) && typeof id === 'string'
+      ? new mongoose.Types.ObjectId(id)
+      : id
+  );
   const allNodes = await nodeModel.aggregate([
     { $sort: { createdAt: -1 } },
     {
       $lookup: {
         from: 'Databases',
-        localField: '_id',
-        foreignField: 'nodeId',
+        let: { nodeId: '$_id' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ['$nodeId', '$$nodeId'] },
+                  { $in: ['$_id', dbIds] }
+                ]
+              }
+            }
+          }
+        ],
         as: 'databases'
       }
-    }
+    },
+    { $match: { 'databases.0': { $exists: true } } }
   ]);
+
   return {
     code: 200,
     metaData: {

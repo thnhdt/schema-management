@@ -13,12 +13,13 @@ const userSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (state, action) => {
-      const { token, roles, userId, username } = action.payload;
+      const { token, roles, userId, username, isAdmin } = action.payload;
       state.token = token;
       state.roles = roles || [];
       state.userId = userId;
       state.username = username;
       state.isAuthenticated = !!token;
+      state.isAdmin = isAdmin;
     },
     logout: (state) => {
       state.token = null;
@@ -26,6 +27,7 @@ const userSlice = createSlice({
       state.userId = null;
       state.username = null;
       state.isAuthenticated = false;
+      state.isAdmin = false;
     },
   },
 });

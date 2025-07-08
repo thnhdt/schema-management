@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Tabs, Card, Space, Button, Typography, message, Tooltip, Popconfirm, Input, Row, Col, Statistic, Select, Modal } from 'antd';
 import { useSelector } from 'react-redux';
 import Highlighter from 'react-highlight-words';
+import { store } from '../../store';
 import {
   DatabaseOutlined,
   TableOutlined,
@@ -26,8 +27,8 @@ const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 
 function Schema() {
-  const [schemas, ] = useState('public');
-  const [selectedSchema, ] = useState(null);
+  const [schemas,] = useState('public');
+  const [selectedSchema,] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { id } = useParams();
@@ -44,9 +45,10 @@ function Schema() {
   const [activeTab, setActiveTab] = useState('table');
   const [dropColumnModal, setDropColumnModal] = useState({ visible: false, table: null, columns: [], loading: false });
   const [selectedColumn, setSelectedColumn] = useState(null);
-  
   const roles = useSelector(state => state.user.roles);
-  const isAdmin = roles.includes('admin');
+  const canUptdateTable = roles.some(role => role?.permissions.some(p => p.databaseId?.toString() === id && p?.ops.includes('update-table')));
+  const canUptdateFunction = roles.some(role => role?.permissions.some(p => p.databaseId?.toString() === id && p?.ops.includes('update-function')));
+  const isAdmin = useSelector(state => state.user.isAdmin);
 
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();
@@ -192,7 +194,7 @@ function Schema() {
     }, 1000);
   };
   const handleDeleteTable = async (tableName) => {
-    if (!isAdmin) {
+    if (!isAdmin && !canUptdateTable) {
       messageApi.error('Bạn phải là admin mới được xóa bảng!');
       return;
     }
@@ -209,7 +211,7 @@ function Schema() {
   };
 
   const handleDeleteFunction = async (functionName, args) => {
-    if (!isAdmin) {
+    if (!isAdmin && !canUptdateFunction) {
       messageApi.error('Bạn phải là admin mới được xóa function!');
       return;
     }
@@ -248,14 +250,14 @@ function Schema() {
       const res = await getColumns(id, table.table_name, schemas);
       setDropColumnModal({ visible: true, table, columns: res.metaData.metaData.columns, loading: false });
     } catch (err) {
-      messageApi.error('Không lấy được danh sách cột!');
+      messageApi.error('Bạn không có quyền truy cập trên table của database này!');
       console.error(err);
       setDropColumnModal({ visible: false, table: null, columns: [], loading: false });
     }
   };
 
   const handleDropColumn = async () => {
-    if (!isAdmin) {
+    if (!isAdmin && !canUptdateTable) {
       messageApi.error('Bạn phải là admin mới được xóa cột!');
       return;
     }
@@ -299,7 +301,7 @@ function Schema() {
         key: 'actions',
         render: (_, record) => (
           <Space>
-            {isAdmin && (
+            {(isAdmin || canUptdateTable) && (
               <>
                 <Popconfirm
                   title="Xác nhận xóa"
@@ -375,7 +377,7 @@ function Schema() {
         key: 'actions',
         render: (_, record) => (
           <Space>
-            {isAdmin && (
+            {(isAdmin || canUptdateFunction) && (
               <Popconfirm
                 title="Xác nhận xóa"
                 description={`Bạn có chắc chắn muốn xóa function "${record.functionName}"?`}
