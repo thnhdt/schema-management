@@ -6,6 +6,7 @@ import { login } from '../../api/index.js';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from './userSlice';
 import Register from './Register';
+import { forgetPassword } from '../../api/user';
 
 function Main() {
   const navigate = useNavigate();
@@ -32,6 +33,20 @@ function Main() {
     }
   }
 
+  const handleForgetPassword = async () => {
+    const email = emailRef.current.input.value;
+    if (!email) {
+      messageApi.open({ type: 'error', content: 'Vui lòng nhập email!' });
+      return;
+    }
+    try {
+      await forgetPassword(email);
+      messageApi.open({ type: 'success', content: 'Đã gửi email đặt lại mật khẩu!' });
+    } catch (error) {
+      messageApi.open({ type: 'error', content: error?.response?.data?.message || 'Gửi email thất bại!' });
+    }
+  }
+
   return (
     <>
       {contextHolder}
@@ -47,6 +62,7 @@ function Main() {
               navigate('/register');
             }
             }>Đăng ký</Button>
+            <Button variant='text' size='small' block onClick={handleForgetPassword}>Quên mật khẩu</Button>
           </Space>
         </Card>
 

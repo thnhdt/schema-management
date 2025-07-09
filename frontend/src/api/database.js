@@ -31,4 +31,9 @@ export const editDatabase = async (id, updateData) => {
 export const deleteDatabase = async (id) => {
   const response = await api.delete(`/database/${id}`, { requiresAuth: true });
   return response.data;
+};
+
+export const getAllDatabasesAll = async () => {
+  const response = await api.get('/database/get-all-databases-all', { requiresAuth: true });
+  return response.data;
 }; 

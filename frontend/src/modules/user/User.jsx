@@ -1,24 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { message, Button, Popconfirm, Space, Form, Input, Select, Tag } from 'antd';
 import { DeleteOutlined, UserOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
-import { getAllUsers, updateUser, deleteUser } from '../../api';
+import { getAllUsers, updateUser, deleteUser, getAllRoles } from '../../api/user';
 import { TableComponent } from '../../util/helper';
 import { useSelector } from 'react-redux';
+import CreateRole from './ModalCreateRoles';
 
 const { Option } = Select;
 
 const User = () => {
   const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [messageApi, contextHolder] = message.useMessage();
   const [addingRow, setAddingRow] = useState(null);
   const [editingKey, setEditingKey] = useState('');
   const [form] = Form.useForm();
-  // const roles = useSelector(state => state.user.roles);
-  // const isAdmin = roles.includes('admin');
   const isAdmin = useSelector(state => state.user.isAdmin);
+  const [showModal, setShowModal] = useState(false);
   useEffect(() => {
     fetchUsers();
+    fetchRoles();
   }, []);
 
   const fetchUsers = async () => {
@@ -36,6 +38,15 @@ const User = () => {
       console.error('Error fetching users:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      const response = await getAllRoles();
+      setRoles(response.metaData || []);
+    } catch {
+      messageApi.open({ type: 'error', content: 'Không lấy được danh sách roles!' });
     }
   };
 
@@ -128,7 +139,7 @@ const User = () => {
       dataIndex: 'roles',
       key: 'roles',
       width: '25%',
-      render: (roles, record) => {
+      render: (_, record) => {
         const editable = isEditing(record);
         if (editable) {
           return (
@@ -147,22 +158,23 @@ const User = () => {
                 placeholder="Chọn roles"
                 style={{ width: '100%' }}
               >
-                <Option value="user">user</Option>
-                <Option value="admin">admin</Option>
+                {roles.map(role => (
+                  <Option key={role._id} value={role._id}>{role.name}</Option>
+                ))}
               </Select>
             </Form.Item>
           );
         }
         return (
           <Space>
-            {roles && roles.map(role => (
-              <Tag
-                key={role}
-                color={role === 'admin' ? 'red' : 'blue'}
-              >
-                {role}
-              </Tag>
-            ))}
+            {record.roles && record.roles.map(roleId => {
+              const roleObj = roles.find(r => r._id === roleId);
+              return (
+                <Tag key={roleId} color={roleObj?.name === 'admin' ? 'red' : 'blue'}>
+                  {roleObj?.name || roleId}
+                </Tag>
+              );
+            })}
           </Space>
         );
       },
@@ -230,6 +242,14 @@ const User = () => {
     <>
       {contextHolder}
       <div style={{ padding: '24px' }}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          style={{ marginBottom: 16 }}
+          onClick={() => setShowModal(true)}
+        >
+          Thêm role
+        </Button>
         <Form form={form} component={false}>
           <TableComponent
             title={'Danh Sách Người Dùng'}
@@ -239,6 +259,14 @@ const User = () => {
           />
         </Form>
       </div>
+        <CreateRole
+          visible={showModal}
+          onCancel={() => setShowModal(false)}
+          onOk={() => {
+            setShowModal(false);
+            fetchRoles();
+          }}
+        />
     </>
   );
 };

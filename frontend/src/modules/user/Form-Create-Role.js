@@ -7,7 +7,7 @@ import { useSelector } from 'react-redux';
 
 const { Option } = Select;
 
-const User = () => {
+const Roles = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [messageApi, contextHolder] = message.useMessage();
@@ -26,13 +26,6 @@ const User = () => {
       const response = await getAllUsers();
       setUsers(response.metaData);
     } catch (error) {
-      if (error.status === 403) {
-        messageApi.open({
-          key: 'expired',
-          type: 'error',
-          content: 'Hết phiên đăng nhập. Vui lòng đăng nhập lại!'
-        });
-      }
       console.error('Error fetching users:', error);
     } finally {
       setLoading(false);
@@ -243,4 +236,4 @@ const User = () => {
   );
 };
 
-export default User;
+export default Roles;

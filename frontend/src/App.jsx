@@ -12,6 +12,7 @@ import FunctionCompareComponent from './modules/Compare/Function';
 import { AlreadyLogined, RequireUsername } from './Authentication';
 import User from './modules/user/User';
 import TableCompareComponent from './components/Compare/Table';
+import ResetPassword from './modules/user/ResetPassword';
 function App() {
   return (
     <BrowserRouter>
@@ -26,6 +27,7 @@ function App() {
               <AlreadyLogined>
                 < Register />
               </AlreadyLogined>} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route element={<RequireUsername />}>
               <Route element={<AppLayout />}>
                 <Route path='/node' element={<Node />} />

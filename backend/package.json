@@ -25,6 +25,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.1",
     "morgan": "^1.10.0",
+    "nodemailer": "^7.0.5",
     "nodemon": "^2.0.20",
     "pg": "^8.13.1",
     "pg-hstore": "^2.3.4",
@@ -36,9 +37,9 @@
     "winston": "^3.7.2"
   },
   "devDependencies": {
-    "@wmfs/pg-info": "^1.20.1",
     "@mermaid-js/mermaid-cli": "^11.6.0",
     "@wmfs/pg-diff-sync": "^1.32.0",
+    "@wmfs/pg-info": "^1.20.1",
     "pg-schema-diff": "^0.1.0",
     "sequelize-cli": "^6.6.2"
   }

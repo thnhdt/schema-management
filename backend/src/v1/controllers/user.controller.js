@@ -80,6 +80,68 @@ const deleteUser = async (req, res, next) => {
     next(error);
   }
 };
+
+const forgetPassword = async (req, res, next) => {
+  try {
+    const result = await userService.forgetPassword(req.body.email);
+    new SucessReponse({
+      message: result.message
+    }).send(res);
+  } catch (error) {
+    next(error);
+  }
+}
+
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token, newPassword } = req.body;
+    const result = await userService.resetPassword(token, newPassword);
+    new SucessReponse({
+      message: result.message
+    }).send(res);
+  } catch (error) {
+    next(error);
+  }
+}
+
+const getAllRoles = async (req, res, next) => {
+  try {
+    const roles = await userService.getAllRoles();
+    new SucessReponse({
+      message: 'Lấy danh sách role thành công!',
+      metaData: roles
+    }).send(res);
+  } catch (error) {
+    next(error);
+  }
+}
+
+const updateRole = async (req, res, next) => {
+  try {
+    const { userId, roles } = req.body;
+    const user = await userService.updateRole({ userId, roles });
+    new SucessReponse({
+      message: 'Cập nhật roles cho user thành công!',
+      metaData: user
+    }).send(res);
+  } catch (error) {
+    next(error);
+  }
+}
+
+const createRoles = async (req, res, next) => {
+  try {
+    const { roleName, permissions, isCreate } = req.body;
+    const role = await userService.createRoles({ roleName, permissions, isCreate });
+    new SucessReponse({
+      message: 'Tạo role thành công!',
+      metaData: role
+    }).send(res);
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   login,
   signUp,
@@ -88,5 +150,10 @@ module.exports = {
   logout,
   getState,
   updateUser,
-  deleteUser
+  deleteUser,
+  forgetPassword,
+  resetPassword,
+  getAllRoles,
+  updateRole,
+  createRoles
 }

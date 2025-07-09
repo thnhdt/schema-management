@@ -5,6 +5,8 @@ const bcrypt = require('bcrypt');
 const { AuthFailureError, ForbiddenError, BadResponseError } = require('../cores/error.response');
 const mongoose = require('mongoose');
 const roleModel = require('../models/role.model');
+const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 
 const signUp = async (dataCreated) => {
   const { email } = dataCreated
@@ -107,6 +109,63 @@ const deleteUser = async (_id) => {
   return deleted;
 }
 
+const forgetPassword = async (email) => {
+  const user = await userModel.findOne({ email });
+  if (!user) throw new AuthFailureError("Email không tồn tại!");
+  const resetToken = jwt.sign({ userId: user._id }, env.SECRET_KEY, { expiresIn: '15m' });
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+  const FRONTEND_URL = process.env.FRONTEND_URL;
+  const resetLink = `http://${FRONTEND_URL}/reset-password?token=${resetToken}`;;
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: 'Đặt lại mật khẩu',
+    text: `Nhấn vào link để đặt lại mật khẩu: ${resetLink}`
+  });
+  return { message: 'Đã gửi email đặt lại mật khẩu!' };
+};
+
+const resetPassword = async (token, newPassword) => {
+  let payload;
+  try {
+    payload = jwt.verify(token, env.SECRET_KEY);
+  } catch (err) {
+    throw new BadResponseError('Token không hợp lệ hoặc đã hết hạn');
+  }
+  const user = await userModel.findById(payload.userId);
+  if (!user) throw new BadResponseError('User không tồn tại');
+  const salt = await bcrypt.genSalt(parseInt(env.SALT));
+  const hashPassword = await bcrypt.hash(newPassword, salt);
+  user.password = hashPassword;
+  await user.save();
+  return { message: 'Đặt lại mật khẩu thành công!' };
+};
+
+const getAllRoles = async () => {
+  const roles = await roleModel.find().lean();
+  return roles;
+}
+
+const updateRole = async ({ userId, roles }) => {
+  const user = await userModel.findById(userId);
+  if (!user) throw new BadResponseError("User không tồn tại");
+  user.roles = roles;
+  await user.save();
+  return user;
+}
+
+const createRoles = async ({ roleName, permissions = [], isCreate = false }) => {
+  const existed = await roleModel.findOne({ name: roleName });
+  if (existed) throw new BadResponseError("Role đã tồn tại");
+  const role = await roleModel.create({ name: roleName, permissions, isCreate });
+  return role;
+}
 
 // permission : mảng các id của database, có thể set quyền host -> username + tên databaese  -> UI, do quyền chỉnh sửa 
 // DB dựa trên quyền của user name GRANT quyền ở dưới DB
@@ -117,5 +176,10 @@ module.exports = {
   getAllUsers,
   getUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  forgetPassword,
+  resetPassword,
+  getAllRoles,
+  updateRole,
+  createRoles
 }

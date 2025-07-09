@@ -23,4 +23,7 @@ databaseRouter.route('/connect-database')
 databaseRouter.route('/disconnect-database')
   .post(handlerError(databaseController.disconnectToDatabase));
 
+databaseRouter.route('/get-all-databases-all')
+  .get(handlerError(databaseController.getAllDatabasesAll));
+
 module.exports = databaseRouter

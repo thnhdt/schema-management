@@ -93,6 +93,16 @@ const getAllDatabaseInHost = async (reqQuery, user) => {
   }
 };
 
+const getAllDatabasesAll = async () => {
+  const allDatabase = await databaseModel.find().lean();
+  return {
+    code: 200,
+    metaData: {
+      database: allDatabase
+    }
+  };
+};
+
 const connectToDatabase = async (reqBody) => {
   const { id } = reqBody;
   const targetDatabase = await databaseModel.findById(id).lean();
@@ -209,5 +219,6 @@ module.exports = {
   disconnectDb, getAllDatabaseInHost,
   editDatabase,
   deleteDatabase,
+  getAllDatabasesAll,
   POOLMAP
 }
