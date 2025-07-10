@@ -77,13 +77,16 @@ dbdiff.describeDatabase = function (conString, schemaname, callback) {
         ) AS indkey_names,
         idx.indexprs IS NOT NULL as indexprs,
         idx.indpred IS NOT NULL as indpred,
-        ns.nspname
+        ns.nspname,
+        t.relname AS tablename
       FROM
         pg_index as idx
       JOIN pg_class as i
         ON i.oid = idx.indexrelid
       JOIN pg_am as am
         ON i.relam = am.oid
+      JOIN pg_class        AS t   
+        ON t.oid  = idx.indrelid
       JOIN pg_namespace as ns
         ON ns.oid = i.relnamespace
         AND ns.nspname NOT IN ('pg_catalog', 'pg_toast')
@@ -92,9 +95,7 @@ dbdiff.describeDatabase = function (conString, schemaname, callback) {
       client.query(query, [schemaname], callback)
     })
     .then(function (indexes, callback) {
-      //console.log('got indexes', result)
       schema.indexes = indexes.rows
-
       var query = multiline(function () {
         ;/*
       SELECT
@@ -225,7 +226,8 @@ function compareTables(tableName, db1, db2) {
 
 function indexNames(tableName, indexes) {
   return _.filter(indexes, function (index) {
-    return util.format('"%s"."%s"', index.nspname, index.indrelid) === tableName
+    // console.log("226", tableName, index);
+    return index.tablename === tableName
   }).map(function (index) {
     return index.indname
   }).sort()
@@ -234,10 +236,8 @@ function indexNames(tableName, indexes) {
 function compareIndexes(tableName, db1, db2) {
   var indexes1 = db1.indexes
   var indexes2 = db2.indexes
-
   var indexNames1 = indexNames(tableName, indexes1)
   var indexNames2 = indexNames(tableName, indexes2)
-
   var diff1 = _.difference(indexNames1, indexNames2)
   var diff2 = _.difference(indexNames2, indexNames1)
 
@@ -250,7 +250,8 @@ function compareIndexes(tableName, db1, db2) {
   if (diff2.length > 0) {
     diff2.forEach(function (indexName) {
       var index = _.findWhere(indexes2, { indname: indexName })
-      dbdiff.log('CREATE INDEX "%s" ON %s USING %s (%s);', indexName, index.indrelid, index.indam, index.indkey_names.join(','))
+      // dbdiff.log('CREATE INDEX "%s" ON %s USING %s (%s);', indexName, index.indrelid, index.indam, index.indkey_names.join(','))
+      dbdiff.log('CREATE INDEX "%s" ON %s USING %s (%s);', indexName, index.tablename, index.indam, index.indkey_names.join(','))
     })
   }
 
@@ -362,47 +363,58 @@ function constraintDescription(constraint) {
 //     return constraint.constraint_name
 //   }).sort()
 // }
+function constraintNames(db) {
+  return db.constraints
+    .map(function (constraint) {
+      // console.log(constraint.constraint_name, constraint.constraint_type)
+      return {
+        constraint_name: constraint.constraint_name,
+        table_name: constraint.table_name,
+        definition: constraint.definition
+      }
+    }).sort();
+}
+
 
 // function compareConstraints(db1, db2) {
 //   var constraintNames1 = constraintNames(db1)
 //   var constraintNames2 = constraintNames(db2)
 
-//   var diff1 = _.difference(constraintNames1, constraintNames2)
-//   var diff2 = _.difference(constraintNames2, constraintNames1)
+//   var diff1 = _.difference(constraintNames1, constraintNames2);
+//   var diff2 = _.difference(constraintNames2, constraintNames1);
 
 //   diff1.forEach(function (constraintName) {
-//     dbdiff.log('-- Need to DROP CONSTRAINT "%s" - not in target database', constraintName)
+//     // dbdiff.log('-- Need to DROP CONSTRAINT "%s" - not in target database', constraintName)
+//     dbdiff.log('ALTER TABLE \"public\".\"%s\" DROP CONSTRAINT %s %s;',
+//       constraintName.table_name,
+//       constraintName.constraint_name,
+//       constraintName.definition)
 //   })
 
+//   // diff2.forEach(function (constraintName) {
+//   //   var constraint = _.findWhere(db2.constraints, { constraint_name: constraintName })
+//   //   dbdiff.log(constraintDescription(constraint))
+//   // })
 //   diff2.forEach(function (constraintName) {
-//     var constraint = _.findWhere(db2.constraints, { constraint_name: constraintName })
+//     var constraint = _.findWhere(db2.constraints, { constraint_name: constraintName.constraint_name })
 //     dbdiff.log(constraintDescription(constraint))
 //   })
 
 //   var inter = _.intersection(constraintNames1, constraintNames2)
 //   inter.forEach(function (constraintName) {
-//     var constraint1 = _.findWhere(db1.constraints, { constraint_name: constraintName })
-//     var constraint2 = _.findWhere(db2.constraints, { constraint_name: constraintName })
+//     var constraint1 = _.findWhere(db1.constraints, { constraint_name: constraintName.constraint_name })
+//     var constraint2 = _.findWhere(db2.constraints, { constraint_name: constraintName.constraint_name })
 
 //     var desc1 = constraintDescription(constraint1)
 //     var desc2 = constraintDescription(constraint2)
 
 //     if (desc2 !== desc1) {
-//       dbdiff.log('-- Need to DROP CONSTRAINT "%s" - not in target database', constraintName)
+//       // dbdiff.log('-- Need to DROP CONSTRAINT "%s" - not in target database', constraintName)
 //       dbdiff.log(desc2)
 //     }
 //   })
 // }
 
-function constraintNames(db) {
-  return db.constraints.map(function (constraint) {
-    return {
-      constraint_name: constraint.constraint_name,
-      table_name: constraint.table_name,
-      definition: constraint.definition
-    }
-  }).sort();
-}
 function compareConstraints(db1, db2) {
   var constraints1 = constraintNames(db1)
   var constraints2 = constraintNames(db2)
@@ -442,9 +454,6 @@ function compareConstraints(db1, db2) {
 }
 
 dbdiff.compareSchemas = function (db1, db2) {
-  compareSequences(db1, db2)
-  compareConstraints(db1, db2)
-
   var tableNames1 = _.keys(db1.tables).sort()
   var tableNames2 = _.keys(db2.tables).sort()
 
@@ -474,6 +483,8 @@ dbdiff.compareSchemas = function (db1, db2) {
     compareTables(tableName, db1, db2)
     compareIndexes(tableName, db1, db2)
   })
+  compareSequences(db1, db2)
+  compareConstraints(db1, db2)
 }
 
 dbdiff.compareDatabases = function (comparison, callback) {

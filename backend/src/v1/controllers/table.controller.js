@@ -46,6 +46,10 @@ const getColumns = async (req, res, next) => {
 const getAllUpdateOnTables = async (req, res, next) => {
   const result = await tableService.getAllUpdateOnTables(req.body, req.user);
   new SucessReponse({ metaData: result }).send(res);
+};
+const getAllUpdateDdl = async (req, res, next) => {
+  const result = await tableService.getAllUpdateDdl(req.body, req.user);
+  new SucessReponse({ metaData: result }).send(res);
 }
 module.exports = {
   test,
@@ -56,5 +60,6 @@ module.exports = {
   deleteRow,
   dropTable,
   getColumns,
-  getAllUpdateOnTables
+  getAllUpdateOnTables,
+  getAllUpdateDdl
 }

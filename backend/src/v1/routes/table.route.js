@@ -9,6 +9,9 @@ tableRouter.use(authentication)
 tableRouter.route('/all-update-tables')
   .post(handlerError(tableController.getAllUpdateOnTables))
 
+tableRouter.route('/all-update-ddl')
+  .post(handlerError(tableController.getAllUpdateDdl))
+
 tableRouter.use(checkPermissionDatabase)
 tableRouter.route('/get-all-tables')
   .get(handlerError(tableController.getAllTables))

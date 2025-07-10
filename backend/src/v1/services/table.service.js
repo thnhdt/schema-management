@@ -3,7 +3,7 @@ const { BadResponseError } = require('../cores/error.response');
 const { ddl } = require('../utils/helper.utils');
 const { QueryTypes } = require('sequelize');
 const databaseService = require('../services/database.service');
-const { getAllUpdateOnTableUtil } = require('../utils/helper.utils');
+const { getAllUpdateOnTableUtil, getAllUpdateBetweenDatabases } = require('../utils/helper.utils');
 
 const mergeTables = (arrTableTarget, arrTableCurrent) => {
   const map = new Map();
@@ -43,6 +43,7 @@ const createSchema = async (reqBody) => {
   const { schema, tableName, id } = reqBody;
   const sequelizeDatatabase = await databaseService.connectToDatabase({ id });
   const ddlText = await ddl(schema, tableName, sequelizeDatatabase);
+  await sequelizeDatatabase.close();
   return {
     code: 200,
     metaData: {
@@ -68,12 +69,13 @@ const getAllTables = async (reqBody) => {
     }
   );
 
-  const allSqlSchema = [];
-  for (const table of allTables) {
-    const text = await ddl("public", table.table_name, client);
-    allSqlSchema.push({ ...table, text });
-  }
-
+  const allSqlSchema = await Promise.all(
+    allTables.map(async (table) => {
+      const text = await ddl("public", table.table_name, client);
+      return { ...table, text };
+    })
+  );
+  await client.close();
   return {
     code: 200,
     metaData: {
@@ -83,26 +85,30 @@ const getAllTables = async (reqBody) => {
 };
 const getAllUpdateOnTables = async (reqBody, user) => {
   const { targetDatabaseId, currentDatabaseId } = reqBody;
-  if(!user.isAdmin){
+  if (!user.isAdmin) {
     const permissions = user.userPermissions.some(role => role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) && role?.permissions.some(p => p.databaseId.toString() === currentDatabaseId));
-  if (!permissions) throw new BadResponseError("Bạn không có quyền truy cập một trong hai DB !")
+    if (!permissions) throw new BadResponseError("Bạn không có quyền truy cập một trong hai DB !")
   }
-  const defaultAllTablesInTargetDB = await getAllTables({ schema: 'public', id: targetDatabaseId });
-  const defaultAllTablesInCurrentDB = await getAllTables({ schema: 'public', id: currentDatabaseId });
+  const [defaultAllTablesInTargetDB, defaultAllTablesInCurrentDB] = await Promise.all([getAllTables({ schema: 'public', id: targetDatabaseId }), getAllTables({ schema: 'public', id: currentDatabaseId })]);
   const allTablesInTargetDB = defaultAllTablesInTargetDB.metaData.data;
   const allTablesInCurrentDB = defaultAllTablesInCurrentDB.metaData.data;
   const mapTables = mergeTables(allTablesInTargetDB, allTablesInCurrentDB);
   const sqlUpdateSchemaTables = await getAllUpdateOnTableUtil(targetDatabaseId, currentDatabaseId, mapTables);
-  const result = Array.from(sqlUpdateSchemaTables.mapTables, ([key, value]) => ({
-    key,
-    ...value
-  }));
-  const allUpdate = result.filter(item => item?.stmts);
+  const allUpdate = Array.from(
+    sqlUpdateSchemaTables.mapTables
+  ).filter(([key, value]) => value?.stmts != null)
+    .map(([key, value]) => ({
+      key,
+      ...value
+    }));
   return {
     code: 200,
-    allUpdate: allUpdate,
+    updateSchema: sqlUpdateSchemaTables.updateSchema,
+    allUpdate,
     targetDB: sqlUpdateSchemaTables.targetDatabase,
-    currentDB: sqlUpdateSchemaTables.currentDatabase
+    currentDB: sqlUpdateSchemaTables.currentDatabase,
+    sequence: sqlUpdateSchemaTables.sequence,
+    index: sqlUpdateSchemaTables.index
   }
 }
 const getAllDdlText = async (reqBody) => {
@@ -119,12 +125,14 @@ const getAllDdlText = async (reqBody) => {
     }
   );
 
-  const allSqlSchema = [];
-  for (const table of allTables) {
-    const ddlText = await ddl("public", table.tableName, client);
-    allSqlSchema.push(ddlText);
-  }
+  // const allSqlSchema = [];
+  // for (const table of allTables) {
+  //   const ddlText = await ddl("public", table.tableName, client);
+  //   allSqlSchema.push(ddlText);
+  // }
+  const allSqlSchema = await Primise.all(allTables.map(table => ddl("public", table.tableName, client)))
   const schemaSql = allSqlSchema.join('\n');
+  await client.close();
   return {
     code: 200,
     metaData: {
@@ -147,6 +155,7 @@ const getCountColumns = async (reqBody) => {
       type: QueryTypes.SELECT
     }
   );
+  await client.close();
   return countColumns[0];
 };
 
@@ -154,6 +163,7 @@ const dropColumn = async ({ id, tableName, columnName, schema = 'public' }) => {
   const sequelize = await databaseService.connectToDatabase({ id });
   const fullTableName = schema ? `"${schema}"."${tableName}"` : `"${tableName}"`;
   await sequelize.query(`ALTER TABLE ${fullTableName} DROP COLUMN "${columnName}";`);
+  await sequelize.close();
   return { code: 200, metaData: { message: `Đã xóa cột ${columnName} khỏi bảng ${tableName}` } };
 };
 
@@ -167,6 +177,7 @@ const deleteRow = async ({ id, tableName, schema = 'public', where }) => {
     `DELETE FROM ${fullTableName} WHERE ${conditions};`,
     { replacements: where }
   );
+  await sequelize.close();
   return { code: 200, metaData: { message: `Đã xóa hàng trong bảng ${tableName}` } };
 };
 
@@ -174,6 +185,7 @@ const dropTable = async ({ id, tableName, schema = 'public' }) => {
   const sequelize = await databaseService.connectToDatabase({ id });
   const fullTableName = schema ? `"${schema}"."${tableName}"` : `"${tableName}"`;
   await sequelize.query(`DROP TABLE IF EXISTS ${fullTableName} CASCADE;`);
+  await sequelize.close();
   return { code: 200, metaData: { message: `Đã xóa bảng ${tableName}` } };
 };
 
@@ -186,8 +198,24 @@ const getColumns = async ({ id, tableName, schema = 'public' }) => {
       type: QueryTypes.SELECT
     }
   );
+  await sequelize.close();
   return { code: 200, metaData: { columns: columns.map(col => col.column_name) } };
 };
+const exportAllUpdateOnTables = async () => {
+
+  const { targetDatabaseId, currentDatabaseId } = reqBody;
+  if (!user.isAdmin) {
+    const permissions = user.userPermissions.some(role => role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) && role?.permissions.some(p => p.databaseId.toString() === currentDatabaseId));
+    if (!permissions) throw new BadResponseError("Bạn không có quyền truy cập một trong hai DB !")
+  }
+  const [targetDatabaseUrl, currentDatabaseUrl] = await Promise.all(getStringUrl(targetDatabaseId), getStringUrl(currentDatabaseId));
+  const allUpdate = await getAllUpdateBetweenDatabases(targetDatabaseUrl.stringConnectPGUrl, currentDatabaseUrl.stringConnectPGUrl);
+  const result = allUpdate.join('\n');
+  return {
+    code: 200,
+    allUpdateSchema: result
+  }
+}
 
 module.exports = {
   test,
@@ -199,5 +227,6 @@ module.exports = {
   deleteRow,
   dropTable,
   getColumns,
-  getAllUpdateOnTables
+  getAllUpdateOnTables,
+  exportAllUpdateOnTables
 }

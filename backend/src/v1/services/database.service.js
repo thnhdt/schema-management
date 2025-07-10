@@ -122,15 +122,6 @@ const connectToDatabase = async (reqBody) => {
     }
   );
   await sequelize.authenticate();
-  // await POOLMAP.set(id, { sequelize, lastUsed: Date.now() });
-  // const updateDatabase = await databaseModel.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, { status: 'active' }, { new: true });
-  // return {
-  //   code: 200,
-  //   metaData: {
-  //     message: "Connect thành công!",
-  //     updateData: updateDatabase
-  //   }
-  // }
   return sequelize;
 };
 

@@ -173,21 +173,35 @@ const ddlPatterns = [
   { type: 'CREATE', re: /create\s+table\s+(?:if\s+not\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
   { type: 'DELETE', re: /drop\s+table\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
   { type: 'UPDATE', re: /alter\s+table\s+(?:only\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
-
+];
+const ddlPatternsSequence = [// ----- SEQUENCE -----
+  { type: 'CREATE', re: /create\s+sequence\s+(?:if\s+not\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'DELETE', re: /drop\s+sequence\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },]
+const ddlPatternsIndex = [
   // ----- INDEX -----
   { type: 'CREATE', re: /create\s+(?:unique\s+|bitmap\s+)?index\s+["`]?[\w]+["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
   { type: 'DELETE', re: /drop\s+index\s+(?:concurrently\s+)?(?:if\s+exists\s+)?["`]?[\w]+["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
-
-  // ----- SEQUENCE -----
-  { type: 'CREATE', re: /create\s+sequence\s+(?:if\s+not\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
-  { type: 'DELETE', re: /drop\s+sequence\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
-];
-
+]
 const PRIORITY = { CREATE: 3, DELETE: 2, UPDATE: 1 };
 function parseDDL(line) {
   for (const { re, type } of ddlPatterns) {
     const m = line.match(re);
     if (m) return { table: m[1], type };
+  }
+  return null;
+}
+
+function parseDDLSequence(line) {
+  for (const { re, type } of ddlPatternsSequence) {
+    const m = line.match(re);
+    if (m) return { sequence: m[1], type };
+  }
+  return null;
+}
+function parseDDLIndex(line) {
+  for (const { re, type } of ddlPatternsIndex) {
+    const m = line.match(re);
+    if (m) return { index: m[1], type };
   }
   return null;
 }
@@ -198,13 +212,12 @@ const getStringUrl = async (id) => {
   if (!targetDatabase) throw new NotFoundError("Không tồn tại database!");
   const targetNode = await nodeModel.findById(targetDatabase.nodeId).lean();
   if (!targetNode) throw new NotFoundError("Không tồn tại node!");
-  // 'postgres://guest:12345@localhost:5432/postgres';
   const stringConnectPGUrl = `postgres://${targetDatabase.username}:${targetDatabase.password}@${targetNode.host}:${Number(targetNode.port)}/${targetDatabase.database}`
   return { stringConnectPGUrl, database: `${targetDatabase.username}:${targetDatabase.database}` };
 }
 const getAllUpdateBetweenDatabases = (
-  targetDatabaseId,
-  currentDatabaseId,
+  targetDatabaseUrl,
+  currentDatabaseUrl,
   schema = 'public'
 ) => new Promise((resolve, reject) => {
 
@@ -213,8 +226,8 @@ const getAllUpdateBetweenDatabases = (
 
   dbdiff.compareDatabases(
     {
-      current: { conn: currentDatabaseId, schema },
-      target: { conn: targetDatabaseId, schema }
+      current: { conn: currentDatabaseUrl, schema },
+      target: { conn: targetDatabaseUrl, schema }
     },
     (err) => {
       if (err) return reject(err);
@@ -224,17 +237,25 @@ const getAllUpdateBetweenDatabases = (
 });
 
 const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapTables) => {
-  const targetDatabaseUrl = await getStringUrl(targetDatabaseId);
-  const currentDatabaseUrl = await getStringUrl(currentDatabaseId);
-  // console.log(targetDatabaseUrl, currentDatabaseUrl);
+  const [targetDatabaseUrl, currentDatabaseUrl] = await Promise.all([getStringUrl(targetDatabaseId), getStringUrl(currentDatabaseId)]);
   const allUpdate = await getAllUpdateBetweenDatabases(
     targetDatabaseUrl.stringConnectPGUrl, currentDatabaseUrl.stringConnectPGUrl
   );
+  // console.log(allUpdate);
+  const sequence = [];
+  const index = [];
   for (const line of allUpdate) {
     const info = parseDDL(line);
-    if (!info) continue;
+    if (!info) {
+      if (parseDDLSequence(line)) {
+        sequence.push({ key: parseDDLSequence(line).sequence, ddl: line, type: parseDDLSequence(line).type })
+      }
+      else if (parseDDLIndex(line)) {
+        index.push({ key: parseDDLIndex(line).index, ddl: line, type: parseDDLIndex(line).type })
+      }
+      continue;
+    }
     const { table, type } = info;
-    // if (!allTables.has(table)) continue;
     if (!mapTables.has(table)) continue;
     const objectTabel = mapTables.get(table);
     if (!objectTabel?.stmts && !objectTabel?.type) {
@@ -249,12 +270,16 @@ const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapT
     }
   }
   return {
+    updateSchema: allUpdate,
     mapTables,
     targetDatabase: targetDatabaseUrl.database,
     currentDatabase: currentDatabaseUrl.database,
+    sequence,
+    index
   };
 }
 module.exports = {
   ddl,
-  getAllUpdateOnTableUtil
+  getAllUpdateOnTableUtil,
+  getAllUpdateBetweenDatabases
 }

@@ -167,13 +167,6 @@ const Node = () => {
       key: 'actions',
       render: (_, record) => (
         <Space.Compact block size="large">
-          {/* <Tooltip title="Xem Database">
-            <Button
-              type="primary"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewDatabase(record)}
-            />
-          </Tooltip> */}
           <Tooltip title="Thêm và xem database">
             <Button
               type="primary"
@@ -269,18 +262,20 @@ const Node = () => {
       </Card>
       {isAddModalVisible && (
         <>
-          <div className="custom-modal-overlay"></div>
+          <div
+            className="modal-backdrop fade show"
+          ></div>
           <div className="modal show d-block" tabIndex="-1" role="dialog">
             <div className="modal-dialog modal-dialog-centered" role="document" style={{ maxWidth: '500px' }}>
               <div className="modal-content">
                 <div className="modal-header">
-                  <h5 className="modal-title">Thêm PostgreSQL Node</h5>
+                  <h5 className="modal-title">Thêm PostgreSQL Instance</h5>
                   <button type="button" className="btn-close" aria-label="Close" onClick={() => setIsAddModalVisible(false)}></button>
                 </div>
                 <div className="modal-body">
                   <form onSubmit={onAddSubmit}>
                     <div className="mb-3">
-                      <label className="form-label">Tên Node</label>
+                      <label className="form-label">Tên Instance</label>
                       <input type="text" name="name" className="form-control" placeholder="Ví dụ: PostgreSQL Production" required />
                     </div>
                     <div className="mb-3">
@@ -314,41 +309,43 @@ const Node = () => {
           </div>
         </>
       )}
-      {isEditModalVisible && (
-        <>
-          <div className="custom-modal-overlay"></div>
-          <div className="modal show d-block" tabIndex="-1" role="dialog">
-            <div className="modal-dialog modal-dialog-centered" role="document" style={{ maxWidth: '500px' }}>
-              <div className="modal-content">
-                <div className="modal-header">
-                  <h5 className="modal-title">Chỉnh Sửa PostgreSQL Instance</h5>
-                  <button type="button" className="btn-close" aria-label="Close" onClick={() => setIsEditModalVisible(false)}></button>
-                </div>
-                <div className="modal-body">
-                  <form onSubmit={onEditSubmit}>
-                    <div className="mb-3">
-                      <label className="form-label">Tên Instance</label>
-                      <input type="text" name="name" className="form-control" placeholder="Ví dụ: PostgreSQL Production" required defaultValue={editingNode?.name} />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Host</label>
-                      <input type="text" name="host" className="form-control" placeholder="localhost hoặc IP address" required defaultValue={editingNode?.host} />
-                    </div>
-                    <div className="mb-3">
-                      <label className="form-label">Port</label>
-                      <input type="text" name="port" className="form-control" placeholder="5432" required defaultValue={editingNode?.port} />
-                    </div>
-                    <div className="d-flex justify-content-end gap-2">
-                      <button type="submit" className="btn btn-primary">Cập Nhật</button>
-                      <button type="button" className="btn btn-secondary" onClick={() => setIsEditModalVisible(false)}>Hủy</button>
-                    </div>
-                  </form>
+      {
+        isEditModalVisible && (
+          <>
+            <div className="modal-backdrop fade show"></div>
+            <div className="modal show d-block" tabIndex="-1" role="dialog">
+              <div className="modal-dialog modal-dialog-centered" role="document" style={{ maxWidth: '500px' }}>
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h5 className="modal-title">Chỉnh Sửa PostgreSQL Instance</h5>
+                    <button type="button" className="btn-close" aria-label="Close" onClick={() => setIsEditModalVisible(false)}></button>
+                  </div>
+                  <div className="modal-body">
+                    <form onSubmit={onEditSubmit}>
+                      <div className="mb-3">
+                        <label className="form-label">Tên Instance</label>
+                        <input type="text" name="name" className="form-control" placeholder="Ví dụ: PostgreSQL Production" required defaultValue={editingNode?.name} />
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label">Host</label>
+                        <input type="text" name="host" className="form-control" placeholder="localhost hoặc IP address" required defaultValue={editingNode?.host} />
+                      </div>
+                      <div className="mb-3">
+                        <label className="form-label">Port</label>
+                        <input type="text" name="port" className="form-control" placeholder="5432" required defaultValue={editingNode?.port} />
+                      </div>
+                      <div className="d-flex justify-content-end gap-2">
+                        <button type="submit" className="btn btn-primary">Cập Nhật</button>
+                        <button type="button" className="btn btn-secondary" onClick={() => setIsEditModalVisible(false)}>Hủy</button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )
+      }
 
       <AddDatabaseInNode
         visible={visible}
@@ -364,7 +361,7 @@ const Node = () => {
         visible={openCompareFunction}
         onCancel={() => setOpenCompareFunction(false)}
       />
-    </div>
+    </div >
   );
 };
 

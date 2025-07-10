@@ -29,7 +29,7 @@ const createNode = async (dataCreated) => {
 const getAllNode = async (user) => {
   let allNodes = [];
   const permissionsDB = user.userPermissions;
-  if(user.isAdmin){
+  if (user.isAdmin) {
     allNodes = await nodeModel.aggregate([
       { $sort: { createdAt: -1 } },
       {
@@ -42,44 +42,45 @@ const getAllNode = async (user) => {
       }
     ]);
   }
-  else{
+  else {
     const dbIdSet = new Set(
-    permissionsDB.flatMap(role =>
-      role.permissions
-        .filter(p => p.databaseId)
-        .map(p => String(p.databaseId))
-    )
-  );
-  const dbIds = [...dbIdSet].map(id =>
-    mongoose.isValidObjectId(id) && typeof id === 'string'
-      ? new mongoose.Types.ObjectId(id)
-      : id
-  );
-  allNodes = await nodeModel.aggregate([
-    { $sort: { createdAt: -1 } },
-    {
-      $lookup: {
-        from: 'Databases',
-        let: { nodeId: '$_id' },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  { $eq: ['$nodeId', '$$nodeId'] },
-                  { $in: ['$_id', dbIds] }
-                ]
+      permissionsDB.flatMap(role =>
+        role.permissions
+          .filter(p => p.databaseId)
+          .map(p => String(p.databaseId))
+      )
+    );
+    const dbIds = [...dbIdSet].map(id =>
+      mongoose.isValidObjectId(id) && typeof id === 'string'
+        ? new mongoose.Types.ObjectId(id)
+        : id
+    );
+    console.log(dbIds);
+    allNodes = await nodeModel.aggregate([
+      { $sort: { createdAt: -1 } },
+      {
+        $lookup: {
+          from: 'Databases',
+          let: { nodeId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$nodeId', '$$nodeId'] },
+                    { $in: ['$_id', dbIds] }
+                  ]
+                }
               }
             }
-          }
-        ],
-        as: 'databases'
-      }
-    },
-    { $match: { 'databases.0': { $exists: true } } }
-  ]);
+          ],
+          as: 'databases'
+        }
+      },
+      { $match: { 'databases.0': { $exists: true } } }
+    ]);
   }
-  
+
 
   return {
     code: 200,

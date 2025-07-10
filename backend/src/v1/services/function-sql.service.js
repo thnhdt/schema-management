@@ -51,6 +51,7 @@ ORDER BY "functionSchema", "functionName";`,
     }
   );
   const targetAllFunction = allFunction.map(item => ({ ...item, definition: item.definition.replace(/\r\n/g, '\n') }));
+  await sequelizeDatabase.close();
   return {
     code: 200,
     metaData: {
@@ -63,6 +64,7 @@ const dropFunction = async ({ id, functionName, args = '', schema = 'public' }) 
   const sequelizeDatabase = await databaseService.connectToDatabase({ id });
   const fullFunctionName = schema ? `"${schema}"."${functionName}"` : `"${functionName}"`;
   await sequelizeDatabase.query(`DROP FUNCTION IF EXISTS ${fullFunctionName}(${args});`);
+  await sequelizeDatabase.close();
   return { code: 200, metaData: { message: `Đã xóa function ${functionName}` } };
 };
 
@@ -108,24 +110,17 @@ const mergeFunctions = (arrFunctionPrime, arrFunctionSecond) => {
 
 const getAllUpdate = async (reqBody, user) => {
   const { currentDatabaseId, targetDatabaseId } = reqBody;
-  if(!user.isAdmin){
+  if (!user.isAdmin) {
     const permissions = user.userPermissions.some(role => role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) && role?.permissions.some(p => p.databaseId.toString() === currentDatabaseId));
     if (!permissions) throw new BadResponseError("Bạn không có quyền truy cập một trong hai DB !");
   }
-  const currentDatabase = await databaseModel.findById(currentDatabaseId).lean();
-  const targetDatabase = await databaseModel.findById(targetDatabaseId).lean();
-  if (!currentDatabase || !targetDatabase) throw new BadResponseError("Một trong hai database không tồn tại !")
-  // const currentDatabaseSquelize = POOLMAP.get(currentDatabaseId).sequelize;
-  // const currentDatabaseSquelize = await databaseService.connectToDatabase({ currentDatabaseId });
-  // const targetDatabaseSequelixe = POOLMAP.get(targetDatabaseId).sequelize;
-  // const targetDatabaseSequelize = await databaseService.connectToDatabase({ targetDatabaseId });
-  // if (!currentDatabaseSquelize || !targetDatabaseSequelize) throw new NotFoundError("Cả hai database chưa được !");
-  const defaultAllCurrentFunction = await getAllFunctions({ schema: 'public', id: currentDatabaseId });
-  const defaultAllTargetFunction = await getAllFunctions({ schema: 'public', id: targetDatabaseId });
+  const [currentDatabase, targetDatabase] = await Promise.all([databaseModel.findById(currentDatabaseId).lean(), databaseModel.findById(targetDatabaseId).lean()]);
+  if (!currentDatabase || !targetDatabase) throw new BadResponseError("Một trong hai database không tồn tại !");
+  const [defaultAllCurrentFunction, defaultAllTargetFunction] = await Promise.all([getAllFunctions({ schema: 'public', id: currentDatabaseId }), getAllFunctions({ schema: 'public', id: targetDatabaseId })]);
 
   const allCurrentFunction = defaultAllCurrentFunction.metaData.data;
   const allTargetFunction = defaultAllTargetFunction.metaData.data;
-  // xem loop so sánh với các hàm trùng tên -> trùng params
+
   const mapFunction = mergeFunctions(allTargetFunction, allCurrentFunction);
   const resultUpdate = (
     await Promise.all(
@@ -133,13 +128,10 @@ const getAllUpdate = async (reqBody, user) => {
         const cmp = await compareFunctionInPosgresql({
           secondFunction: fn.left,
           primeFunction: fn.right,
-          databasePrimeId: targetDatabaseId,
-          databaseSecondId: currentDatabaseId,
           sameParameters: fn.sameParameters
         });
         if (!cmp.hasChange) return null;
         const key = fn.left ? `${fn.left.functionName}(${fn.left.functionArguments})` : `${fn.right.functionName}(${fn.right.functionArguments})`
-
         return {
           key: key,
           patch: cmp.patch,
@@ -150,10 +142,12 @@ const getAllUpdate = async (reqBody, user) => {
       })
     )
   ).filter(Boolean);
-  // await Promise.all([currentDatabaseSquelize, targetDatabaseSequelize].map((p) => p.sequelize.close()));
+  let ddlSchema = '';
+  resultUpdate.forEach(item => ddlSchema += item.patch + '\n');
   return {
     code: 200,
-    mapFunction,
+    allPatchDdl: ddlSchema,
+    // mapFunction,
     resultUpdate,
     currentDatabase: currentDatabase.name,
     targetDatabase: targetDatabase.name
@@ -161,40 +155,21 @@ const getAllUpdate = async (reqBody, user) => {
 }
 
 const compareFunctionInPosgresql = async (reqBody) => {
-  const { secondFunction, primeFunction, databasePrimeId, databaseSecondId, sameParmameters } = reqBody;
-  // const primeClient = POOLMAP.get(databasePrimeId).sequelize;
-  // const secondClient = POOLMAP.get(databaseSecondId).sequelize;
+  const { secondFunction, primeFunction, sameParameters } = reqBody;
   let ddlPrimeFunction = '';
   let ddlSecondFunction = '';
   if (primeFunction) {
-    // const functionName = `${primeFunction.functionName}(${primeFunction.functionArguments})`
-    // ddlPrimeFunction = await primeClient.query(
-    //   'SELECT pg_get_functiondef(:functionName::regprocedure) AS ddl;',
-    //   {
-    //     replacements: { functionName },
-    //     type: QueryTypes.SELECT
-    //   }
-    // );
     ddlPrimeFunction = primeFunction.definition;
   }
   if (secondFunction) {
-    // const functionName = `${secondFunction.functionName}(${secondFunction.functionArguments})`
-    // ddlSecondFunction = await secondClient.query(
-    //   'SELECT pg_get_functiondef(:functionName ::regprocedure) AS ddl;',
-    //   {
-    //     replacements: { functionName },
-    //     type: QueryTypes.SELECT
-    //   }
-    // );
     ddlSecondFunction = secondFunction.definition;
   }
-
   const diffScipt = diffLines(ddlSecondFunction, ddlPrimeFunction);
   const hasChange = diffScipt.some(p => p.added || p.removed);
   let patch;
   let type;
   if (ddlSecondFunction && ddlPrimeFunction) {
-    if (sameParmameters) {
+    if (sameParameters) {
       patch = ddlSecondFunction.replace(/CREATE FUNCTION/i, 'CREATE OR REPLACE FUNCTION');
       type = "UPDATE";
     }

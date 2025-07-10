@@ -1,4 +1,4 @@
-import { Table, Space, Button, Typography, Flex, Spin, Row, Col, Modal } from 'antd';
+import { Table, Space, Button, Typography, Flex, Spin, Row, Col, Modal, Drawer } from 'antd';
 import '../App.css';
 export const TableComponent = (props) => {
   const { customButton, columns, data, title, rowClassName = () => 'no-hover', loading = null, size = null, onRow = undefined, scroll = undefined } = props
@@ -49,3 +49,12 @@ export const ModalComponent = ({ onCancel, onOk = null, open = null, title, Comp
     </Modal>
   );
 };
+
+
+export const DrawerComponent = ({ onClose, open, Component }) => {
+  return (
+    <Drawer width={'40vw'} placement="right" closable={false} onClose={onClose} open={open}>
+      {Component}
+    </Drawer>
+  )
+}

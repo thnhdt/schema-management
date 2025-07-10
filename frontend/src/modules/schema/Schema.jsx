@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Tabs, Card, Space, Button, Typography, message, Tooltip, Popconfirm, Input, Row, Col, Statistic, Select, Modal } from 'antd';
 import { useSelector } from 'react-redux';
 import Highlighter from 'react-highlight-words';
-import { store } from '../../store';
 import {
   DatabaseOutlined,
   TableOutlined,
@@ -23,8 +22,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { TableComponent } from '../../util/helper';
 import { getAllFunctions, getTables, getAllSequences, dropTable, dropFunction, dropSequence, getColumns, dropColumn } from '../../api';
 
-const { Title, Text } = Typography;
-const { TabPane } = Tabs;
+const { Text } = Typography;
 
 function Schema() {
   const [schemas,] = useState('public');

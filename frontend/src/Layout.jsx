@@ -30,7 +30,7 @@ const AppLayout = () => {
     sessionStorage.removeItem('userId');
     persistor.purge();
     navigate('/', { replace: true });
-    logout().catch(() => {});
+    logout().catch(() => { });
   }
   return (
     <Layout className="app-layout" style={{ minHeight: '100vh' }}>
@@ -42,7 +42,8 @@ const AppLayout = () => {
         onCollapse={setCollapsed}
         breakpoint="md"
         onBreakpoint={(broken) => setCollapsed(broken)}
-        style={{ position: 'fixed',
+        style={{
+          position: 'fixed',
           height: '100vh',
           left: 0,
           top: 0,
@@ -95,15 +96,22 @@ const AppLayout = () => {
             transition: 'left 0.2s'
           }}
         >
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            style={{ fontSize: '16px', width: 64, height: 64 }}
-          />
+          {/* <div class='row'> */}
+          {/* <div class='col-md-2 col-sm-2'> */}
+          <div>
+            <div>
+              <Button
+                type="text"
+                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                onClick={() => setCollapsed(!collapsed)}
+                style={{ fontSize: '16px', width: 64, height: 64 }}
+              />
+            </div>
+            {/* <h2 class='col-md-10 col-sm-5' style={{ margin: 'auto 0' }}>Schema Management</h2> */}
+          </div>
           <Flex gap='small' align='center'>
             <Divider type='vertical' style={{ height: '40px' }} />
-            <Button onClick={handleLogOut} danger type='primary' shape='circle' icon={<LogoutOutlined />} />
+            <Button onClick={handleLogOut} style={{ marginRight: '1rem' }} danger type='primary' shape='circle' icon={<LogoutOutlined />} />
           </Flex>
         </Header>
 
