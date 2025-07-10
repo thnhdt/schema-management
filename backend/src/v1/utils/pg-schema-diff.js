@@ -250,8 +250,9 @@ function compareIndexes(tableName, db1, db2) {
   if (diff2.length > 0) {
     diff2.forEach(function (indexName) {
       var index = _.findWhere(indexes2, { indname: indexName })
-      // dbdiff.log('CREATE INDEX "%s" ON %s USING %s (%s);', indexName, index.indrelid, index.indam, index.indkey_names.join(','))
-      dbdiff.log('CREATE INDEX "%s" ON \"%s\" USING %s (%s);', indexName, index.tablename, index.indam, index.indkey_names.join(','))
+      if (index && index.tablename) {
+        dbdiff.log('CREATE INDEX "%s" ON "%s" USING %s (%s);', indexName, index.tablename, index.indam, index.indkey_names.join(','))
+      }
     })
   }
 
@@ -264,7 +265,9 @@ function compareIndexes(tableName, db1, db2) {
       var index = index2
       dbdiff.log('-- Index "%s"."%s" needs to be changed', index.nspname, index.indname)
       dbdiff.log('DROP INDEX "%s"."%s";', index.nspname, index.indname)
-      dbdiff.log('CREATE INDEX "%s" ON \"%s\" USING %s (%s);', index.indname, index.indrelid, index.indam, index.indkey_names.join(','))
+      if (index && index.indrelid) {
+        dbdiff.log('CREATE INDEX "%s" ON "%s" USING %s (%s);', index.indname, index.indrelid, index.indam, index.indkey_names.join(','))
+      }
     }
   })
 }
@@ -315,7 +318,7 @@ function compareSequences(db1, db2) {
     var desc2 = sequenceDescription(sequence2)
 
     if (desc2 !== desc1) {
-      dbdiff.log('DROP SEQUENCE %s;', sequenceName)
+      dbdiff.log('DROP SEQUENCE "%s"."%s";', db2.schema, sequenceName)
       dbdiff.log(desc2)
     }
   })
@@ -431,10 +434,9 @@ function compareConstraints(db1, db2) {
   var inBoth = constraints1.filter(c => inBothNames.includes(c.constraint_name))
 
   onlyInDb1.forEach(function (c) {
-    dbdiff.log('ALTER TABLE "public"."%s" DROP CONSTRAINT %s %s;',
+    dbdiff.log('ALTER TABLE "public"."%s" DROP CONSTRAINT %s;',
       c.table_name,
-      c.constraint_name,
-      c.definition)
+      c.constraint_name)
   })
 
   onlyInDb2.forEach(function (c) {
@@ -461,20 +463,39 @@ dbdiff.compareSchemas = function (db1, db2) {
   var diff2 = _.difference(tableNames2, tableNames1)
 
   diff1.forEach(function (tableName) {
-    dbdiff.log('DROP TABLE \"%s\".\"%s\";', db2.schema, tableName)
+    dbdiff.log('DROP TABLE "%s"."%s" CASCADE;', db2.schema, tableName)
   })
+
+  // Gom các FOREIGN KEY constraint để sinh sau
+  var foreignKeyConstraints = [];
 
   diff2.forEach(function (tableName) {
     var columns = db2.tables[tableName].map(function (col) {
       var type = dataType(col)
       return '\n  "' + col.column_name + '" ' + columnDescription(col)
     })
-    dbdiff.log('CREATE TABLE \"%s\".\"%s\" (%s);', db2.schema, tableName, columns.join(','))
+    var tableConstraints = db2.constraints.filter(function (c) {
+      return c.table_name === tableName;
+    });
+    var nonFkConstraints = tableConstraints.filter(function (c) {
+      return !/^FOREIGN KEY/i.test(c.definition.trim());
+    });
+    var fkConstraints = tableConstraints.filter(function (c) {
+      return /^FOREIGN KEY/i.test(c.definition.trim());
+    });
+    foreignKeyConstraints = foreignKeyConstraints.concat(fkConstraints);
+    var constraintDefs = nonFkConstraints.map(function (c) {
+      return '\n  CONSTRAINT ' + c.constraint_name + ' ' + c.definition;
+    });
+    var allDefs = columns.concat(constraintDefs);
+    dbdiff.log('CREATE TABLE "%s"."%s" (%s);', db2.schema, tableName, allDefs.join(','))
 
     var indexNames2 = indexNames(tableName, db2.indexes)
     indexNames2.forEach(function (indexName) {
       var index = _.findWhere(db2.indexes, { indname: indexName })
-      dbdiff.log('CREATE INDEX "%s" ON \"%s\" USING %s (%s);', index.indname, index.tablename, index.indam, index.indkey_names.join(','))
+      if (index && index.indrelid) {
+        dbdiff.log('CREATE INDEX "%s" ON "%s" USING %s (%s);', index.indname, index.indrelid, index.indam, index.indkey_names.join(','))
+      }
     })
   })
 
@@ -484,7 +505,19 @@ dbdiff.compareSchemas = function (db1, db2) {
     compareIndexes(tableName, db1, db2)
   })
   compareSequences(db1, db2)
-  compareConstraints(db1, db2)
+  compareConstraints(
+    {
+      ...db1,
+      constraints: db1.constraints.filter(c => inter.includes(c.table_name))
+    },
+    {
+      ...db2,
+      constraints: db2.constraints.filter(c => inter.includes(c.table_name))
+    }
+  )
+  foreignKeyConstraints.forEach(function (c) {
+    dbdiff.log('ALTER TABLE "%s"."%s" ADD CONSTRAINT %s %s;', db2.schema, c.table_name, c.constraint_name, c.definition)
+  })
 }
 
 dbdiff.compareDatabases = function (comparison, callback) {
