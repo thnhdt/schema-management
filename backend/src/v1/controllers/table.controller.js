@@ -52,9 +52,19 @@ const getAllUpdateDdl = async (req, res, next) => {
   new SucessReponse({ metaData: result }).send(res);
 };
 
-const updateDatabaseAndSaveHistory = async (req, res, next) => {
-  const result = await tableService.updateDatabaseAndSaveHistory(req.body, req.user);
+const syncDatabase = async (req, res, next) => {
+  const result = await tableService.syncDatabase(req.body, req.user);
   new SucessReponse({ metaData: result }).send(res);
+};
+
+const saveDBHistory = async (req, res, next) => {
+  try {
+    const { databaseId } = req.body;
+    const result = await tableService.saveDBHistory(databaseId);
+    new SucessReponse({ metaData: result }).send(res);
+  } catch (error) {
+    next(error);
+  }
 };
 
 module.exports = {
@@ -68,5 +78,6 @@ module.exports = {
   getColumns,
   getAllUpdateOnTables,
   getAllUpdateDdl,
-  updateDatabaseAndSaveHistory
+  syncDatabase,
+  saveDBHistory
 }

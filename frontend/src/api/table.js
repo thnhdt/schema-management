@@ -35,8 +35,8 @@ export const getAllUpdateTables = async (targetDatabaseId, currentDatabaseId) =>
   return response.data;
 };
 
-export const updateDatabaseAndSaveHistory = async (targetDatabaseId, currentDatabaseId, allUpdateFunction, allUpdateDdlTable) => {
-  const response = await api.post('/table/update-database-and-save-history', {
+export const syncDatabase = async (targetDatabaseId, currentDatabaseId, allUpdateFunction, allUpdateDdlTable) => {
+  const response = await api.post('/table/sync-Database', {
     targetDatabaseId,
     currentDatabaseId,
     allUpdateFunction,
@@ -50,5 +50,10 @@ export const getAllUpdateDdl = async (targetDatabaseId, currentDatabaseId) => {
     targetDatabaseId,
     currentDatabaseId
   }, { requiresAuth: true });
+  return response.data;
+};
+
+export const saveDBHistory = async (databaseId) => {
+  const response = await api.post('/table/save-DB-history', { databaseId }, { requiresAuth: true });
   return response.data;
 };  

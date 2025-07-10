@@ -20,7 +20,7 @@ import '../../App.css';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { TableComponent } from '../../util/helper';
-import { getAllFunctions, getTables, getAllSequences, dropTable, dropFunction, dropSequence, getColumns, dropColumn } from '../../api';
+import { getAllFunctions, getTables, getAllSequences, dropTable, dropFunction, dropSequence, getColumns, dropColumn, saveDBHistory } from '../../api';
 
 const { Text } = Typography;
 
@@ -184,12 +184,22 @@ function Schema() {
   //   messageApi.info('Tính năng import schema sẽ được phát triển sau');
   // };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await saveDBHistory(id);
+      messageApi.success('Đã lưu lịch sử DDL thành công!');
+    } catch {
+      messageApi.error('Lưu lịch sử DDL thất bại!');
+    }
+    try {
+      await fetchAll();
       messageApi.success('Đã làm mới dữ liệu!');
-    }, 1000);
+    } catch {
+      messageApi.error('Làm mới dữ liệu thất bại!');
+    } finally {
+      setLoading(false);
+    }
   };
   const handleDeleteTable = async (tableName) => {
     if (!isAdmin && !canUptdateTable) {
@@ -327,17 +337,6 @@ function Schema() {
           columns={columns}
           data={tables || []}
           loading={loading}
-          customButton={
-            <Space>
-              <Button
-                type="primary"
-                icon={<ReloadOutlined />}
-                onClick={handleRefresh}
-              >
-                Làm Mới
-              </Button>
-            </Space>
-          }
           rowKey={record => record.name}
           onRow={record => ({
             onClick: () => setSelectedTable(record)
@@ -403,17 +402,6 @@ function Schema() {
             onClick: () => setSelectedFunction(record)
           })}
           rowClassName={record => selectedFunction && record.functionName === selectedFunction.functionName ? 'selected-row' : 'no-hover'}
-          customButton={
-            <Space>
-              <Button
-                type="primary"
-                icon={<ReloadOutlined />}
-                onClick={handleRefresh}
-              >
-                Làm Mới
-              </Button>
-            </Space>
-          }
           scroll={{ x: 'max-content', y: 'calc(100vh - 350px)' }}
         />
       </div>
@@ -478,17 +466,6 @@ function Schema() {
           columns={columns}
           data={sequences || []}
           loading={loading}
-          customButton={
-            <Space>
-              <Button
-                type="primary"
-                icon={<ReloadOutlined />}
-                onClick={handleRefresh}
-              >
-                Làm Mới
-              </Button>
-            </Space>
-          }
           rowKey={record => record.name}
           onRow={record => ({
             onClick: () => setSelectedSequence(record)

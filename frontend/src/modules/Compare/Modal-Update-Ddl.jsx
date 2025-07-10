@@ -2,7 +2,7 @@
 import { Card, message, FloatButton } from "antd";
 import { SwapOutlined } from '@ant-design/icons';
 import { DrawerComponent } from "../../util/helper";
-import { updateDatabaseAndSaveHistory } from "../../api/table";
+import { syncDatabase } from "../../api/table";
 import '../../App.css'
 
 const DrawerCompareComponent = (props) => {
@@ -14,7 +14,7 @@ const DrawerCompareComponent = (props) => {
     try {
       messageApi.loading({ content: 'Đang cập nhật database...', key: 'update' });
       
-      await updateDatabaseAndSaveHistory(
+      await syncDatabase(
         targetDatabaseId, 
         currentDatabaseId, 
         allUpdateFunction, 

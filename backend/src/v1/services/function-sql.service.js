@@ -143,7 +143,7 @@ const getAllUpdate = async (reqBody, user) => {
     )
   ).filter(Boolean);
   let ddlSchema = '';
-  resultUpdate.forEach(item => ddlSchema += item.patch + '\n');
+  resultUpdate.forEach(item => ddlSchema += item.patch + ';'+'\n');
   return {
     code: 200,
     allPatchDdl: ddlSchema,

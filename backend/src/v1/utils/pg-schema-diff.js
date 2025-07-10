@@ -194,13 +194,13 @@ function compareTables(tableName, db1, db2) {
   var diff2 = _.difference(columNames2, columNames1)
 
   diff1.forEach(function (columnName) {
-    dbdiff.log('ALTER TABLE %s DROP COLUMN "%s";', tableName, columnName)
+    dbdiff.log('ALTER TABLE \"%s\" DROP COLUMN "%s";', tableName, columnName)
   })
 
   diff2.forEach(function (columnName) {
     var col = _.findWhere(table2, { column_name: columnName })
     var type = dataType(col)
-    dbdiff.log('ALTER TABLE %s ADD COLUMN "%s" %s;', tableName, columnName, columnDescription(col))
+    dbdiff.log('ALTER TABLE \"%s\" ADD COLUMN "%s" %s;', tableName, columnName, columnDescription(col))
   })
 
   var common = _.intersection(columNames1, columNames2)
@@ -212,13 +212,13 @@ function compareTables(tableName, db1, db2) {
       || col1.udt_name !== col2.udt_name
       || col1.character_maximum_length !== col2.character_maximum_length) {
       dbdiff.log('-- Previous data type was %s', dataType(col1))
-      dbdiff.log('ALTER TABLE %s ALTER COLUMN "%s" SET DATA TYPE %s;', tableName, columnName, dataType(col2))
+      dbdiff.log('ALTER TABLE \"%s\" ALTER COLUMN "%s" SET DATA TYPE %s;', tableName, columnName, dataType(col2))
     }
     if (col1.is_nullable !== col2.is_nullable) {
       if (col2.is_nullable === 'YES') {
-        dbdiff.log('ALTER TABLE %s ALTER COLUMN "%s" DROP NOT NULL;', tableName, columnName)
+        dbdiff.log('ALTER TABLE \"%s\" ALTER COLUMN "%s" DROP NOT NULL;', tableName, columnName)
       } else {
-        dbdiff.log('ALTER TABLE %s ALTER COLUMN "%s" SET NOT NULL;', tableName, columnName)
+        dbdiff.log('ALTER TABLE \"%s\" ALTER COLUMN "%s" SET NOT NULL;', tableName, columnName)
       }
     }
   })
@@ -251,7 +251,7 @@ function compareIndexes(tableName, db1, db2) {
     diff2.forEach(function (indexName) {
       var index = _.findWhere(indexes2, { indname: indexName })
       // dbdiff.log('CREATE INDEX "%s" ON %s USING %s (%s);', indexName, index.indrelid, index.indam, index.indkey_names.join(','))
-      dbdiff.log('CREATE INDEX "%s" ON %s USING %s (%s);', indexName, index.tablename, index.indam, index.indkey_names.join(','))
+      dbdiff.log('CREATE INDEX "%s" ON \"%s\" USING %s (%s);', indexName, index.tablename, index.indam, index.indkey_names.join(','))
     })
   }
 
@@ -264,7 +264,7 @@ function compareIndexes(tableName, db1, db2) {
       var index = index2
       dbdiff.log('-- Index "%s"."%s" needs to be changed', index.nspname, index.indname)
       dbdiff.log('DROP INDEX "%s"."%s";', index.nspname, index.indname)
-      dbdiff.log('CREATE INDEX "%s" ON %s USING %s (%s);', index.indname, index.indrelid, index.indam, index.indkey_names.join(','))
+      dbdiff.log('CREATE INDEX "%s" ON \"%s\" USING %s (%s);', index.indname, index.indrelid, index.indam, index.indkey_names.join(','))
     }
   })
 }
@@ -461,7 +461,7 @@ dbdiff.compareSchemas = function (db1, db2) {
   var diff2 = _.difference(tableNames2, tableNames1)
 
   diff1.forEach(function (tableName) {
-    dbdiff.log('DROP TABLE %s.%s;', db2.schema, tableName)
+    dbdiff.log('DROP TABLE \"%s\".\"%s\";', db2.schema, tableName)
   })
 
   diff2.forEach(function (tableName) {
@@ -469,12 +469,12 @@ dbdiff.compareSchemas = function (db1, db2) {
       var type = dataType(col)
       return '\n  "' + col.column_name + '" ' + columnDescription(col)
     })
-    dbdiff.log('CREATE TABLE %s.%s (%s);', db2.schema, tableName, columns.join(','))
+    dbdiff.log('CREATE TABLE \"%s\".\"%s\" (%s);', db2.schema, tableName, columns.join(','))
 
     var indexNames2 = indexNames(tableName, db2.indexes)
     indexNames2.forEach(function (indexName) {
       var index = _.findWhere(db2.indexes, { indname: indexName })
-      dbdiff.log('CREATE INDEX "%s" ON %s USING %s (%s);', index.indname, index.indrelid, index.indam, index.indkey_names.join(','))
+      dbdiff.log('CREATE INDEX "%s" ON \"%s\" USING %s (%s);', index.indname, index.tablename, index.indam, index.indkey_names.join(','))
     })
   })
 

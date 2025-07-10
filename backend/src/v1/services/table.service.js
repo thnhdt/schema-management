@@ -219,7 +219,42 @@ const getAllUpdateDdl = async (reqBody, user) => {
   }
 }
 
-const updateDatabaseAndSaveHistory = async (reqBody, user) => {
+const saveDBHistory = async (databaseId) => {
+  const currentDatabase = await databaseModel.findById(databaseId).lean();
+  if (!currentDatabase) {
+    throw new BadResponseError("Database không tồn tại!");
+  }
+  const [allTablesResponse, allFunctionsResponse] = await Promise.all([
+    getAllTables({ schema: 'public', id: databaseId }),
+    functionService.getAllFunctions({ schema: 'public', id: databaseId })
+  ]);
+  const allTablesDdl = allTablesResponse.metaData.data.map(table => table.text).join('\n');
+  const allFunctionsDdl = allFunctionsResponse.metaData.data.map(func => func.definition).join('\n');
+  const currentHistoryData = {
+    databaseName: databaseId,
+    versions: [{
+      timestamps: new Date(),
+      tables: [allTablesDdl],
+      functions: [allFunctionsDdl]
+    }]
+  };
+  let currentHistory = await HistoryModel.findOne({ databaseName: databaseId });
+  if (currentHistory) {
+    currentHistory.versions.push(currentHistoryData.versions[0]);
+    await currentHistory.save();
+  } else {
+    await HistoryModel.create(currentHistoryData);
+  }
+  return {
+    code: 200,
+    metaData: {
+      message: "Đã lưu lịch sử DDL thành công",
+      database: currentDatabase.name
+    }
+  };
+};
+
+const syncDatabase = async (reqBody, user) => {
   const { targetDatabaseId, currentDatabaseId, allUpdateFunction, allUpdateDdlTable } = reqBody;
   
   if (!user.isAdmin) {
@@ -240,90 +275,53 @@ const updateDatabaseAndSaveHistory = async (reqBody, user) => {
   }
 
   const sequelize = await databaseService.connectToDatabase({ id: currentDatabaseId });
-  
+  const ddlErrors = [];
+  let transaction;
   try {
     // Bắt đầu transaction
-    const transaction = await sequelize.transaction();
-    
-    try {
-      // Thực hiện cập nhật function
-      if (allUpdateFunction && allUpdateFunction.trim()) {
-        const functionQueries = allUpdateFunction.split(';').filter(query => query.trim());
-        for (const query of functionQueries) {
-          if (query.trim()) {
-            await sequelize.query(query.trim(), { transaction });
-          }
+    transaction = await sequelize.transaction();
+    if (allUpdateFunction && allUpdateFunction.trim()) {
+      try {
+        await sequelize.query(allUpdateFunction, { transaction });
+      } catch (err) {
+        await transaction.rollback();
+        throw new BadResponseError(`Lỗi khi thực thi function/procedure: ${err.message}`);
+      }
+    }
+    // 2. Thực thi DDL table/index/sequence/constraint: Tách theo dấu chấm phẩy, chỉ thực thi lệnh hợp lệ
+    if (allUpdateDdlTable && allUpdateDdlTable.trim()) {
+      const tableQueries = allUpdateDdlTable
+        .split(';')
+        .map(q => q.trim())
+        .filter(q => q && /^(CREATE|ALTER|DROP|TRUNCATE|COMMENT|RENAME)/i.test(q));
+      for (const query of tableQueries) {
+        try {
+          console.log('Đang thực thi DDL:', query);
+          await sequelize.query(query, { transaction });
+        } catch (err) {
+          console.error('Lỗi khi thực thi lệnh DDL:', query, err.message);
+          ddlErrors.push({ query, error: err.message });
+          // KHÔNG throw, KHÔNG rollback, tiếp tục với lệnh tiếp theo
         }
       }
-      
-      // Thực hiện cập nhật table
-      if (allUpdateDdlTable && allUpdateDdlTable.trim()) {
-        const tableQueries = allUpdateDdlTable.split(';').filter(query => query.trim());
-        for (const query of tableQueries) {
-          if (query.trim()) {
-            await sequelize.query(query.trim(), { transaction });
-          }
-        }
-      }
-      
-      // Commit transaction
-      await transaction.commit();
-      
-    } catch (error) {
-      // Rollback nếu có lỗi
-      await transaction.rollback();
-      throw error;
     }
-    
-    // Lấy toàn bộ DDL của tables và functions từ current database
-    const [allTablesResponse, allFunctionsResponse] = await Promise.all([
-      getAllTables({ schema: 'public', id: currentDatabaseId }),
-      functionService.getAllFunctions({ schema: 'public', id: currentDatabaseId })
-    ]);
-    
-    const allTablesDdl = allTablesResponse.metaData.data.map(table => table.text).join('\n');
-    const allFunctionsDdl = allFunctionsResponse.metaData.data.map(func => func.definition).join('\n');
-    
-    // Lưu vào history cho current database
-    const currentHistoryData = {
-      databaseName: currentDatabaseId,
-      versions: [{
-        timestamps: new Date(),
-        tables: [allTablesDdl],
-        functions: [allFunctionsDdl]
-      }]
-    };
-    
-    let currentHistory = await HistoryModel.findOne({ databaseName: currentDatabaseId });
-    
-    if (currentHistory) {
-      currentHistory.versions.push(currentHistoryData.versions[0]);
-      await currentHistory.save();
-    } else {
-      await HistoryModel.create(currentHistoryData);
-    }
-    
-    // Kiểm tra và tạo history cho target database nếu chưa có
+    // Commit transaction (dù có lệnh DDL lỗi, các lệnh thành công vẫn được commit)
+    await transaction.commit();
+    await saveDBHistory(currentDatabaseId);
     let targetHistory = await HistoryModel.findOne({ databaseName: targetDatabaseId });
-    
     if (targetHistory && targetHistory.versions.length > 0) {
-      // Cập nhật timestamp của version mới nhất
       const latestVersion = targetHistory.versions[targetHistory.versions.length - 1];
       latestVersion.timestamps = new Date();
       await targetHistory.save();
     } else {
-      // Tạo history mới cho target database với DDL hiện tại
       const targetSequelize = await databaseService.connectToDatabase({ id: targetDatabaseId });
-      
       try {
         const [targetAllTablesResponse, targetAllFunctionsResponse] = await Promise.all([
           getAllTables({ schema: 'public', id: targetDatabaseId }),
           functionService.getAllFunctions({ schema: 'public', id: targetDatabaseId })
         ]);
-        
         const targetAllTablesDdl = targetAllTablesResponse.metaData.data.map(table => table.text).join('\n');
         const targetAllFunctionsDdl = targetAllFunctionsResponse.metaData.data.map(func => func.definition).join('\n');
-        
         const targetHistoryData = {
           databaseName: targetDatabaseId,
           versions: [{
@@ -332,26 +330,26 @@ const updateDatabaseAndSaveHistory = async (reqBody, user) => {
             functions: [targetAllFunctionsDdl]
           }]
         };
-        
         await HistoryModel.create(targetHistoryData);
       } finally {
         await targetSequelize.close();
       }
     }
-    
+    await sequelize.close();
     return {
       code: 200,
       metaData: {
         message: "Cập nhật thành công và đã lưu lịch sử",
         currentDatabase: currentDatabase.name,
-        targetDatabase: targetDatabase.name
+        targetDatabase: targetDatabase.name,
+        ddlErrors // trả về các lệnh lỗi nếu có
       }
     };
-    
   } catch (error) {
     console.error("Lỗi khi cập nhật database:", error);
     throw new BadResponseError(`Lỗi khi cập nhật database: ${error.message}`);
   } finally {
+    if (transaction) await transaction.finished ? null : transaction.rollback();
     await sequelize.close();
   }
 };
@@ -368,5 +366,6 @@ module.exports = {
   getColumns,
   getAllUpdateOnTables,
   getAllUpdateDdl,
-  updateDatabaseAndSaveHistory
+  syncDatabase,
+  saveDBHistory
 }
