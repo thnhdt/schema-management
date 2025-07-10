@@ -33,4 +33,22 @@ export const getColumns = async (id, tableName, schema = 'public') => {
 export const getAllUpdateTables = async (targetDatabaseId, currentDatabaseId) => {
   const response = await api.post('/table/all-update-tables', { currentDatabaseId, targetDatabaseId }, { requiresAuth: true });
   return response.data;
+};
+
+export const updateDatabaseAndSaveHistory = async (targetDatabaseId, currentDatabaseId, allUpdateFunction, allUpdateDdlTable) => {
+  const response = await api.post('/table/update-database-and-save-history', {
+    targetDatabaseId,
+    currentDatabaseId,
+    allUpdateFunction,
+    allUpdateDdlTable
+  }, { requiresAuth: true });
+  return response.data;
+};
+
+export const getAllUpdateDdl = async (targetDatabaseId, currentDatabaseId) => {
+  const response = await api.post('/table/all-update-ddl', {
+    targetDatabaseId,
+    currentDatabaseId
+  }, { requiresAuth: true });
+  return response.data;
 };  

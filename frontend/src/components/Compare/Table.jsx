@@ -202,6 +202,8 @@ const TableCompareComponent = () => {
         onClose={() => setOpenDrawer(false)}
         allUpdateFunction={allUpdateFunction}
         allUpdateDdlTable={allUpdateDdlTable}
+        targetDatabaseId={targetDatabaseId}
+        currentDatabaseId={currentDatabaseId}
       />
     </div>
 

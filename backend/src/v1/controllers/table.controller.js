@@ -50,7 +50,13 @@ const getAllUpdateOnTables = async (req, res, next) => {
 const getAllUpdateDdl = async (req, res, next) => {
   const result = await tableService.getAllUpdateDdl(req.body, req.user);
   new SucessReponse({ metaData: result }).send(res);
-}
+};
+
+const updateDatabaseAndSaveHistory = async (req, res, next) => {
+  const result = await tableService.updateDatabaseAndSaveHistory(req.body, req.user);
+  new SucessReponse({ metaData: result }).send(res);
+};
+
 module.exports = {
   test,
   createSchema,
@@ -61,5 +67,6 @@ module.exports = {
   dropTable,
   getColumns,
   getAllUpdateOnTables,
-  getAllUpdateDdl
+  getAllUpdateDdl,
+  updateDatabaseAndSaveHistory
 }

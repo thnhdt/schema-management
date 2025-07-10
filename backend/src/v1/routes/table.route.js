@@ -38,4 +38,7 @@ tableRouter.route('/drop-table')
 tableRouter.route('/get-columns')
   .get(handlerError(tableController.getColumns))
 
+tableRouter.route('/update-database-and-save-history')
+  .post(handlerError(tableController.updateDatabaseAndSaveHistory));
+
 module.exports = tableRouter

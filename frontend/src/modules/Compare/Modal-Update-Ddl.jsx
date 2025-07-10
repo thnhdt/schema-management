@@ -2,11 +2,42 @@
 import { Card, message, FloatButton } from "antd";
 import { SwapOutlined } from '@ant-design/icons';
 import { DrawerComponent } from "../../util/helper";
+import { updateDatabaseAndSaveHistory } from "../../api/table";
 import '../../App.css'
+
 const DrawerCompareComponent = (props) => {
-  const { onClose, open, allUpdateFunction, allUpdateDdlTable } = props;
-  const [_, contextHolder] = message.useMessage();
+  const { onClose, open, allUpdateFunction, allUpdateDdlTable, targetDatabaseId, currentDatabaseId } = props;
+  const [messageApi, contextHolder] = message.useMessage();
   const allDdlUpdateSchema = '-- Cập nhật trên Function' + '\n' + allUpdateFunction + '\n' + '-- Cập nhật trên Table' + '\n' + allUpdateDdlTable;
+  
+  const handleUpdateDatabase = async () => {
+    try {
+      messageApi.loading({ content: 'Đang cập nhật database...', key: 'update' });
+      
+      await updateDatabaseAndSaveHistory(
+        targetDatabaseId, 
+        currentDatabaseId, 
+        allUpdateFunction, 
+        allUpdateDdlTable
+      );
+      
+      messageApi.success({ 
+        content: 'Cập nhật database thành công!', 
+        key: 'update',
+        duration: 3
+      });
+      onClose();
+      
+    } catch (error) {
+      console.error('Lỗi khi cập nhật database:', error);
+      messageApi.error({ 
+        content: `Lỗi khi cập nhật database: ${error.message}`, 
+        key: 'update',
+        duration: 5
+      });
+    }
+  };
+  
   return (
     <>
       {contextHolder}
@@ -41,7 +72,14 @@ const DrawerCompareComponent = (props) => {
               </Card>
 
             </div>
-            <FloatButton size='large' className='add-btn' icon={<SwapOutlined />} style={{ insetInlineEnd: 24 }} />
+            <FloatButton 
+              size='large' 
+              className='add-btn' 
+              icon={<SwapOutlined />} 
+              style={{ insetInlineEnd: 24 }}
+              onClick={handleUpdateDatabase}
+              tooltip="Cập nhật database"
+            />
           </>
         )}
       />

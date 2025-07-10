@@ -3,7 +3,10 @@ const { BadResponseError } = require('../cores/error.response');
 const { ddl } = require('../utils/helper.utils');
 const { QueryTypes } = require('sequelize');
 const databaseService = require('../services/database.service');
-const { getAllUpdateOnTableUtil, getAllUpdateBetweenDatabases } = require('../utils/helper.utils');
+const { getAllUpdateOnTableUtil, getAllUpdateBetweenDatabases, getStringUrl } = require('../utils/helper.utils');
+const HistoryModel = require('../models/history.model');
+const databaseModel = require('../models/database.model');
+const functionService = require('./function-sql.service');
 
 const mergeTables = (arrTableTarget, arrTableCurrent) => {
   const map = new Map();
@@ -130,7 +133,7 @@ const getAllDdlText = async (reqBody) => {
   //   const ddlText = await ddl("public", table.tableName, client);
   //   allSqlSchema.push(ddlText);
   // }
-  const allSqlSchema = await Primise.all(allTables.map(table => ddl("public", table.tableName, client)))
+  const allSqlSchema = await Promise.all(allTables.map(table => ddl("public", table.tableName, client)))
   const schemaSql = allSqlSchema.join('\n');
   await client.close();
   return {
@@ -201,14 +204,13 @@ const getColumns = async ({ id, tableName, schema = 'public' }) => {
   await sequelize.close();
   return { code: 200, metaData: { columns: columns.map(col => col.column_name) } };
 };
-const exportAllUpdateOnTables = async () => {
-
+const getAllUpdateDdl = async (reqBody, user) => {
   const { targetDatabaseId, currentDatabaseId } = reqBody;
   if (!user.isAdmin) {
     const permissions = user.userPermissions.some(role => role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) && role?.permissions.some(p => p.databaseId.toString() === currentDatabaseId));
     if (!permissions) throw new BadResponseError("Bạn không có quyền truy cập một trong hai DB !")
   }
-  const [targetDatabaseUrl, currentDatabaseUrl] = await Promise.all(getStringUrl(targetDatabaseId), getStringUrl(currentDatabaseId));
+  const [targetDatabaseUrl, currentDatabaseUrl] = await Promise.all([getStringUrl(targetDatabaseId), getStringUrl(currentDatabaseId)]);
   const allUpdate = await getAllUpdateBetweenDatabases(targetDatabaseUrl.stringConnectPGUrl, currentDatabaseUrl.stringConnectPGUrl);
   const result = allUpdate.join('\n');
   return {
@@ -216,6 +218,143 @@ const exportAllUpdateOnTables = async () => {
     allUpdateSchema: result
   }
 }
+
+const updateDatabaseAndSaveHistory = async (reqBody, user) => {
+  const { targetDatabaseId, currentDatabaseId, allUpdateFunction, allUpdateDdlTable } = reqBody;
+  
+  if (!user.isAdmin) {
+    const permissions = user.userPermissions.some(role => 
+      role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) && 
+      role?.permissions.some(p => p.databaseId.toString() === currentDatabaseId)
+    );
+    if (!permissions) throw new BadResponseError("Bạn không có quyền truy cập một trong hai DB !");
+  }
+
+  const [currentDatabase, targetDatabase] = await Promise.all([
+    databaseModel.findById(currentDatabaseId).lean(),
+    databaseModel.findById(targetDatabaseId).lean()
+  ]);
+  
+  if (!currentDatabase || !targetDatabase) {
+    throw new BadResponseError("Một trong hai database không tồn tại !");
+  }
+
+  const sequelize = await databaseService.connectToDatabase({ id: currentDatabaseId });
+  
+  try {
+    // Bắt đầu transaction
+    const transaction = await sequelize.transaction();
+    
+    try {
+      // Thực hiện cập nhật function
+      if (allUpdateFunction && allUpdateFunction.trim()) {
+        const functionQueries = allUpdateFunction.split(';').filter(query => query.trim());
+        for (const query of functionQueries) {
+          if (query.trim()) {
+            await sequelize.query(query.trim(), { transaction });
+          }
+        }
+      }
+      
+      // Thực hiện cập nhật table
+      if (allUpdateDdlTable && allUpdateDdlTable.trim()) {
+        const tableQueries = allUpdateDdlTable.split(';').filter(query => query.trim());
+        for (const query of tableQueries) {
+          if (query.trim()) {
+            await sequelize.query(query.trim(), { transaction });
+          }
+        }
+      }
+      
+      // Commit transaction
+      await transaction.commit();
+      
+    } catch (error) {
+      // Rollback nếu có lỗi
+      await transaction.rollback();
+      throw error;
+    }
+    
+    // Lấy toàn bộ DDL của tables và functions từ current database
+    const [allTablesResponse, allFunctionsResponse] = await Promise.all([
+      getAllTables({ schema: 'public', id: currentDatabaseId }),
+      functionService.getAllFunctions({ schema: 'public', id: currentDatabaseId })
+    ]);
+    
+    const allTablesDdl = allTablesResponse.metaData.data.map(table => table.text).join('\n');
+    const allFunctionsDdl = allFunctionsResponse.metaData.data.map(func => func.definition).join('\n');
+    
+    // Lưu vào history cho current database
+    const currentHistoryData = {
+      databaseName: currentDatabaseId,
+      versions: [{
+        timestamps: new Date(),
+        tables: [allTablesDdl],
+        functions: [allFunctionsDdl]
+      }]
+    };
+    
+    let currentHistory = await HistoryModel.findOne({ databaseName: currentDatabaseId });
+    
+    if (currentHistory) {
+      currentHistory.versions.push(currentHistoryData.versions[0]);
+      await currentHistory.save();
+    } else {
+      await HistoryModel.create(currentHistoryData);
+    }
+    
+    // Kiểm tra và tạo history cho target database nếu chưa có
+    let targetHistory = await HistoryModel.findOne({ databaseName: targetDatabaseId });
+    
+    if (targetHistory && targetHistory.versions.length > 0) {
+      // Cập nhật timestamp của version mới nhất
+      const latestVersion = targetHistory.versions[targetHistory.versions.length - 1];
+      latestVersion.timestamps = new Date();
+      await targetHistory.save();
+    } else {
+      // Tạo history mới cho target database với DDL hiện tại
+      const targetSequelize = await databaseService.connectToDatabase({ id: targetDatabaseId });
+      
+      try {
+        const [targetAllTablesResponse, targetAllFunctionsResponse] = await Promise.all([
+          getAllTables({ schema: 'public', id: targetDatabaseId }),
+          functionService.getAllFunctions({ schema: 'public', id: targetDatabaseId })
+        ]);
+        
+        const targetAllTablesDdl = targetAllTablesResponse.metaData.data.map(table => table.text).join('\n');
+        const targetAllFunctionsDdl = targetAllFunctionsResponse.metaData.data.map(func => func.definition).join('\n');
+        
+        const targetHistoryData = {
+          databaseName: targetDatabaseId,
+          versions: [{
+            timestamps: new Date(),
+            tables: [targetAllTablesDdl],
+            functions: [targetAllFunctionsDdl]
+          }]
+        };
+        
+        await HistoryModel.create(targetHistoryData);
+      } finally {
+        await targetSequelize.close();
+      }
+    }
+    
+    return {
+      code: 200,
+      metaData: {
+        message: "Cập nhật thành công và đã lưu lịch sử",
+        currentDatabase: currentDatabase.name,
+        targetDatabase: targetDatabase.name
+      }
+    };
+    
+  } catch (error) {
+    console.error("Lỗi khi cập nhật database:", error);
+    throw new BadResponseError(`Lỗi khi cập nhật database: ${error.message}`);
+  } finally {
+    await sequelize.close();
+  }
+};
 
 module.exports = {
   test,
@@ -228,5 +367,6 @@ module.exports = {
   dropTable,
   getColumns,
   getAllUpdateOnTables,
-  exportAllUpdateOnTables
+  getAllUpdateDdl,
+  updateDatabaseAndSaveHistory
 }

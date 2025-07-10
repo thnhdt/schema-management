@@ -8,13 +8,15 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "create-admin": "node src/v1/scripts/create-admin.js"
   },
   "keywords": [],
   "author": "anonystick <anonystick@gmail.com>",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

@@ -3,6 +3,7 @@ const { format } = require('sql-formatter');
 const dbdiff = require('./pg-schema-diff');
 const databaseModel = require('../models/database.model');
 const nodeModel = require('../models/node.model');
+const { NotFoundError } = require('../cores/error.response');
 function fmtType(r) {
   if (r.data_type === 'character varying')
     return r.character_maximum_length
@@ -281,5 +282,6 @@ const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapT
 module.exports = {
   ddl,
   getAllUpdateOnTableUtil,
-  getAllUpdateBetweenDatabases
+  getAllUpdateBetweenDatabases,
+  getStringUrl
 }

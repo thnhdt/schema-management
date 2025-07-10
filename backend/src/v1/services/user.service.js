@@ -121,7 +121,7 @@ const forgetPassword = async (email) => {
     }
   });
   const FRONTEND_URL = process.env.FRONTEND_URL;
-  const resetLink = `http://${FRONTEND_URL}/reset-password?token=${resetToken}`;;
+  const resetLink = `${FRONTEND_URL}/reset-password?token=${resetToken}`;;
   await transporter.sendMail({
     from: process.env.EMAIL_USER,
     to: email,
