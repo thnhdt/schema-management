@@ -301,7 +301,7 @@ function compareSequences(db1, db2) {
   var diff2 = _.difference(sequenceNames2, sequenceNames1)
 
   diff1.forEach(function (sequenceName) {
-    dbdiff.log('DROP SEQUENCE %s;', sequenceName)
+    dbdiff.log('DROP SEQUENCE "%s"."%s";', db2.schema, sequenceName)
   })
 
   diff2.forEach(function (sequenceName) {
