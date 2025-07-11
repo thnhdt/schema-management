@@ -55,7 +55,6 @@ const TableCompareComponent = () => {
   }, [])
   const fetchUpdate = async () => {
     try {
-      //thêm datbase id vào
       const data = await getAllUpdateTables(targetDatabaseId, currentDatabaseId);
       setUpdateData(data.metaData.allUpdate);
       setCurrentDatabase(data.metaData.currentDB);
