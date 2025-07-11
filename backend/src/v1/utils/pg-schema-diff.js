@@ -434,9 +434,22 @@ function compareConstraints(db1, db2) {
   var inBoth = constraints1.filter(c => inBothNames.includes(c.constraint_name))
 
   onlyInDb1.forEach(function (c) {
-    dbdiff.log('ALTER TABLE "public"."%s" DROP CONSTRAINT %s;',
+    dbdiff.log(`DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_name = '%s'
+          AND constraint_name = '%s'
+      ) THEN
+        ALTER TABLE "%s" DROP CONSTRAINT "%s";
+      END IF;
+    END$$;`,
       c.table_name,
-      c.constraint_name)
+      c.constraint_name,
+      c.table_name,
+      c.constraint_name
+    )
   })
 
   onlyInDb2.forEach(function (c) {
@@ -505,10 +518,13 @@ dbdiff.compareSchemas = function (db1, db2) {
     compareIndexes(tableName, db1, db2)
   })
   compareSequences(db1, db2)
+  console.log("508::: ", db1.constraints);
+  console.log("509::: ", db2.constraints);
   compareConstraints(
     {
       ...db1,
       constraints: db1.constraints.filter(c => inter.includes(c.table_name))
+
     },
     {
       ...db2,
