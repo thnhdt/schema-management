@@ -244,7 +244,7 @@ function compareIndexes(tableName, db1, db2) {
   if (diff1.length > 0) {
     diff1.forEach(function (indexName) {
       var index = _.findWhere(indexes1, { indname: indexName })
-      dbdiff.log('DROP INDEX "%s"."%s";', index.nspname, indexName)
+      dbdiff.log('DROP INDEX IF EXISTS "%s"."%s";', index.nspname, indexName)
     })
   }
   if (diff2.length > 0) {
@@ -264,7 +264,7 @@ function compareIndexes(tableName, db1, db2) {
     if (_.difference(index1.indkey_names, index2.indkey_names).length > 0) {
       var index = index2
       dbdiff.log('-- Index "%s"."%s" needs to be changed', index.nspname, index.indname)
-      dbdiff.log('DROP INDEX "%s"."%s";', index.nspname, index.indname)
+      dbdiff.log('DROP INDEX IF EXISTS "%s"."%s";', index.nspname, index.indname)
       if (index && index.indrelid) {
         dbdiff.log('CREATE INDEX "%s" ON "%s" USING %s (%s);', index.indname, index.indrelid, index.indam, index.indkey_names.join(','))
       }
@@ -301,7 +301,7 @@ function compareSequences(db1, db2) {
   var diff2 = _.difference(sequenceNames2, sequenceNames1)
 
   diff1.forEach(function (sequenceName) {
-    dbdiff.log('DROP SEQUENCE "%s"."%s";', db2.schema, sequenceName)
+    dbdiff.log('DROP SEQUENCE IF EXISTS "%s"."%s";', db2.schema, sequenceName)
   })
 
   diff2.forEach(function (sequenceName) {
@@ -318,7 +318,7 @@ function compareSequences(db1, db2) {
     var desc2 = sequenceDescription(sequence2)
 
     if (desc2 !== desc1) {
-      dbdiff.log('DROP SEQUENCE "%s"."%s";', db2.schema, sequenceName)
+      dbdiff.log('DROP SEQUENCE IF EXISTS "%s"."%s";', db2.schema, sequenceName)
       dbdiff.log(desc2)
     }
   })
@@ -326,11 +326,22 @@ function compareSequences(db1, db2) {
 
 function constraintDescription(constraint) {
   // console.log("constraint", constraint);
-  return util.format(
-    'ALTER TABLE \"public\".\"%s\" ADD CONSTRAINT %s %s;',
-    constraint.table_name,
-    constraint.constraint_name,
-    constraint.definition
+  return util.format(`DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_name = '%s'
+          AND constraint_name = '%s'
+      ) THEN
+        ALTER TABLE \"public\".\"%s\" ADD CONSTRAINT "%s" %s;
+      END IF;
+    END$$;`,
+      c.table_name,
+      c.constraint_name,
+      c.table_name,
+      constraint.constraint_name,
+      constraint.definition
   );
   // if (constraint.constraint_type === 'FOREIGN KEY') {
   //   return util.format(
@@ -476,7 +487,7 @@ dbdiff.compareSchemas = function (db1, db2) {
   var diff2 = _.difference(tableNames2, tableNames1)
 
   diff1.forEach(function (tableName) {
-    dbdiff.log('DROP TABLE "%s"."%s" CASCADE;', db2.schema, tableName)
+    dbdiff.log('DROP TABLE IF EXISTS "%s"."%s" CASCADE;', db2.schema, tableName)
   })
 
   // Gom các FOREIGN KEY constraint để sinh sau
