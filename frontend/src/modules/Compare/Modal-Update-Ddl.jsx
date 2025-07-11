@@ -72,14 +72,38 @@ const DrawerCompareComponent = (props) => {
               </Card>
 
             </div>
-            <FloatButton 
-              size='large' 
-              className='add-btn' 
-              icon={<SwapOutlined />} 
-              style={{ insetInlineEnd: 24 }}
-              onClick={handleUpdateDatabase}
-              tooltip="Cập nhật database"
-            />
+            <FloatButton.Group
+              open={open}
+              shape="square"
+              trigger="click"
+              style={{ insetInlineEnd: 88 }}
+              icon={<CustomerServiceOutlined />}
+            >
+              <FloatButton 
+                size='large' 
+                className='add-btn' 
+                icon={<SwapOutlined />} 
+                style={{ insetInlineEnd: 24 }}
+                onClick={handleUpdateDatabase}
+                tooltip="Cập nhật database"
+              />
+              <FloatButton 
+                size='large' 
+                className='add-btn' 
+                icon={<SwapOutlined />} 
+                style={{ insetInlineEnd: 24 }}
+                onClick={handleUpdateDatabase}
+                tooltip="Cập nhật database"
+              />
+              <FloatButton 
+                size='large' 
+                className='add-btn' 
+                icon={<SwapOutlined />} 
+                style={{ insetInlineEnd: 24 }}
+                onClick={handleUpdateDatabase}
+                tooltip="Cập nhật database"
+              />
+            </FloatButton.Group>
           </>
         )}
       />

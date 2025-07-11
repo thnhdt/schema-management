@@ -325,24 +325,33 @@ function compareSequences(db1, db2) {
 }
 
 function constraintDescription(constraint) {
-  // console.log("constraint", constraint);
-  return util.format(`DO $$
-    BEGIN
-      IF EXISTS (
-        SELECT 1
-        FROM information_schema.table_constraints
-        WHERE table_name = '%s'
-          AND constraint_name = '%s'
-      ) THEN
-        ALTER TABLE \"public\".\"%s\" ADD CONSTRAINT "%s" %s;
-      END IF;
-    END$$;`,
-      c.table_name,
-      c.constraint_name,
-      c.table_name,
-      constraint.constraint_name,
-      constraint.definition
+  return util.format(
+    `ALTER TABLE "public"."%s" DROP CONSTRAINT IF EXISTS \"%s\";
+     ALTER TABLE \"public\".\"%s\" ADD CONSTRAINT \"%s\" %s;`,
+     constraint.table_name,
+     constraint.constraint_name,
+     constraint.table_name,
+    constraint.constraint_name,
+    constraint.definition
   );
+  // console.log("constraint", constraint);
+  // return util.format(`DO $$
+  //   BEGIN
+  //     IF EXISTS (
+  //       SELECT 1
+  //       FROM information_schema.table_constraints
+  //       WHERE table_name = '%s'
+  //         AND constraint_name = '%s'
+  //     ) THEN
+  //       ALTER TABLE \"public\".\"%s\" ADD CONSTRAINT "%s" %s;
+  //     END IF;
+  //   END$$;`,
+  //     c.table_name,
+  //     c.constraint_name,
+  //     c.table_name,
+  //     constraint.constraint_name,
+  //     constraint.definition
+  // );
   // if (constraint.constraint_type === 'FOREIGN KEY') {
   //   return util.format(
   //     'ALTER TABLE public.%s ADD CONSTRAINT %s FOREIGN KEY ("%s") ' +
@@ -445,24 +454,27 @@ function compareConstraints(db1, db2) {
   var inBoth = constraints1.filter(c => inBothNames.includes(c.constraint_name))
 
   onlyInDb1.forEach(function (c) {
-    dbdiff.log(`DO $$
-    BEGIN
-      IF EXISTS (
-        SELECT 1
-        FROM information_schema.table_constraints
-        WHERE table_name = '%s'
-          AND constraint_name = '%s'
-      ) THEN
-        ALTER TABLE "%s" DROP CONSTRAINT "%s";
-      END IF;
-    END$$;`,
+    dbdiff.log('ALTER TABLE "public"."%s" DROP CONSTRAINT IF EXISTS \"%s\";',
       c.table_name,
-      c.constraint_name,
-      c.table_name,
-      c.constraint_name
-    )
-  })
+      c.constraint_name)
+  //   dbdiff.log(`DO $$
+  //   BEGIN
+  //     IF EXISTS (
+  //       SELECT 1
+  //       FROM information_schema.table_constraints
+  //       WHERE table_name = '%s'
+  //         AND constraint_name = '%s'
+  //     ) THEN
+  //       ALTER TABLE "%s" DROP CONSTRAINT "%s";
+  //     END IF;
+  //   END$$;`,
+  //     c.table_name,
+  //     c.constraint_name,
+  //     c.table_name,
+  //     c.constraint_name
+  //   )
 
+  })
   onlyInDb2.forEach(function (c) {
     dbdiff.log(constraintDescription(c))
   })
