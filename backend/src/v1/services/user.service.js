@@ -73,7 +73,6 @@ const handlerRefreshToken = async ({ user, refreshToken }) => {
   if (!targetUser) throw new ForbiddenError("User is not register !");
   const userPermissions = await Promise.all(targetUser.roles.map(role => roleModel.findById(role)));
   const isAdmin = userPermissions.some(item => item.name === 'admin');
-  console.log("handlerRefreshToken:isAdmin", isAdmin);
   const tokens = await createTokenPair({ userId: targetUser._id, name: targetUser.name, roles: targetUser.roles }, env.SECRET_KEY);
   return {
     user: { ...user, isAdmin },

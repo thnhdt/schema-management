@@ -21,15 +21,12 @@ dbdiff.describeDatabase = function (conString, schemaname, callback) {
     client.connect(callback)
   })
     .then(function (client, done, callback) {
-      //console.log('connected')
       client.query('SELECT * FROM pg_tables WHERE schemaname = $1', [schemaname], callback)
     })
     .then(function (result, callback) {
-      //console.log('got tables', result)
       callback(null, result.rows)
     })
     .map(function (table, callback) {
-      //console.log('map table', table)
       var query = multiline(function () {
         ;/*
       SELECT
@@ -541,8 +538,6 @@ dbdiff.compareSchemas = function (db1, db2) {
     compareIndexes(tableName, db1, db2)
   })
   compareSequences(db1, db2)
-  console.log("508::: ", db1.constraints);
-  console.log("509::: ", db2.constraints);
   compareConstraints(
     {
       ...db1,

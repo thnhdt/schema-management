@@ -1,33 +1,49 @@
 
 import { Card, message, FloatButton } from "antd";
-import { SwapOutlined } from '@ant-design/icons';
+import { SwapOutlined, FunctionOutlined, TableOutlined } from '@ant-design/icons';
 import { DrawerComponent } from "../../util/helper";
 import { syncDatabase } from "../../api/table";
+import { useState } from "react";
 import '../../App.css'
 
 const DrawerCompareComponent = (props) => {
   const { onClose, open, allUpdateFunction, allUpdateDdlTable, targetDatabaseId, currentDatabaseId } = props;
   const [messageApi, contextHolder] = message.useMessage();
+  const [floatButtonOpen, setFloatButtonOpen] = useState(false);
   const allDdlUpdateSchema = '-- Cập nhật trên Function' + '\n' + allUpdateFunction + '\n' + '-- Cập nhật trên Table' + '\n' + allUpdateDdlTable;
   
-  const handleUpdateDatabase = async () => {
+  const handleUpdateDatabase = async (isFunction, isTable) => {
     try {
       messageApi.loading({ content: 'Đang cập nhật database...', key: 'update' });
-      
-      await syncDatabase(
-        targetDatabaseId, 
-        currentDatabaseId, 
-        allUpdateFunction, 
-        allUpdateDdlTable
-      );
-      
+      if (isFunction && isTable) {
+        await syncDatabase(
+          targetDatabaseId,
+          currentDatabaseId,
+          allUpdateFunction,
+          allUpdateDdlTable
+        );
+      }
+      else if (isFunction && !isTable) {
+        await syncDatabase(
+          targetDatabaseId,
+          currentDatabaseId,
+          allUpdateFunction,
+          ''
+        );
+      } else {
+        await syncDatabase(
+          targetDatabaseId,
+          currentDatabaseId,
+          '',
+          allUpdateDdlTable
+        );
+      }
       messageApi.success({ 
         content: 'Cập nhật database thành công!', 
         key: 'update',
         duration: 3
       });
       onClose();
-      
     } catch (error) {
       console.error('Lỗi khi cập nhật database:', error);
       messageApi.error({ 
@@ -73,35 +89,34 @@ const DrawerCompareComponent = (props) => {
 
             </div>
             <FloatButton.Group
-              open={open}
-              shape="square"
-              trigger="click"
+              open={floatButtonOpen}
+              placement='left'
+              shape="circle"
+              trigger="hover"
               style={{ insetInlineEnd: 88 }}
-              icon={<CustomerServiceOutlined />}
+              icon={<SwapOutlined />}
+              onOpenChange={setFloatButtonOpen}
             >
               <FloatButton 
-                size='large' 
                 className='add-btn' 
-                icon={<SwapOutlined />} 
+                icon={<FunctionOutlined />} 
                 style={{ insetInlineEnd: 24 }}
-                onClick={handleUpdateDatabase}
-                tooltip="Cập nhật database"
+                onClick={() => handleUpdateDatabase(true, false)}
+                tooltip="Cập nhật function"
               />
               <FloatButton 
-                size='large' 
                 className='add-btn' 
-                icon={<SwapOutlined />} 
+                icon={<TableOutlined />} 
                 style={{ insetInlineEnd: 24 }}
-                onClick={handleUpdateDatabase}
-                tooltip="Cập nhật database"
+                onClick={() => handleUpdateDatabase(false, true)}
+                tooltip="Cập nhật table"
               />
               <FloatButton 
-                size='large' 
                 className='add-btn' 
                 icon={<SwapOutlined />} 
                 style={{ insetInlineEnd: 24 }}
-                onClick={handleUpdateDatabase}
-                tooltip="Cập nhật database"
+                onClick={() => handleUpdateDatabase(true, true)}
+                tooltip="Cập nhật toàn bộ"
               />
             </FloatButton.Group>
           </>

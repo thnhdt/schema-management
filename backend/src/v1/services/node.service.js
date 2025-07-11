@@ -55,7 +55,6 @@ const getAllNode = async (user) => {
         ? new mongoose.Types.ObjectId(id)
         : id
     );
-    console.log(dbIds);
     allNodes = await nodeModel.aggregate([
       { $sort: { createdAt: -1 } },
       {

@@ -242,7 +242,6 @@ const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapT
   const allUpdate = await getAllUpdateBetweenDatabases(
     targetDatabaseUrl.stringConnectPGUrl, currentDatabaseUrl.stringConnectPGUrl
   );
-  // console.log(allUpdate);
   const sequence = [];
   const index = [];
   for (const line of allUpdate) {
