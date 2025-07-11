@@ -1,25 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Tabs, Card, Space, Button, Typography, message, Tooltip, Popconfirm, Input, Row, Col, Statistic, Select, Modal } from 'antd';
+import { Tabs, Card, Space, Button, Typography, message, Tooltip, Popconfirm, Input, Row, Col, Statistic, Select, Modal, FloatButton } from 'antd';
 import { useSelector } from 'react-redux';
 import Highlighter from 'react-highlight-words';
 import {
   DatabaseOutlined,
   TableOutlined,
-  ExportOutlined,
-  ImportOutlined,
   ReloadOutlined,
-  EyeOutlined,
   DeleteOutlined,
   FunctionOutlined,
   OrderedListOutlined,
   ArrowLeftOutlined,
   SearchOutlined,
-
+  CopyOutlined
 } from '@ant-design/icons';
 import '../../App.css';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { TableComponent } from '../../util/helper';
+import { TableComponent, DrawerComponent } from '../../util/helper';
 import { getAllFunctions, getTables, getAllSequences, dropTable, dropFunction, dropSequence, getColumns, dropColumn, saveDBHistory } from '../../api';
 
 const { Text } = Typography;
@@ -47,7 +44,18 @@ function Schema() {
   const canUptdateTable = roles.some(role => role?.permissions.some(p => p.databaseId?.toString() === id && p?.ops.includes('update-table')));
   const canUptdateFunction = roles.some(role => role?.permissions.some(p => p.databaseId?.toString() === id && p?.ops.includes('update-function')));
   const isAdmin = useSelector(state => state.user.isAdmin);
-
+  const [selectionFunction, setSelectionFunction] = useState([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [openDrawer, setOpenDrawer] = useState(false);
+  const onSelectChange = newSelectedRowKeys => {
+    setSelectionFunction(functions.filter(f => newSelectedRowKeys.includes(`${f.functionName}(${f.functionArguments})`)).map(item => item.definition));
+    setSelectedRowKeys(newSelectedRowKeys);
+  };
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: onSelectChange,
+  };
+  // const hasSelected = selectedRowKeys.length > 0;
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();
     setSearchText(selectedKeys[0]);
@@ -57,7 +65,18 @@ function Schema() {
     clearFilters();
     setSearchText('');
   };
-
+  const getDDLFunctions = () => {
+    setOpenDrawer(true);
+  }
+  const hanldeCopyText = () => {
+    if (activeTab === 'function') {
+      navigator.clipboard.writeText(selectionFunction?.join(';\n'));
+    }
+    messageApi.open({
+      type: 'success',
+      content: 'Copy thành công',
+    });
+  }
   const getColumnSearchProps = dataIndex => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
       <div style={{ padding: 8 }} onKeyDown={e => e.stopPropagation()}>
@@ -337,6 +356,17 @@ function Schema() {
           columns={columns}
           data={tables || []}
           loading={loading}
+          customButton={
+            <Space>
+              <Button
+                type="primary"
+                icon={<TableOutlined />}
+                onClick={getDDLFunctions}
+              >
+                Lấy DDL
+              </Button>
+            </Space>
+          }
           rowKey={record => record.name}
           onRow={record => ({
             onClick: () => setSelectedTable(record)
@@ -397,12 +427,24 @@ function Schema() {
           columns={columns}
           data={functions || []}
           loading={loading}
-          rowKey={record => record.name}
+          rowKey={record => `${record.functionName}(${record.functionArguments})`}
           onRow={record => ({
             onClick: () => setSelectedFunction(record)
           })}
-          rowClassName={record => selectedFunction && record.functionName === selectedFunction.functionName ? 'selected-row' : 'no-hover'}
+          rowClassName={record => selectedFunction && `${record.functionName}(${record.functionArguments})` === `${selectedFunction.functionName}(${selectedFunction.functionArguments})` ? 'selected-row' : 'no-hover'}
+          customButton={
+            <Space>
+              <Button
+                type="primary"
+                icon={<FunctionOutlined />}
+                onClick={getDDLFunctions}
+              >
+                Lấy DDL
+              </Button>
+            </Space>
+          }
           scroll={{ x: 'max-content', y: 'calc(100vh - 350px)' }}
+          rowSelection={rowSelection}
         />
       </div>
     );
@@ -504,28 +546,8 @@ function Schema() {
                     onClick={handleRefresh}
                     loading={loading}
                   >
-                    Làm mới
+                    Làm Mới
                   </Button>
-                  {/* <Button
-                    icon={<ExportOutlined />}
-                    onClick={handleExportSchema}
-                    disabled={!selectedSchema}
-                  >
-                    Export
-                  </Button>
-                  <Button
-                    icon={<ImportOutlined />}
-                    onClick={handleImportSchema}
-                  >
-                    Import
-                  </Button>
-                  <Button
-                    type="primary"
-                    icon={<DatabaseOutlined />}
-                    onClick={() => navigate('/schema/flow')}
-                  >
-                    Schema Flow
-                  </Button> */}
                 </Space>
               </Space>
             </Card>
@@ -630,7 +652,7 @@ function Schema() {
                 <Text strong>Sequence Info: {selectedSequence?.sequence_name || ''}</Text>
                 <Input.TextArea
                   style={{ width: '100%', flex: 1, fontFamily: 'monospace', fontSize: 14, minHeight: 0, resize: 'none' }}
-                  value={selectedSequence ? (selectedSequence.text || 'Chưa có thông tin chi tiết cho sequence này') : ''}
+                  value={selectedSequence ? (selectedSequence.ddl || 'Chưa có thông tin chi tiết cho sequence này') : ''}
                   readOnly
                   autoSize={false}
                   rows={30}
@@ -641,7 +663,50 @@ function Schema() {
           </div>
         </div>
       </div>
+      <DrawerComponent
+        open={openDrawer}
+        onClose={() => setOpenDrawer(false)}
+        Component={
+          <><Card
+            title="Cập nhật"
+            // extra={
+            //   <Button onClick={hanldeCopyText}>
+            //     Copy
+            //   </Button>
+            // }
+            style={{ flex: 1 }}
+            bodyStyle={{
+              overflow: 'auto',
+              height: '100%',
+              padding: '1rem',
+              background: '#2d2d2d',
+            }}
+          >
+            <pre
+              style={{
+                margin: 0,
+                color: '#fff',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                fontFamily: 'Menlo, Consolas, "Courier New", monospace',
+                fontSize: '0.9rem',
+              }}
+            >
+              {activeTab === 'function' ? selectionFunction?.join(';\n') ?? '' : ''}
+            </pre>
+          </Card>
+            <FloatButton
+              size='large'
+              className='add-btn'
+              icon={<CopyOutlined />}
+              style={{ insetInlineEnd: 24 }}
+              onClick={hanldeCopyText}
+              tooltip="Copy toàn bộ cập nhật"
+            />
+          </>
 
+        }
+      />
       <Modal
         open={dropColumnModal.visible}
         title={`Xóa cột trong bảng ${dropColumnModal.table?.table_name || ''}`}

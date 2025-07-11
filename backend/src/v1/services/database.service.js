@@ -22,19 +22,19 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-const createPhysicalDB = async (dbName, username, password, host, port) => {
-  const sequelize = new Sequelize('postgres', username, password, {
-    host,
-    port,
-    dialect: 'postgres',
-    logging: false,
-  });
-  const [results] = await sequelize.query(`SELECT 1 FROM pg_database WHERE datname = '${dbName}'`);
-  if (results.length === 0) {
-    await sequelize.query(`CREATE DATABASE "${dbName}"`);
-  }
-  await sequelize.close();
-};
+// const createPhysicalDB = async (dbName, username, password, host, port) => {
+//   const sequelize = new Sequelize('postgres', username, password, {
+//     host,
+//     port,
+//     dialect: 'postgres',
+//     logging: false,
+//   });
+//   const [results] = await sequelize.query(`SELECT 1 FROM pg_database WHERE datname = '${dbName}'`);
+//   if (results.length === 0) {
+//     await sequelize.query(`CREATE DATABASE "${dbName}"`);
+//   }
+//   await sequelize.close();
+// };
 
 const createDatabase = async (dataCreated) => {
   const checkNameAlready = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(dataCreated.nodeId), name: dataCreated.name }).lean();
@@ -59,8 +59,6 @@ const getAllDatabaseInHost = async (reqQuery, user) => {
   const { idHost, status } = reqQuery;
 
   const permissionsDB = user.userPermissions;
-
-
 
   if (status) {
     allDatabase = await databaseModel.find({ nodeId: new mongoose.Types.ObjectId(idHost), status: status }).lean();
@@ -168,7 +166,7 @@ const connectToDatabaseForResponse = async (reqBody) => {
 };
 const disconnectDb = async (reqBody) => {
   const { id } = reqBody;
-  if (!POOLMAP.has(id)) throw new BadResponseError("Seqencelize chưa được kết nối !")
+  if (!POOLMAP.has(id)) throw new BadResponseError("Sequelize chưa được kết nối !")
   await POOLMAP.get(id).sequelize.close();
   await POOLMAP.delete(id);
   const updateTarget = await databaseModel.findOneAndUpdate({ _id: new mongoose.Types.ObjectId(id) }, { status: 'inactive' }, { new: true });

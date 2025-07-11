@@ -26,7 +26,13 @@ const getAllFunctions = async (reqBody) => {
         ) AS argtypes
     FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = :schema
+    WHERE n.nspname = :schema AND NOT EXISTS (
+          SELECT 1
+          FROM pg_depend d
+          JOIN pg_extension e ON e.oid = d.refobjid
+          WHERE d.objid = p.oid
+            AND e.extname = 'postgis'
+      )
 )
 
 SELECT
@@ -143,7 +149,7 @@ const getAllUpdate = async (reqBody, user) => {
     )
   ).filter(Boolean);
   let ddlSchema = '';
-  resultUpdate.forEach(item => ddlSchema += item.patch + ';'+'\n');
+  resultUpdate.forEach(item => ddlSchema += item.patch + ';' + '\n');
   return {
     code: 200,
     allPatchDdl: ddlSchema,
@@ -174,18 +180,20 @@ const compareFunctionInPosgresql = async (reqBody) => {
       type = "UPDATE";
     }
     else {
-      const functionName = primeFunction.functionName;
-      const functionArgs = primeFunction.functionArguments;
-      const dropStmt = `DROP FUNCTION ${functionName}(${functionArgs});`;
+      // const functionName = primeFunction.functionName;
+      // const functionArgs = primeFunction.functionArguments;
+      const regprocName = primeFunction.regprocName;
+      const dropStmt = `DROP FUNCTION IF EXISTS ${regprocName};`;
       const createStmt = ddlSecondFunction.replace(/CREATE FUNCTION/i, 'CREATE OR REPLACE FUNCTION');
       patch = `${dropStmt}\n${createStmt}`;
       type = "UPDATE";
     }
   }
   else if (!ddlSecondFunction) {
-    const functionName = primeFunction.functionName;
-    const functionArgs = primeFunction.functionArguments;
-    const dropStmt = `DROP FUNCTION ${functionName}(${functionArgs});`;
+    // const functionName = primeFunction.functionName;
+    // const functionArgs = primeFunction.functionArguments;
+    const regprocName = primeFunction.regprocName;
+    const dropStmt = `DROP FUNCTION IF EXISTS ${regprocName};`;
     patch = dropStmt;
     type = "DELETE"
   }

@@ -1,6 +1,6 @@
 
 import { Card, message, FloatButton } from "antd";
-import { SwapOutlined, FunctionOutlined, TableOutlined } from '@ant-design/icons';
+import { SwapOutlined, FunctionOutlined, TableOutlined, CustomerServiceOutlined } from '@ant-design/icons';
 import { DrawerComponent } from "../../util/helper";
 import { syncDatabase } from "../../api/table";
 import { useState } from "react";
@@ -11,7 +11,7 @@ const DrawerCompareComponent = (props) => {
   const [messageApi, contextHolder] = message.useMessage();
   const [floatButtonOpen, setFloatButtonOpen] = useState(false);
   const allDdlUpdateSchema = '-- Cập nhật trên Function' + '\n' + allUpdateFunction + '\n' + '-- Cập nhật trên Table' + '\n' + allUpdateDdlTable;
-  
+
   const handleUpdateDatabase = async (isFunction, isTable) => {
     try {
       messageApi.loading({ content: 'Đang cập nhật database...', key: 'update' });
@@ -38,22 +38,22 @@ const DrawerCompareComponent = (props) => {
           allUpdateDdlTable
         );
       }
-      messageApi.success({ 
-        content: 'Cập nhật database thành công!', 
+      messageApi.success({
+        content: 'Cập nhật database thành công!',
         key: 'update',
         duration: 3
       });
       onClose();
     } catch (error) {
       console.error('Lỗi khi cập nhật database:', error);
-      messageApi.error({ 
-        content: `Lỗi khi cập nhật database: ${error.message}`, 
+      messageApi.error({
+        content: `Lỗi khi cập nhật database: ${error.message}`,
         key: 'update',
         duration: 5
       });
     }
   };
-  
+
   return (
     <>
       {contextHolder}
@@ -93,32 +93,33 @@ const DrawerCompareComponent = (props) => {
               placement='left'
               shape="circle"
               trigger="hover"
-              style={{ insetInlineEnd: 88 }}
+              style={{ insetInlineEnd: 24 }}
               icon={<SwapOutlined />}
               onOpenChange={setFloatButtonOpen}
+              className='main-float-btn'
             >
-              <FloatButton 
-                className='add-btn' 
-                icon={<FunctionOutlined />} 
+              <FloatButton
+                className='add-btn'
+                icon={<FunctionOutlined />}
                 style={{ insetInlineEnd: 24 }}
                 onClick={() => handleUpdateDatabase(true, false)}
                 tooltip="Cập nhật function"
               />
-              <FloatButton 
-                className='add-btn' 
-                icon={<TableOutlined />} 
+              <FloatButton
+                className='add-btn'
+                icon={<TableOutlined />}
                 style={{ insetInlineEnd: 24 }}
                 onClick={() => handleUpdateDatabase(false, true)}
                 tooltip="Cập nhật table"
               />
-              <FloatButton 
-                className='add-btn' 
-                icon={<SwapOutlined />} 
+              <FloatButton
+                className='add-btn'
+                icon={<SwapOutlined />}
                 style={{ insetInlineEnd: 24 }}
                 onClick={() => handleUpdateDatabase(true, true)}
                 tooltip="Cập nhật toàn bộ"
               />
-            </FloatButton.Group>
+            </FloatButton.Group >
           </>
         )}
       />

@@ -3,6 +3,7 @@ const { format } = require('sql-formatter');
 const dbdiff = require('./pg-schema-diff');
 const databaseModel = require('../models/database.model');
 const nodeModel = require('../models/node.model');
+var util = require('util')
 const { NotFoundError } = require('../cores/error.response');
 function fmtType(r) {
   if (r.data_type === 'character varying')
@@ -278,9 +279,23 @@ const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapT
     index
   };
 }
+function isNumber(n) {
+  return +n == n
+}
+function sequenceDescription(sequence) {
+  return util.format('CREATE SEQUENCE %s INCREMENT %s %s %s %s %s CYCLE;',
+    sequence.sequence_name,
+    sequence.increment,
+    isNumber(sequence.minimum_value) ? 'MINVALUE ' + sequence.minimum_value : 'NO MINVALUE',
+    isNumber(sequence.maximum_value) ? 'MAXVALUE ' + sequence.maximum_value : 'NO MAXVALUE',
+    isNumber(sequence.start_value) ? 'START ' + sequence.start_value : '',
+    sequence.cycle_option === 'NO' ? 'NO' : ''
+  )
+}
 module.exports = {
   ddl,
   getAllUpdateOnTableUtil,
   getAllUpdateBetweenDatabases,
-  getStringUrl
+  getStringUrl,
+  sequenceDescription
 }

@@ -12,6 +12,9 @@ tableRouter.route('/all-update-tables')
 tableRouter.route('/all-update-ddl')
   .post(handlerError(tableController.getAllUpdateDdl))
 
+tableRouter.route('/sync-Database')
+  .post(handlerError(tableController.syncDatabase));
+
 tableRouter.use(checkPermissionDatabase)
 tableRouter.route('/get-all-tables')
   .get(handlerError(tableController.getAllTables))
@@ -38,8 +41,7 @@ tableRouter.route('/drop-table')
 tableRouter.route('/get-columns')
   .get(handlerError(tableController.getColumns))
 
-tableRouter.route('/sync-Database')
-  .post(handlerError(tableController.syncDatabase));
+
 
 tableRouter.route('/save-DB-history')
   .post(handlerError(tableController.saveDBHistory));

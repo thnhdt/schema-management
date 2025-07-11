@@ -325,9 +325,9 @@ function constraintDescription(constraint) {
   return util.format(
     `ALTER TABLE "public"."%s" DROP CONSTRAINT IF EXISTS \"%s\";
      ALTER TABLE \"public\".\"%s\" ADD CONSTRAINT \"%s\" %s;`,
-     constraint.table_name,
-     constraint.constraint_name,
-     constraint.table_name,
+    constraint.table_name,
+    constraint.constraint_name,
+    constraint.table_name,
     constraint.constraint_name,
     constraint.definition
   );
@@ -454,23 +454,6 @@ function compareConstraints(db1, db2) {
     dbdiff.log('ALTER TABLE "public"."%s" DROP CONSTRAINT IF EXISTS \"%s\";',
       c.table_name,
       c.constraint_name)
-  //   dbdiff.log(`DO $$
-  //   BEGIN
-  //     IF EXISTS (
-  //       SELECT 1
-  //       FROM information_schema.table_constraints
-  //       WHERE table_name = '%s'
-  //         AND constraint_name = '%s'
-  //     ) THEN
-  //       ALTER TABLE "%s" DROP CONSTRAINT "%s";
-  //     END IF;
-  //   END$$;`,
-  //     c.table_name,
-  //     c.constraint_name,
-  //     c.table_name,
-  //     c.constraint_name
-  //   )
-
   })
   onlyInDb2.forEach(function (c) {
     dbdiff.log(constraintDescription(c))
@@ -518,7 +501,7 @@ dbdiff.compareSchemas = function (db1, db2) {
     });
     foreignKeyConstraints = foreignKeyConstraints.concat(fkConstraints);
     var constraintDefs = nonFkConstraints.map(function (c) {
-      return '\n  CONSTRAINT ' + c.constraint_name + ' ' + c.definition;
+      return '\n  CONSTRAINT "' + c.constraint_name + '" ' + c.definition;
     });
     var allDefs = columns.concat(constraintDefs);
     dbdiff.log('CREATE TABLE "%s"."%s" (%s);', db2.schema, tableName, allDefs.join(','))
