@@ -46,6 +46,8 @@ function Schema() {
   const isAdmin = useSelector(state => state.user.isAdmin);
   const [selectionFunction, setSelectionFunction] = useState([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [selectionTable, setSelectionTable] = useState([]);
+  const [selectedTableRowKeys, setSelectedTableRowKeys] = useState([]);
   const [openDrawer, setOpenDrawer] = useState(false);
   const onSelectChange = newSelectedRowKeys => {
     setSelectionFunction(functions.filter(f => newSelectedRowKeys.includes(`${f.functionName}(${f.functionArguments})`)).map(item => item.definition));
@@ -55,7 +57,14 @@ function Schema() {
     selectedRowKeys,
     onChange: onSelectChange,
   };
-  // const hasSelected = selectedRowKeys.length > 0;
+  const onSelectChangeTable = newSelectedRowKeys => {
+    setSelectionTable(tables.filter(t => newSelectedRowKeys.includes(`${t.table_name}`)).map(item => item.text));
+    setSelectedTableRowKeys(newSelectedRowKeys);
+  };
+  const rowSelectionTable = {
+    selectedRowKeys: selectedTableRowKeys,
+    onChange: onSelectChangeTable,
+  };
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();
     setSearchText(selectedKeys[0]);
@@ -71,6 +80,9 @@ function Schema() {
   const hanldeCopyText = () => {
     if (activeTab === 'function') {
       navigator.clipboard.writeText(selectionFunction?.join(';\n'));
+    }
+    if (activeTab === 'table') {
+      navigator.clipboard.writeText(selectionTable?.join(';\n'));
     }
     messageApi.open({
       type: 'success',
@@ -367,12 +379,13 @@ function Schema() {
               </Button>
             </Space>
           }
-          rowKey={record => record.name}
+          rowKey={record => `${record.table_name}`}
           onRow={record => ({
             onClick: () => setSelectedTable(record)
           })}
           rowClassName={record => selectedTable && record.table_name === selectedTable.table_name ? 'selected-row' : 'no-hover'}
           scroll={{ x: 'max-content', y: 'calc(100vh - 350px)' }}
+          rowSelection={rowSelectionTable}
         />
       </div>
     );
@@ -669,11 +682,6 @@ function Schema() {
         Component={
           <><Card
             title="Cập nhật"
-            // extra={
-            //   <Button onClick={hanldeCopyText}>
-            //     Copy
-            //   </Button>
-            // }
             style={{ flex: 1 }}
             bodyStyle={{
               overflow: 'auto',
@@ -692,7 +700,11 @@ function Schema() {
                 fontSize: '0.9rem',
               }}
             >
-              {activeTab === 'function' ? selectionFunction?.join(';\n') ?? '' : ''}
+              {activeTab === 'function'
+                ? selectionFunction?.join(';\n') ?? ''
+                : activeTab === 'table'
+                  ? selectionTable?.join(';\n') ?? ''
+                  : ''}
             </pre>
           </Card>
             <FloatButton
@@ -704,7 +716,6 @@ function Schema() {
               tooltip="Copy toàn bộ cập nhật"
             />
           </>
-
         }
       />
       <Modal
