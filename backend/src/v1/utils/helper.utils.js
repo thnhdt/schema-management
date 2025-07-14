@@ -172,9 +172,11 @@ const ddl = async (schema, table, client) => {
 //////////////////////////////////////////////////
 const ddlPatterns = [
   // ----- TABLE -----
-  { type: 'CREATE', re: /create\s+table\s+(?:if\s+not\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
-  { type: 'DELETE', re: /drop\s+table\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
-  { type: 'UPDATE', re: /alter\s+table\s+(?:only\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'CREATE', target: 'TABLE', re: /create\s+table\s+(?:if\s+not\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'DELETE', target: 'TABLE', re: /drop\s+table\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'UPDATE', target: 'TABLE', re: /alter\s+table\s+(?:only\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'UPDATE', target: 'TRIGGER', re: /create\s+(?:or\s+replace\s+)?trigger\s+["`]?([\w]+)["`]?\s+(?:before|after|instead\s+of)\s+[\w\s,]+\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?(?:\s+for\s+each\s+row)?(?:\s+when\s*\(.*?\))?/i },
+  { type: 'UPDATE', target: 'TRIGGER', re: /drop\s+trigger\s+(?:if\s+exists\s+)?["`]?([\w]+)["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
 ];
 const ddlPatternsSequence = [// ----- SEQUENCE -----
   { type: 'CREATE', re: /create\s+sequence\s+(?:if\s+not\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
@@ -185,10 +187,31 @@ const ddlPatternsIndex = [
   { type: 'DELETE', re: /drop\s+index\s+(?:concurrently\s+)?(?:if\s+exists\s+)?["`]?[\w]+["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
 ]
 const PRIORITY = { CREATE: 3, DELETE: 2, UPDATE: 1 };
+// function parseDDL(line) {
+//   for (const { re, type } of ddlPatterns) {
+//     const m = line.match(re);
+//     if (m) return { table: m[1], type };
+//   }
+//   return null;
+// }
 function parseDDL(line) {
-  for (const { re, type } of ddlPatterns) {
+  for (const { re, type, target } of ddlPatterns) {
     const m = line.match(re);
-    if (m) return { table: m[1], type };
+    if (m) {
+      if (target === 'TRIGGER') {
+        return {
+          type,
+          target,
+          name: m[1],
+          table: m[2],
+        };
+      }
+      return {
+        type,
+        target,
+        table: m[1],
+      };
+    }
   }
   return null;
 }
@@ -283,7 +306,7 @@ function isNumber(n) {
   return +n == n
 }
 function sequenceDescription(sequence) {
-  return util.format('CREATE SEQUENCE %s INCREMENT %s %s %s %s %s CYCLE;',
+  return util.format('CREATE SEQUENCE IF NOT EXISTS \"%s\" INCREMENT %s %s %s %s %s CYCLE;',
     sequence.sequence_name,
     sequence.increment,
     isNumber(sequence.minimum_value) ? 'MINVALUE ' + sequence.minimum_value : 'NO MINVALUE',

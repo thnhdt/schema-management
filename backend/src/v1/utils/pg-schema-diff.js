@@ -7,143 +7,194 @@ var pg = require('pg')
 var util = require('util')
 
 var dbdiff = module.exports = {}
-
+function ddlTrigger(trigger) {
+  const allManipulations = trigger.event_manipulation.join(' OR ');
+  return `CREATE OR REPLACE TRIGGER \"${trigger.trigger_name}\" ${trigger.action_timing} ${allManipulations} ON "${trigger.event_object_table}" FOR EACH ${trigger.action_orientation} ${trigger.action_condition ? `WHEN ${trigger.action_condition} ` : ''}${trigger.action_statement};`
+}
 dbdiff.log = function () {
   var msg = util.format.apply(null, Array.prototype.slice.call(arguments))
   dbdiff.logger(msg)
 }
 
 dbdiff.describeDatabase = function (conString, schemaname, callback) {
-  var client = new pg.Client(conString)
-  var schema = { tables: {} }
+  const client = new pg.Client(conString);
+  const schema = { tables: {} };
 
   txain(function (callback) {
-    client.connect(callback)
+    client.connect(callback);
   })
     .then(function (client, done, callback) {
-      client.query('SELECT * FROM pg_tables WHERE schemaname = $1', [schemaname], callback)
+      client.query('SELECT * FROM pg_tables WHERE schemaname = $1', [schemaname], callback);
     })
     .then(function (result, callback) {
-      callback(null, result.rows)
+      const tables = result.rows;
+      callback(null, tables);
     })
-    .map(function (table, callback) {
-      var query = multiline(function () {
-        ;/*
-      SELECT
-        table_name,
-        column_name,
-        data_type,
-        udt_name,
-        character_maximum_length,
-        is_nullable,
-        '' as column_default
-      FROM
-        INFORMATION_SCHEMA.COLUMNS
-      WHERE
-        table_name=$1 AND table_schema=$2;
-    */})
-      client.query(query, [table.tablename, schemaname], callback)
-    })
-    .then(function (descriptions, callback) {
-      //console.log('got descriptions', descriptions)
-      var tables = schema.tables = {}
-      descriptions.forEach(function (desc) {
-        desc.rows.forEach(function (row) {
-          var tableName = row.table_name
-          var table = tables[tableName]
-          if (!table) {
-            tables[tableName] = []
-            table = tables[tableName]
-          }
-          delete row.table_name
-          table.push(row)
-        })
-      })
 
-      var query = multiline(function () {
-        ;/*
-      SELECT
-        i.relname as indname,
-        split_part(CAST(idx.indrelid::regclass as TEXT),'.',2),
-        am.amname as indam,
-        idx.indkey,
-        ARRAY(
-          SELECT pg_get_indexdef(idx.indexrelid, k + 1, true)
-          FROM generate_subscripts(idx.indkey, 1) as k
-          ORDER BY k
-        ) AS indkey_names,
-        idx.indexprs IS NOT NULL as indexprs,
-        idx.indpred IS NOT NULL as indpred,
-        ns.nspname,
-        t.relname AS tablename
-      FROM
-        pg_index as idx
-      JOIN pg_class as i
-        ON i.oid = idx.indexrelid
-      JOIN pg_am as am
-        ON i.relam = am.oid
-      JOIN pg_class        AS t   
-        ON t.oid  = idx.indrelid
-      JOIN pg_namespace as ns
-        ON ns.oid = i.relnamespace
+    .map(function (table, callback) {
+      const tableName = table.tablename;
+      const columnsQuery = multiline(function () {/*
+        SELECT
+          table_name,
+          column_name,
+          data_type,
+          udt_name,
+          character_maximum_length,
+          is_nullable,
+          '' as column_default
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE table_name = $1 AND table_schema = $2;
+      */});
+
+      client.query(columnsQuery, [tableName, schemaname], function (err, result) {
+        if (err) return callback(err);
+
+        const columns = result.rows.map(row => {
+          delete row.table_name;
+          return row;
+        });
+
+        callback(null, { tableName, columns });
+      });
+    })
+
+    .then(function (columnTables, callback) {
+      columnTables.forEach(({ tableName, columns }) => {
+        schema.tables[tableName] = { columns, triggers: [] };
+      });
+
+      callback(null, columnTables.map(t => t.tableName)); // Truyền danh sách bảng cho bước sau
+    })
+
+    .map(function (tableName, callback) {
+      const triggersQuery = multiline(function () {/*
+        SELECT
+          event_object_table,
+          trigger_name,
+          event_manipulation,
+          action_statement,
+          action_timing,
+          action_orientation,
+          action_condition
+        FROM information_schema.triggers
+        WHERE event_object_table = $1
+        ORDER BY event_object_table, event_manipulation;
+      */});
+
+      client.query(triggersQuery, [tableName], function (err, result) {
+        if (err) return callback(err);
+
+        const map = new Map();
+        for (const item of result.rows) {
+          const key = item.trigger_name;
+          if (map.has(key)) {
+            map.get(key).event_manipulation.push(item.event_manipulation);
+          } else {
+            map.set(key, { ...item, event_manipulation: [item.event_manipulation] });
+          }
+        }
+
+        const triggers = Array.from(map).map(([key, value]) => ({ key, ...value }));
+
+        callback(null, { tableName, triggers });
+      });
+    })
+
+    .then(function (triggerTables, callback) {
+      triggerTables.forEach(({ tableName, triggers }) => {
+        if (!schema.tables[tableName]) {
+          schema.tables[tableName] = { columns: [], triggers: [] };
+        }
+        schema.tables[tableName].triggers = triggers;
+      });
+
+      callback(null);
+    })
+
+    .then(function (callback) {
+      const query = multiline(function () {/*
+        SELECT
+          i.relname as indname,
+          split_part(CAST(idx.indrelid::regclass as TEXT),'.',2),
+          am.amname as indam,
+          idx.indkey,
+          ARRAY(
+            SELECT pg_get_indexdef(idx.indexrelid, k + 1, true)
+            FROM generate_subscripts(idx.indkey, 1) as k
+            ORDER BY k
+          ) AS indkey_names,
+          idx.indexprs IS NOT NULL as indexprs,
+          idx.indpred IS NOT NULL as indpred,
+          ns.nspname,
+          t.relname AS tablename
+        FROM pg_index as idx
+        JOIN pg_class as i ON i.oid = idx.indexrelid
+        JOIN pg_am as am ON i.relam = am.oid
+        JOIN pg_class AS t ON t.oid = idx.indrelid
+        JOIN pg_namespace as ns ON ns.oid = i.relnamespace
         AND ns.nspname NOT IN ('pg_catalog', 'pg_toast')
-      WHERE ns.nspname = $1;
-    */})
-      client.query(query, [schemaname], callback)
+        WHERE ns.nspname = $1;
+      */});
+
+      client.query(query, [schemaname], callback);
     })
+
     .then(function (indexes, callback) {
-      schema.indexes = indexes.rows
-      var query = multiline(function () {
-        ;/*
-      SELECT
-        con.conname                         AS constraint_name,
-        n.nspname                           AS schema_name,
-        rel.relname                         AS table_name,
-        con.contype                         AS constraint_type,
-        pg_get_constraintdef(con.oid)       AS definition
-      FROM pg_constraint con
-      JOIN pg_class rel       ON rel.oid = con.conrelid
-      JOIN pg_namespace n     ON n.oid   = rel.relnamespace
-      WHERE n.nspname = $1;
-    */})
-      client.query(query, [schemaname], callback)
+      schema.indexes = indexes.rows;
+
+      const query = multiline(function () {/*
+        SELECT
+          con.conname AS constraint_name,
+          n.nspname AS schema_name,
+          rel.relname AS table_name,
+          con.contype AS constraint_type,
+          pg_get_constraintdef(con.oid) AS definition
+        FROM pg_constraint con
+        JOIN pg_class rel ON rel.oid = con.conrelid
+        JOIN pg_namespace n ON n.oid = rel.relnamespace
+        WHERE n.nspname = $1;
+      */});
+
+      client.query(query, [schemaname], callback);
     })
+
     .then(function (constraints, callback) {
-      //console.log('got constraints', result)
-      schema.constraints = constraints.rows
-      var query = multiline(function () {
-        ;/*
-      SELECT 
-       sequence_name,
-       data_type,
-       numeric_precision,
-       numeric_precision_radix,
-       numeric_scale,
-       start_value,
-       minimum_value,
-       maximum_value,
-       increment,
-       cycle_option
-      FROM 
-        information_schema.sequences
-      WHERE sequence_schema = $1;
-    */})
-      client.query(query, [schemaname], callback)
-    }).then(function (result, callback) {
-      //console.log('got sequences', result)
-      schema.sequences = result.rows
-      schema.sequences.forEach(function (sequence) {
-        sequence.name = sequence.sequence_name
-      })
-      client.query('SELECT current_schema()', callback)
+      schema.constraints = constraints.rows;
+
+      const query = multiline(function () {/*
+        SELECT 
+         sequence_name,
+         data_type,
+         numeric_precision,
+         numeric_precision_radix,
+         numeric_scale,
+         start_value,
+         minimum_value,
+         maximum_value,
+         increment,
+         cycle_option
+        FROM information_schema.sequences
+        WHERE sequence_schema = $1;
+      */});
+
+      client.query(query, [schemaname], callback);
     })
+
+    .then(function (result, callback) {
+      schema.sequences = result.rows;
+      schema.sequences.forEach(sequence => {
+        sequence.name = sequence.sequence_name;
+      });
+
+      client.query('SELECT current_schema()', callback);
+    })
+
     .end(function (err, result) {
-      //console.log('reached the end', result)
-      client.end()
-      if (err) return callback(err)
-      callback(null, schema)
-    })
-}
+      client.end();
+      if (err) return callback(err);
+      callback(null, schema);
+    });
+};
 
 function dataType(info) {
   var type
@@ -181,8 +232,8 @@ function columnDescription(col) {
 }
 
 function compareTables(tableName, db1, db2) {
-  var table1 = db1.tables[tableName]
-  var table2 = db2.tables[tableName]
+  var table1 = db1.tables[tableName].columns
+  var table2 = db2.tables[tableName].columns
 
   var columNames1 = columnNames(table1)
   var columNames2 = columnNames(table2)
@@ -219,11 +270,11 @@ function compareTables(tableName, db1, db2) {
       }
     }
   })
+  compareTriggers(db1.tables[tableName], db2.tables[tableName])
 }
 
 function indexNames(tableName, indexes) {
   return _.filter(indexes, function (index) {
-    // console.log("226", tableName, index);
     return index.tablename === tableName
   }).map(function (index) {
     return index.indname
@@ -248,7 +299,7 @@ function compareIndexes(tableName, db1, db2) {
     diff2.forEach(function (indexName) {
       var index = _.findWhere(indexes2, { indname: indexName })
       if (index && index.tablename) {
-        dbdiff.log('CREATE INDEX "%s" ON "%s" USING %s (%s);', indexName, index.tablename, index.indam, index.indkey_names.join(','))
+        dbdiff.log('CREATE INDEX IF NOT EXISTS "%s" ON "%s" USING %s (%s);', indexName, index.tablename, index.indam, index.indkey_names.join(','))
       }
     })
   }
@@ -262,9 +313,7 @@ function compareIndexes(tableName, db1, db2) {
       var index = index2
       dbdiff.log('-- Index "%s"."%s" needs to be changed', index.nspname, index.indname)
       dbdiff.log('DROP INDEX IF EXISTS "%s"."%s";', index.nspname, index.indname)
-      if (index && index.indrelid) {
-        dbdiff.log('CREATE INDEX "%s" ON "%s" USING %s (%s);', index.indname, index.indrelid, index.indam, index.indkey_names.join(','))
-      }
+      dbdiff.log('CREATE INDEX IF NOT EXISTS "%s" ON "%s" USING %s (%s);', index.indname, index.tablename, index.indam, index.indkey_names.join(','))
     }
   })
 }
@@ -274,7 +323,7 @@ function isNumber(n) {
 }
 
 function sequenceDescription(sequence) {
-  return util.format('CREATE SEQUENCE %s INCREMENT %s %s %s %s %s CYCLE;',
+  return util.format('CREATE SEQUENCE IF NOT EXISTS "%s" INCREMENT %s %s %s %s %s CYCLE;',
     sequence.name,
     sequence.increment,
     isNumber(sequence.minimum_value) ? 'MINVALUE ' + sequence.minimum_value : 'NO MINVALUE',
@@ -323,49 +372,16 @@ function compareSequences(db1, db2) {
 
 function constraintDescription(constraint) {
   return util.format(
-    `ALTER TABLE "public"."%s" DROP CONSTRAINT IF EXISTS \"%s\";
-     ALTER TABLE \"public\".\"%s\" ADD CONSTRAINT \"%s\" %s;`,
+    `ALTER TABLE "public"."%s" DROP CONSTRAINT IF EXISTS \"%s\" CASCADE;
+    DROP INDEX IF EXISTS "%s";
+    ALTER TABLE \"public\".\"%s\" ADD CONSTRAINT \"%s\" %s;`,
     constraint.table_name,
+    constraint.constraint_name,
     constraint.constraint_name,
     constraint.table_name,
     constraint.constraint_name,
     constraint.definition
   );
-  // console.log("constraint", constraint);
-  // return util.format(`DO $$
-  //   BEGIN
-  //     IF EXISTS (
-  //       SELECT 1
-  //       FROM information_schema.table_constraints
-  //       WHERE table_name = '%s'
-  //         AND constraint_name = '%s'
-  //     ) THEN
-  //       ALTER TABLE \"public\".\"%s\" ADD CONSTRAINT "%s" %s;
-  //     END IF;
-  //   END$$;`,
-  //     c.table_name,
-  //     c.constraint_name,
-  //     c.table_name,
-  //     constraint.constraint_name,
-  //     constraint.definition
-  // );
-  // if (constraint.constraint_type === 'FOREIGN KEY') {
-  //   return util.format(
-  //     'ALTER TABLE public.%s ADD CONSTRAINT %s FOREIGN KEY ("%s") ' +
-  //     'REFERENCES public.%s("%s") ON UPDATE %s ON DELETE %s;',
-  //     constraint.table_name,
-  //     constraint.constraint_name,
-  //     constraint.column_name,
-  //     constraint.foreign_table_name,
-  //     constraint.foreign_column_name,
-  //     constraint.on_update,
-  //     constraint.on_delete
-  //   );
-  // }
-  // return util.format('-- Need to ADD CONSTRAINT "%s" for Column "%s" on Table "%s"',
-  //   constraint.constraint_name,
-  //   constraint.column_name,
-  //   constraint.table_name);
   /*  
     return util.format('CREATE SEQUENCE %s INCREMENT %s %s %s %s %s CYCLE;',
         sequence.name,
@@ -377,12 +393,6 @@ function constraintDescription(constraint) {
       )
   */
 }
-
-// function constraintNames(db) {
-//   return db.constraints.map(function (constraint) {
-//     return constraint.constraint_name
-//   }).sort()
-// }
 function constraintNames(db) {
   return db.constraints
     .map(function (constraint) {
@@ -395,45 +405,6 @@ function constraintNames(db) {
     }).sort();
 }
 
-
-// function compareConstraints(db1, db2) {
-//   var constraintNames1 = constraintNames(db1)
-//   var constraintNames2 = constraintNames(db2)
-
-//   var diff1 = _.difference(constraintNames1, constraintNames2);
-//   var diff2 = _.difference(constraintNames2, constraintNames1);
-
-//   diff1.forEach(function (constraintName) {
-//     // dbdiff.log('-- Need to DROP CONSTRAINT "%s" - not in target database', constraintName)
-//     dbdiff.log('ALTER TABLE \"public\".\"%s\" DROP CONSTRAINT %s %s;',
-//       constraintName.table_name,
-//       constraintName.constraint_name,
-//       constraintName.definition)
-//   })
-
-//   // diff2.forEach(function (constraintName) {
-//   //   var constraint = _.findWhere(db2.constraints, { constraint_name: constraintName })
-//   //   dbdiff.log(constraintDescription(constraint))
-//   // })
-//   diff2.forEach(function (constraintName) {
-//     var constraint = _.findWhere(db2.constraints, { constraint_name: constraintName.constraint_name })
-//     dbdiff.log(constraintDescription(constraint))
-//   })
-
-//   var inter = _.intersection(constraintNames1, constraintNames2)
-//   inter.forEach(function (constraintName) {
-//     var constraint1 = _.findWhere(db1.constraints, { constraint_name: constraintName.constraint_name })
-//     var constraint2 = _.findWhere(db2.constraints, { constraint_name: constraintName.constraint_name })
-
-//     var desc1 = constraintDescription(constraint1)
-//     var desc2 = constraintDescription(constraint2)
-
-//     if (desc2 !== desc1) {
-//       // dbdiff.log('-- Need to DROP CONSTRAINT "%s" - not in target database', constraintName)
-//       dbdiff.log(desc2)
-//     }
-//   })
-// }
 
 function compareConstraints(db1, db2) {
   var constraints1 = constraintNames(db1)
@@ -451,8 +422,11 @@ function compareConstraints(db1, db2) {
   var inBoth = constraints1.filter(c => inBothNames.includes(c.constraint_name))
 
   onlyInDb1.forEach(function (c) {
-    dbdiff.log('ALTER TABLE "public"."%s" DROP CONSTRAINT IF EXISTS \"%s\";',
+
+    dbdiff.log(`ALTER TABLE "public"."%s" DROP CONSTRAINT IF EXISTS \"%s\" CASCADE;
+      DROP INDEX IF EXISTS "%s";`,
       c.table_name,
+      c.constraint_name,
       c.constraint_name)
   })
   onlyInDb2.forEach(function (c) {
@@ -470,7 +444,49 @@ function compareConstraints(db1, db2) {
     }
   })
 }
+function compareTriggers(table1, table2) {
+  var triggers1 = table1.triggers;
+  var triggers2 = table2.triggers;
+  // console.log(triggers1, triggers2)
+  // console.log("triggers1", triggers1);
+  // console.log("triggers2", triggers2);
+  if (triggers1.length === 0 && triggers2.length === 0) return;
+  var names1 = triggers1.map(t => t?.trigger_name)
+  var names2 = triggers2.map(t => t?.trigger_name)
 
+  var onlyInDb1Names = _.difference(names1, names2)
+  var onlyInDb2Names = _.difference(names2, names1)
+  var inBothNames = _.intersection(names1, names2)
+
+  var onlyInDb1 = triggers1.filter(t => onlyInDb1Names.includes(t.trigger_name))
+  var onlyInDb2 = triggers2.filter(t => onlyInDb2Names.includes(t.trigger_name))
+  var inBoth = triggers1.filter(t => inBothNames.includes(t.trigger_name))
+  onlyInDb1.forEach(function (t) {
+    dbdiff.log('DROP TRIGGER IF EXISTS \"%s\" ON \"%s\";',
+      t.trigger_name,
+      t.event_object_table)
+  })
+
+  onlyInDb2.forEach(function (t) {
+    dbdiff.log(ddlTrigger(t))
+  })
+
+  inBoth.forEach(function (t1) {
+    var t2 = _.findWhere(table2.triggers, { trigger_name: t1.trigger_name })
+
+    var desc1 = ddlTrigger(t1)
+    var desc2 = ddlTrigger(t2)
+
+    if (desc2 !== desc1) {
+      // var trigger = t2
+      // dbdiff.log('DROP TRIGGER IF EXISTS \%s\" ON \"$s\"',
+      //   trigger.trigger_name,
+      //   trigger.event_object_table)
+      dbdiff.log(desc2)
+    }
+  })
+  return;
+}
 dbdiff.compareSchemas = function (db1, db2) {
   var tableNames1 = _.keys(db1.tables).sort()
   var tableNames2 = _.keys(db2.tables).sort()
@@ -480,13 +496,14 @@ dbdiff.compareSchemas = function (db1, db2) {
 
   diff1.forEach(function (tableName) {
     dbdiff.log('DROP TABLE IF EXISTS "%s"."%s" CASCADE;', db2.schema, tableName)
+    compareTriggers(db1.tables[tableName], { triggers: [] })
   })
 
   // Gom các FOREIGN KEY constraint để sinh sau
   var foreignKeyConstraints = [];
 
   diff2.forEach(function (tableName) {
-    var columns = db2.tables[tableName].map(function (col) {
+    var columns = db2.tables[tableName].columns.map(function (col) {
       var type = dataType(col)
       return '\n  "' + col.column_name + '" ' + columnDescription(col)
     })
@@ -504,15 +521,14 @@ dbdiff.compareSchemas = function (db1, db2) {
       return '\n  CONSTRAINT "' + c.constraint_name + '" ' + c.definition;
     });
     var allDefs = columns.concat(constraintDefs);
-    dbdiff.log('CREATE TABLE "%s"."%s" (%s);', db2.schema, tableName, allDefs.join(','))
+    dbdiff.log('CREATE TABLE IF NOT EXISTS "%s"."%s" (%s);', db2.schema, tableName, allDefs.join(','))
 
     var indexNames2 = indexNames(tableName, db2.indexes)
     indexNames2.forEach(function (indexName) {
       var index = _.findWhere(db2.indexes, { indname: indexName })
-      if (index && index.indrelid) {
-        dbdiff.log('CREATE INDEX "%s" ON "%s" USING %s (%s);', index.indname, index.indrelid, index.indam, index.indkey_names.join(','))
-      }
+      dbdiff.log('CREATE INDEX IF NOT EXISTS "%s" ON "%s" USING %s (%s);', index.indname, index.tablename, index.indam, index.indkey_names.join(','))
     })
+    compareTriggers({ triggers: [] }, db2.tables[tableName]);
   })
 
   var inter = _.intersection(tableNames1, tableNames2)

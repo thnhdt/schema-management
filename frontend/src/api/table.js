@@ -36,7 +36,7 @@ export const getAllUpdateTables = async (targetDatabaseId, currentDatabaseId) =>
 };
 
 export const syncDatabase = async (targetDatabaseId, currentDatabaseId, allUpdateFunction, allUpdateDdlTable) => {
-  const response = await api.post('/table/sync-Database', {
+  const response = await api.post('/table/sync-database', {
     targetDatabaseId,
     currentDatabaseId,
     allUpdateFunction,

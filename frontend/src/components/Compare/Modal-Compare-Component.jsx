@@ -21,7 +21,6 @@ const ModalCompareComponent = (props) => {
       `/compare?` +
       `targetDatabaseId=${selectedTargetDb}&currentDatabaseId=${selectedCurrentDb}`
     );
-    console.log("Chuyển tới trang so sánh");
   }
   useEffect(() => {
     fetchData();

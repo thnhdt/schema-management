@@ -75,7 +75,9 @@ const getAllTables = async (reqBody) => {
   const allSqlSchema = await Promise.all(
     allTables.map(async (table) => {
       const text = await ddl("public", table.table_name, client);
-      return { ...table, text };
+      const trigger = await getAllTriggerOnTable(table.table_name, client);
+      const triggerDdl = trigger.map(t => t.ddl).join('\n');
+      return { ...table, text: text + '\n' + '-- Trigger trong bảng' + '\n' + triggerDdl, trigger };
     })
   );
   await client.close();
@@ -256,10 +258,10 @@ const saveDBHistory = async (databaseId) => {
 
 const syncDatabase = async (reqBody, user) => {
   const { targetDatabaseId, currentDatabaseId, allUpdateFunction, allUpdateDdlTable } = reqBody;
-  
+
   if (!user.isAdmin) {
-    const permissions = user.userPermissions.some(role => 
-      role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) && 
+    const permissions = user.userPermissions.some(role =>
+      role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) &&
       role?.permissions.some(p => p.databaseId.toString() === currentDatabaseId)
     );
     if (!permissions) throw new BadResponseError("Bạn không có quyền truy cập một trong hai DB !");
@@ -269,7 +271,7 @@ const syncDatabase = async (reqBody, user) => {
     databaseModel.findById(currentDatabaseId).lean(),
     databaseModel.findById(targetDatabaseId).lean()
   ]);
-  
+
   if (!currentDatabase || !targetDatabase) {
     throw new BadResponseError("Một trong hai database không tồn tại !");
   }
@@ -278,7 +280,6 @@ const syncDatabase = async (reqBody, user) => {
   const ddlErrors = [];
   let transaction;
   try {
-    // Bắt đầu transaction
     transaction = await sequelize.transaction();
     if (allUpdateFunction && allUpdateFunction.trim()) {
       try {
@@ -288,7 +289,6 @@ const syncDatabase = async (reqBody, user) => {
         throw new BadResponseError(`Lỗi khi thực thi function/procedure: ${err.message}`);
       }
     }
-    // 2. Thực thi DDL table/index/sequence/constraint: Tách theo dấu chấm phẩy, chỉ thực thi lệnh hợp lệ
     if (allUpdateDdlTable && allUpdateDdlTable.trim()) {
       const tableQueries = allUpdateDdlTable
         .split(';')
@@ -301,11 +301,9 @@ const syncDatabase = async (reqBody, user) => {
         } catch (err) {
           console.error('Lỗi khi thực thi lệnh DDL:', query, err.message);
           ddlErrors.push({ query, error: err.message });
-          // KHÔNG throw, KHÔNG rollback, tiếp tục với lệnh tiếp theo
         }
       }
     }
-    // Commit transaction (dù có lệnh DDL lỗi, các lệnh thành công vẫn được commit)
     await transaction.commit();
     await saveDBHistory(currentDatabaseId);
     let targetHistory = await HistoryModel.findOne({ databaseName: targetDatabaseId });
@@ -342,7 +340,7 @@ const syncDatabase = async (reqBody, user) => {
         message: "Cập nhật thành công và đã lưu lịch sử",
         currentDatabase: currentDatabase.name,
         targetDatabase: targetDatabase.name,
-        ddlErrors // trả về các lệnh lỗi nếu có
+        ddlErrors
       }
     };
   } catch (error) {
@@ -353,6 +351,52 @@ const syncDatabase = async (reqBody, user) => {
     await sequelize.close();
   }
 };
+function ddlTrigger(trigger) {
+  const allManipulations = trigger.event_manipulation.join(' OR ');
+  return `CREATE OR REPLACE TRIGGER \"${trigger.trigger_name}\" ${trigger.action_timing} ${allManipulations} ON "${trigger.event_object_table}" FOR EACH ${trigger.action_orientation} ${trigger.action_condition ? `WHEN ${trigger.action_condition} ` : ''}${trigger.action_statement};`
+}
+const getAllTriggerOnTable = async (tableName, sequelize) => {
+  // const sequelize = await databaseService.connectToDatabase({ id });
+  const getAllTriggers = await sequelize.query(
+    `SELECT event_object_table
+      ,trigger_name
+      ,event_manipulation
+      ,action_statement
+      ,action_timing
+      ,action_orientation
+      ,action_condition
+FROM  information_schema.triggers
+WHERE event_object_table = :tableName
+ORDER BY event_object_table
+     ,event_manipulation;`,
+    {
+      replacements: { tableName },
+      type: QueryTypes.SELECT
+    }
+  );
+  let allTrigger = [];
+  if (getAllTriggers.length > 0) {
+    const map = new Map();
+    for (let item of getAllTriggers) {
+      const key = item.trigger_name;
+      if (map.has(key)) {
+        map.get(key).event_manipulation = [...map.get(key).event_manipulation, item.event_manipulation];
+      } else {
+        map.set(key, { ...item, event_manipulation: [item.event_manipulation] });
+      }
+    }
+    allTrigger = Array.from(
+      map
+    ).map(([key, value]) => ({
+      key,
+      ...value,
+      ddl: ddlTrigger(value)
+    }));
+  }
+
+  // await sequelize.close();
+  return allTrigger;
+}
 
 module.exports = {
   test,

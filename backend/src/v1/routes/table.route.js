@@ -12,7 +12,7 @@ tableRouter.route('/all-update-tables')
 tableRouter.route('/all-update-ddl')
   .post(handlerError(tableController.getAllUpdateDdl))
 
-tableRouter.route('/sync-Database')
+tableRouter.route('/sync-database')
   .post(handlerError(tableController.syncDatabase));
 
 tableRouter.use(checkPermissionDatabase)
