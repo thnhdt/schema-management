@@ -178,7 +178,8 @@ const ddlPatterns = [
   { type: 'UPDATE', target: 'TRIGGER', re: /create\s+(?:or\s+replace\s+)?trigger\s+["`]?([\w]+)["`]?\s+(?:before|after|instead\s+of)\s+[\w\s,]+\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?(?:\s+for\s+each\s+row)?(?:\s+when\s*\(.*?\))?/i },
   { type: 'UPDATE', target: 'TRIGGER', re: /drop\s+trigger\s+(?:if\s+exists\s+)?["`]?([\w]+)["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
 ];
-const ddlPatternsSequence = [// ----- SEQUENCE -----
+const ddlPatternsSequence = [
+  // ----- SEQUENCE -----
   { type: 'CREATE', re: /create\s+sequence\s+(?:if\s+not\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
   { type: 'DELETE', re: /drop\s+sequence\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },]
 const ddlPatternsIndex = [
@@ -315,10 +316,19 @@ function sequenceDescription(sequence) {
     sequence.cycle_option === 'NO' ? 'NO' : ''
   )
 }
+
+const timeFormat = (dateTime) => {
+  const utcTime = new Date(dateTime);
+  const vietnamOffsetMs = 7 * 60 * 60 * 1000;
+
+  const vietnamTime = new Date(utcTime.getTime() + vietnamOffsetMs);
+  return vietnamTime.toISOString().replace('T', ' ').substring(0, 19);
+}
 module.exports = {
   ddl,
   getAllUpdateOnTableUtil,
   getAllUpdateBetweenDatabases,
   getStringUrl,
-  sequenceDescription
+  sequenceDescription,
+  timeFormat
 }

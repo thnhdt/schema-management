@@ -3,10 +3,11 @@ const { BadResponseError } = require('../cores/error.response');
 const { ddl } = require('../utils/helper.utils');
 const { QueryTypes } = require('sequelize');
 const databaseService = require('../services/database.service');
-const { getAllUpdateOnTableUtil, getAllUpdateBetweenDatabases, getStringUrl } = require('../utils/helper.utils');
+const { getAllUpdateOnTableUtil, getAllUpdateBetweenDatabases, getStringUrl, timeFormat } = require('../utils/helper.utils');
 const HistoryModel = require('../models/history.model');
 const databaseModel = require('../models/database.model');
 const functionService = require('./function-sql.service');
+const { default: mongoose } = require('mongoose');
 
 const mergeTables = (arrTableTarget, arrTableCurrent) => {
   const map = new Map();
@@ -71,7 +72,6 @@ const getAllTables = async (reqBody) => {
       type: QueryTypes.SELECT
     }
   );
-
   const allSqlSchema = await Promise.all(
     allTables.map(async (table) => {
       const text = await ddl("public", table.table_name, client);
@@ -81,11 +81,14 @@ const getAllTables = async (reqBody) => {
       return { ...table, text: textDDL, trigger};
     })
   );
+
   await client.close();
+  const timestampsUpdate = await HistoryModel.find({ databaseName: new mongoose.Types.ObjectId(id) });
   return {
     code: 200,
     metaData: {
-      data: allSqlSchema
+      data: allSqlSchema,
+      timestamps: timeFormat(timestampsUpdate[0].updatedAt)
     }
   }
 };

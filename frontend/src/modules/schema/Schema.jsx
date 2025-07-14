@@ -49,6 +49,7 @@ function Schema() {
   const [selectionTable, setSelectionTable] = useState([]);
   const [selectedTableRowKeys, setSelectedTableRowKeys] = useState([]);
   const [openDrawer, setOpenDrawer] = useState(false);
+  const [timestamps, setTimestamp] = useState('null');
   const onSelectChange = newSelectedRowKeys => {
     setSelectionFunction(functions.filter(f => newSelectedRowKeys.includes(`${f.functionName}(${f.functionArguments})`)).map(item => item.definition));
     setSelectedRowKeys(newSelectedRowKeys);
@@ -180,6 +181,7 @@ function Schema() {
       setTables(tableResponse.metaData.metaData.data);
       setFunctions(functionResponse.metaData.metaData.data);
       setSequences(sequenceResponse.metaData.metaData.data);
+      setTimestamp(tableResponse.metaData.metaData.timestamps);
     } catch (error) {
       if (error.status === 403) {
         messageApi.open({
@@ -562,8 +564,13 @@ function Schema() {
                     Làm Mới
                   </Button>
                 </Space>
+                <Space>
+                  <Text strong>Thời gian cập nhật gần đây: </Text>
+                  <Text code>{timestamps || '00:00:00'}</Text>
+                </Space>
               </Space>
             </Card>
+
           </Col>
 
           <Col span={16}>
