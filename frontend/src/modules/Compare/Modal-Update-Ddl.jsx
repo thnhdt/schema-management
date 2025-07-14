@@ -47,7 +47,7 @@ const DrawerCompareComponent = (props) => {
     } catch (error) {
       console.error('Lỗi khi cập nhật database:', error);
       messageApi.error({
-        content: `Lỗi khi cập nhật database: ${error.message}`,
+        content: `${error.response.data.error.message}`,
         key: 'update',
         duration: 5
       });

@@ -77,7 +77,8 @@ const getAllTables = async (reqBody) => {
       const text = await ddl("public", table.table_name, client);
       const trigger = await getAllTriggerOnTable(table.table_name, client);
       const triggerDdl = trigger.map(t => t.ddl).join('\n');
-      return { ...table, text: text + '\n' + '-- Trigger trong bảng' + '\n' + triggerDdl, trigger };
+      const textDDL = trigger.length > 0 ? text + '\n' + '-- Trigger trong bảng' + '\n' + triggerDdl : text;
+      return { ...table, text: textDDL, trigger};
     })
   );
   await client.close();
@@ -279,6 +280,7 @@ const syncDatabase = async (reqBody, user) => {
   const sequelize = await databaseService.connectToDatabase({ id: currentDatabaseId });
   const ddlErrors = [];
   let transaction;
+  let functionError = null;
   try {
     transaction = await sequelize.transaction();
     if (allUpdateFunction && allUpdateFunction.trim()) {
@@ -286,25 +288,52 @@ const syncDatabase = async (reqBody, user) => {
         await sequelize.query(allUpdateFunction, { transaction });
       } catch (err) {
         await transaction.rollback();
-        throw new BadResponseError(`Lỗi khi thực thi function/procedure: ${err.message}`);
+        functionError = err;
       }
     }
-    if (allUpdateDdlTable && allUpdateDdlTable.trim()) {
-      const tableQueries = allUpdateDdlTable
-        .split(';')
-        .map(q => q.trim())
-        .filter(q => q && /^(CREATE|ALTER|DROP|TRUNCATE|COMMENT|RENAME)/i.test(q));
-      for (const query of tableQueries) {
-        try {
-          console.log('Đang thực thi DDL:', query);
-          await sequelize.query(query, { transaction });
-        } catch (err) {
-          console.error('Lỗi khi thực thi lệnh DDL:', query, err.message);
-          ddlErrors.push({ query, error: err.message });
+    if (functionError) {
+      if (allUpdateDdlTable && allUpdateDdlTable.trim()) {
+        const tableQueries = allUpdateDdlTable
+          .split(';')
+          .map(q => q.trim())
+          .filter(q => q && /^(CREATE|ALTER|DROP|TRUNCATE|COMMENT|RENAME)/i.test(q));
+        for (const query of tableQueries) {
+          try {
+            console.log('Đang thực thi DDL:', query);
+            await sequelize.query(query); // Không truyền transaction
+          } catch (err) {
+            console.error('Lỗi khi thực thi lệnh DDL:', query, err.message);
+            ddlErrors.push({ query, error: err.message });
+          }
         }
       }
+      try {
+        transaction = await sequelize.transaction();
+        await sequelize.query(allUpdateFunction, { transaction });
+        await transaction.commit();
+      } catch (err) {
+        if (transaction) await transaction.rollback();
+        throw new BadResponseError(`Lỗi khi thực thi function/procedure sau khi cập nhật bảng: ${err.message}`);
+      }
+    } else {
+      if (allUpdateDdlTable && allUpdateDdlTable.trim()) {
+        const tableQueries = allUpdateDdlTable
+          .split(';')
+          .map(q => q.trim())
+          .filter(q => q && /^(CREATE|ALTER|DROP|TRUNCATE|COMMENT|RENAME)/i.test(q));
+        for (const query of tableQueries) {
+          try {
+            console.log('Đang thực thi DDL:', query);
+            await sequelize.query(query, { transaction });
+          } catch (err) {
+            console.error('Lỗi khi thực thi lệnh DDL:', query, err.message);
+            ddlErrors.push({ query, error: err.message });
+          }
+        }
+      }
+      await transaction.commit();
     }
-    await transaction.commit();
+
     await saveDBHistory(currentDatabaseId);
     let targetHistory = await HistoryModel.findOne({ databaseName: targetDatabaseId });
     if (targetHistory && targetHistory.versions.length > 0) {
