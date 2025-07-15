@@ -10,12 +10,12 @@ const { Content } = Layout;
 const CompareComponent = ({ title, ddlPrime = '', ddlSecond = '', patch = '', targetDatabase = '', currentDatabase = '', onBack }) => {
   return (
     <Layout style={{ minHeight: '100vh', background: '#fafafa' }}>
-      <Content style={{ maxWidth: 1440, margin: '0 auto', padding: '2rem' }}>
+      <Content style={{ maxWidth: 1440, margin: '0 auto', padding: '2rem', fontSize: '0.9rem' }}>
         <Button onClick={onBack} style={{ marginBottom: 16 }}>
           ← Quay lại
         </Button>
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <Title level={2} style={{ margin: 0 }}>
+          <Title level={2} style={{ margin: 0, fontSize: '1.2rem' }}>
             {title}
           </Title>
           <Row gutter={[24, 24]} align="stretch">
@@ -44,7 +44,7 @@ const CompareComponent = ({ title, ddlPrime = '', ddlSecond = '', patch = '', ta
             </Col>
             <Col xs={24} md={8} style={{ display: 'flex' }}>
               <Card
-                title="SQL Thay đổi"
+                title={<span style={{ fontSize: '1rem' }}>SQL Thay đổi</span>}
                 style={{ flex: 1 }}
                 bodyStyle={{
                   overflow: 'auto',

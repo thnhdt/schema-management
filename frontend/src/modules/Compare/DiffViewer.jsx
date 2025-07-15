@@ -29,7 +29,7 @@ const DiffViewer = ({ oldText, newText, filePrimeTitle = 'Before', fileSecondTit
   }
 
   return (
-    <div className="p-4 bg-white rounded shadow">
+    <div className="p-4 bg-white rounded shadow" style={{ fontSize: '0.85rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
         <div className="diff-title">{fileSecondTitle}</div>
         <div className="diff-title">{filePrimeTitle}</div>
