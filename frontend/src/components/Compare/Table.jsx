@@ -5,20 +5,21 @@ import {
   SwapOutlined
 } from '@ant-design/icons';
 import '../../App.css';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react'
-import { getAllUpdateTables } from '../../api';
+import { getAllUpdateTables, getAllUpdateFunction } from '../../api';
 import { Card, List, Typography, Spin, Flex, Tag, Space, Divider, Tabs, Button } from 'antd';
 import FunctionCompareComponent from '../../modules/Compare/Function';
 import SequenceCompareComponent from '../../modules/Compare/Sequence';
 import DrawerCompareComponent from '../../modules/Compare/Modal-Update-Ddl';
+import CompareComponent from '../../modules/Compare/Compare';
 const enumTypeColor = {
   'CREATE': 'green',
   'UPDATE': 'purple',
   "DELETE": 'red'
 }
 const enumTypeTitle = {
-  'CREATE': 'Thêm Bảng',
+  'CREATE': 'Thêm bảng',
   'UPDATE': 'Cập nhật trên bảng',
   "DELETE": 'Xóa bảng'
 }
@@ -28,7 +29,6 @@ const TableCompareComponent = () => {
   const targetDatabaseId = searchParams.get('targetDatabaseId');
   const currentDatabaseId = searchParams.get('currentDatabaseId');
   const { Title, Paragraph, Text } = Typography;
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [updateData, setUpdateData] = useState([]);
   const [currentDatabase, setCurrentDatabase] = useState(null);
@@ -38,20 +38,44 @@ const TableCompareComponent = () => {
   const [allUpdateFunction, setAllUpdateFunction] = useState('');
   const [allUpdateDdlTable, setAllUpdateDdlTable] = useState('');
   const [openDrawer, setOpenDrawer] = useState(false);
-  const handleGetDetailUpdate = (key, ddlTargetTable, ddlCurrentTable, patch, currentDatabase, targetDatabase) => {
-    navigate('/compare/detail', {
-      state: {
-        key,
-        ddlPrime: ddlTargetTable,
-        ddlSecond: ddlCurrentTable,
-        patch,
-        currentDatabase,
-        targetDatabase
-      }
-    });
-  }
+  const [selectedChange, setSelectedChange] = useState(null);
+  const [functionLoading, setFunctionLoading] = useState(true);
+  const [functionUpdateData, setFunctionUpdateData] = useState([]);
+  const [functionCurrentDatabase, setFunctionCurrentDatabase] = useState(null);
+  const [functionTargetDatabase, setFunctionTargetDatabase] = useState(null);
+  const handleGetDetailUpdate = (item) => {
+    let ddlPrime = '';
+    let ddlSecond = '';
+    let patch = '';
+    let title = item.key;
+    if (item.stmts) {
+      ddlPrime = item.right?.text ?? '';
+      ddlSecond = item.left?.text ?? '';
+      patch = Array.isArray(item.stmts) ? item.stmts.join('\n') : (item.stmts ?? '');
+      title = `${enumTypeTitle[item.type]} ${item.key}`;
+    } else if (item.ddlPrime !== undefined || item.ddlSecond !== undefined || item.patch !== undefined) {
+      ddlPrime = item.ddlPrime ?? '';
+      ddlSecond = item.ddlSecond ?? '';
+      patch = item.patch ?? '';
+    } else if (item.ddl) {
+      ddlPrime = item.ddl ?? '';
+      ddlSecond = '';
+      patch = item.ddl ?? '';
+    }
+    const detail = {
+      title,
+      ddlPrime,
+      ddlSecond,
+      patch,
+      currentDatabase,
+      targetDatabase
+    };
+    setSelectedChange(detail);
+  };
+  const handleBack = () => setSelectedChange(null);
   useEffect(() => {
     fetchUpdate();
+    fetchFunctionUpdate();
   }, [])
   const fetchUpdate = async () => {
     try {
@@ -67,15 +91,35 @@ const TableCompareComponent = () => {
       setLoading(false);
     }
   }
+  const fetchFunctionUpdate = async () => {
+    try {
+      setFunctionLoading(true);
+      const data = await getAllUpdateFunction(targetDatabaseId, currentDatabaseId);
+      setFunctionUpdateData(data.metaData.resultUpdate);
+      setFunctionCurrentDatabase(data.metaData.currentDatabase);
+      setFunctionTargetDatabase(data.metaData.targetDatabase);
+      setAllUpdateFunction(data.metaData.allPatchDdl);
+    } catch (error) {
+      console.error(error.message)
+    } finally {
+      setFunctionLoading(false);
+    }
+  }
   if (loading) {
     return (
-      <>
-        <Flex align="center"
-          justify="center"
-          style={{ height: '80%' }}>
-          <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
-        </Flex>
-      </>);
+      <Flex align="center"
+        justify="center"
+        style={{ height: '80%' }}>
+        <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
+      </Flex>);
+  }
+  if (selectedChange) {
+    return (
+      <CompareComponent
+        {...selectedChange}
+        onBack={handleBack}
+      />
+    );
   }
   return (
     <div style={{ maxHeight: '100vh' }}>
@@ -115,9 +159,12 @@ const TableCompareComponent = () => {
           ),
           children: (
             <FunctionCompareComponent
-              targetDatabaseId={targetDatabaseId}
-              currentDatabaseId={currentDatabaseId}
+              loading={functionLoading}
+              updateData={functionUpdateData}
+              currentDatabase={functionCurrentDatabase}
+              targetDatabase={functionTargetDatabase}
               setAllUpdateFunction={setAllUpdateFunction}
+              onShowDetail={handleGetDetailUpdate}
             />),
         },
         {
@@ -139,13 +186,7 @@ const TableCompareComponent = () => {
                 renderItem={item => (
                   <List.Item
                     key={item.key}
-                    onClick={() => handleGetDetailUpdate(
-                      `${enumTypeTitle[item.type]} ${item.key}`,
-                      item.right?.text ?? '',
-                      item.left?.text ?? '',
-                      item.stmts.join('\n'),
-                      currentDatabase,
-                      targetDatabase)}
+                    onClick={() => handleGetDetailUpdate(item)}
                     className="hover-overlay shadow-sm rounded mb-2"
                   >
                     <div
@@ -192,6 +233,9 @@ const TableCompareComponent = () => {
           children: (
             <SequenceCompareComponent
               sequence={sequence}
+              onShowDetail={handleGetDetailUpdate}
+              currentDatabase={currentDatabase}
+              targetDatabase={targetDatabase}
             />),
         },
         ]}
@@ -203,9 +247,10 @@ const TableCompareComponent = () => {
         allUpdateDdlTable={allUpdateDdlTable}
         targetDatabaseId={targetDatabaseId}
         currentDatabaseId={currentDatabaseId}
+        onRefetchTable={fetchUpdate}
+        onRefetchFunction={fetchFunctionUpdate}
       />
     </div>
-
   );
 }
 

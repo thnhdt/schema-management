@@ -281,7 +281,6 @@ const syncDatabase = async (reqBody, user) => {
   }
 
   const sequelize = await databaseService.connectToDatabase({ id: currentDatabaseId });
-  const ddlErrors = [];
   let transaction;
   let functionError = null;
   try {
@@ -303,10 +302,10 @@ const syncDatabase = async (reqBody, user) => {
         for (const query of tableQueries) {
           try {
             console.log('Đang thực thi DDL:', query);
-            await sequelize.query(query); // Không truyền transaction
+            await sequelize.query(query);
           } catch (err) {
             console.error('Lỗi khi thực thi lệnh DDL:', query, err.message);
-            ddlErrors.push({ query, error: err.message });
+            throw err;
           }
         }
       }
@@ -330,7 +329,8 @@ const syncDatabase = async (reqBody, user) => {
             await sequelize.query(query, { transaction });
           } catch (err) {
             console.error('Lỗi khi thực thi lệnh DDL:', query, err.message);
-            ddlErrors.push({ query, error: err.message });
+            await transaction.rollback();
+            throw err;
           }
         }
       }
@@ -372,7 +372,6 @@ const syncDatabase = async (reqBody, user) => {
         message: "Cập nhật thành công và đã lưu lịch sử",
         currentDatabase: currentDatabase.name,
         targetDatabase: targetDatabase.name,
-        ddlErrors
       }
     };
   } catch (error) {

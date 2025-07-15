@@ -7,7 +7,7 @@ import { useState } from "react";
 import '../../App.css'
 
 const DrawerCompareComponent = (props) => {
-  const { onClose, open, allUpdateFunction, allUpdateDdlTable, targetDatabaseId, currentDatabaseId } = props;
+  const { onClose, open, allUpdateFunction, allUpdateDdlTable, targetDatabaseId, currentDatabaseId, onRefetchTable, onRefetchFunction } = props;
   const [messageApi, contextHolder] = message.useMessage();
   const [floatButtonOpen, setFloatButtonOpen] = useState(false);
   const allDdlUpdateSchema = '-- Cập nhật trên Function' + '\n' + allUpdateFunction + '\n' + '-- Cập nhật trên Table' + '\n' + allUpdateDdlTable;
@@ -22,6 +22,8 @@ const DrawerCompareComponent = (props) => {
           allUpdateFunction,
           allUpdateDdlTable
         );
+        onRefetchTable();
+        onRefetchFunction();
       }
       else if (isFunction && !isTable) {
         await syncDatabase(
@@ -30,6 +32,7 @@ const DrawerCompareComponent = (props) => {
           allUpdateFunction,
           ''
         );
+        onRefetchFunction();
       } else {
         await syncDatabase(
           targetDatabaseId,
@@ -37,6 +40,7 @@ const DrawerCompareComponent = (props) => {
           '',
           allUpdateDdlTable
         );
+        onRefetchTable();
       }
       messageApi.success({
         content: 'Cập nhật database thành công!',

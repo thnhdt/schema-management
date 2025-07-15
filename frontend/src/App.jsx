@@ -38,7 +38,7 @@ function App() {
 
                 {/* <Route path='/compare/function' element={<FunctionCompareComponent />} /> */}
                 <Route path='/compare' element={<TableCompareComponent />} />
-                <Route path='/compare/detail' element={<CompareComponent />} />
+                {/* <Route path='/compare/detail' element={<CompareComponent />} /> */}
               </Route>
             </Route>
             <Route path="*" element={<h6>Không có đường dẫn...</h6>} />

@@ -255,7 +255,7 @@ const Node = () => {
           columns={columns}
           dataSource={nodes}
           loading={loading}
-          rowKey="id"
+          rowKey="_id"
           rowClassName={() => 'no-hover'}
           pagination={false}
         />

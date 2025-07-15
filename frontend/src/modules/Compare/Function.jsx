@@ -3,9 +3,6 @@ import {
   LoadingOutlined, DatabaseOutlined
 } from '@ant-design/icons';
 import '../../App.css';
-import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react'
-import { getAllUpdateFunction } from '../../api';
 import { List, Typography, Spin, Flex, Tag, Space, Divider } from 'antd';
 
 const enumTypeColor = {
@@ -18,45 +15,8 @@ const enumTypeTitle = {
   'UPDATE': 'Cập nhật trên hàm',
   "DELETE": 'Xóa hàm'
 }
-const FunctionCompareComponent = ({ targetDatabaseId, currentDatabaseId, setAllUpdateFunction }) => {
+const FunctionCompareComponent = ({ loading, updateData, currentDatabase, targetDatabase, onShowDetail }) => {
   const { Paragraph } = Typography;
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [updateData, setUpdateData] = useState([]);
-  const [currentDatabase, setCurrentDatabase] = useState(null);
-  const [targetDatabase, setTargetDatabase] = useState(null);
-
-
-  const handleGetDetailUpdate = (key, ddlPrimeFunction, ddlSecondFunction, patch, currentDatabase, targetDatabase) => {
-    navigate('/compare/detail', {
-      state: {
-        key,
-        ddlSecond: ddlSecondFunction,
-        ddlPrime: ddlPrimeFunction,
-        patch,
-        currentDatabase,
-        targetDatabase
-      }
-    });
-  }
-  useEffect(() => {
-    fetchUpdate();
-  }, [])
-  const fetchUpdate = async () => {
-    try {
-      //thêm datbase id vào
-      setLoading(true);
-      const data = await getAllUpdateFunction(targetDatabaseId, currentDatabaseId);
-      setUpdateData(data.metaData.resultUpdate);
-      setCurrentDatabase(data.metaData.currentDatabase);
-      setTargetDatabase(data.metaData.targetDatabase);
-      setAllUpdateFunction(data.metaData.allPatchDdl);
-    } catch (error) {
-      console.error(error.message)
-    } finally {
-      setLoading(false);
-    }
-  }
   if (loading) {
     return (
       <>
@@ -74,17 +34,17 @@ const FunctionCompareComponent = ({ targetDatabaseId, currentDatabaseId, setAllU
         size="large"
         pagination={false}
         dataSource={updateData}
-        // style={{ overflowY: 'auto' }}
         renderItem={item => (
           <List.Item
             key={item.key}
-            onClick={() => handleGetDetailUpdate(
-              `${enumTypeTitle[item.type]} ${item.key}`,
-              item.ddlPrimeFunction,
-              item.ddlSecondFunction,
-              item.patch,
+            onClick={() => onShowDetail && onShowDetail({
+              key: `${enumTypeTitle[item.type]} ${item.key}`,
+              ddlPrime: item.ddlPrimeFunction ?? '',
+              ddlSecond: item.ddlSecondFunction ?? '',
+              patch: item.patch ?? '',
               currentDatabase,
-              targetDatabase)}
+              targetDatabase
+            })}
             className="hover-overlay shadow-sm rounded mb-4"
           >
             <div
@@ -119,7 +79,6 @@ const FunctionCompareComponent = ({ targetDatabaseId, currentDatabaseId, setAllU
         )}
       />
     </div>
-
   );
 }
 

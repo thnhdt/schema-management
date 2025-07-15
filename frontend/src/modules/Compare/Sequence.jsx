@@ -10,7 +10,7 @@ const enumTypeTitle = {
   'CREATE': 'Thêm mới sequence',
   "DELETE": 'Xóa đi sequence'
 }
-const SequenceCompareComponent = ({ sequence }) => {
+const SequenceCompareComponent = ({ sequence, onShowDetail, currentDatabase, targetDatabase }) => {
   const { Paragraph } = Typography;
   return (
     <div style={{ maxHeight: 'calc(100vh - 330px)', overflowY: 'auto' }}>
@@ -19,9 +19,17 @@ const SequenceCompareComponent = ({ sequence }) => {
         size="large"
         pagination={false}
         dataSource={sequence}
-        renderItem={item => (
+        renderItem={(item, idx) => (
           <List.Item
-            key={item.key}
+            key={item.key + '-' + item.type + '-' + idx}
+            onClick={() => onShowDetail && onShowDetail({
+              key: `${enumTypeTitle[item.type]} ${item.key}`,
+              ddlPrime: item.ddl ?? '',
+              ddlSecond: '',
+              patch: item.ddl ?? '',
+              currentDatabase,
+              targetDatabase
+            })}
             className="hover-overlay shadow-sm rounded mb-4"
           >
             <div
@@ -55,7 +63,6 @@ const SequenceCompareComponent = ({ sequence }) => {
         )}
       />
     </div>
-
   );
 }
 

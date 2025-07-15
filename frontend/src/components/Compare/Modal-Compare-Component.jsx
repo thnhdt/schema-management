@@ -30,7 +30,8 @@ const ModalCompareComponent = (props) => {
       const response = await getAllNodes();
       const data = response.metaData.metaData.node.map(item => ({
         value: item._id,
-        label: `${item.host}:${item.port}`
+        // label: `${item.host}:${item.port}`
+        label: `${item.name}`
       }));
       setOptionHost(data);
     } catch (error) {
