@@ -16,7 +16,7 @@ const groupBy = (arr, key) =>
   }, {});
 function ddlTrigger(trigger) {
   const allManipulations = trigger.event_manipulation.join(' OR ');
-  return `CREATE OR REPLACE TRIGGER \"${trigger.trigger_name}\" ${trigger.action_timing} ${allManipulations} ON "${trigger.table_name}" FOR EACH ${trigger.action_orientation} ${trigger.action_condition ? `WHEN ${trigger.action_condition} ` : ''}${trigger.action_statement};`
+  return `CREATE OR REPLACE TRIGGER \"${trigger.trigger_name}\" ${trigger.action_timing} ${allManipulations} ON "${trigger.event_object_table}" FOR EACH ${trigger.action_orientation} ${trigger.action_condition ? `WHEN ${trigger.action_condition} ` : ''}${trigger.action_statement};`
 }
 dbdiff.log = function () {
   var msg = util.format.apply(null, Array.prototype.slice.call(arguments))
@@ -211,22 +211,34 @@ dbdiff.log = function () {
 // };
 
 
-dbdiff.describeDatabase = async function (conString, schemaname) {
+dbdiff.describeDatabase = async function (conString, schemaname, listTablePriority) {
   const client = new Pool({
     connectionString: conString,
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
   });
+  const createConditionOnTables = (key, listTablePriority) => {
+    if (!listTablePriority || listTablePriority.length === 0) return '';
+
+    const condition = listTablePriority
+      .map(item => `${key} LIKE '${item}'`)
+      .join(' OR\n');
+
+    return condition;
+  };
 
   const schema = { tables: {}, indexes: [], constraints: [], sequences: [] };
 
   const connection = await client.connect();
-
+  const tablenameCondition = createConditionOnTables('tablename', listTablePriority);
+  const table_nameCondition = createConditionOnTables('table_name', listTablePriority);
   try {
     // Lấy danh sách bảng vả trigger
     const tablesRes = await connection.query(
-      'SELECT * FROM pg_tables WHERE schemaname = $1',
+      `SELECT 
+        tablename
+      FROM pg_tables WHERE schemaname = $1 ${listTablePriority.length > 0 ? `AND (${tablenameCondition})` : ''};`,
       [schemaname]
     );
     const tables = tablesRes.rows;
@@ -241,7 +253,7 @@ dbdiff.describeDatabase = async function (conString, schemaname) {
     is_nullable,
     '' as column_default
   FROM INFORMATION_SCHEMA.COLUMNS
-  WHERE table_schema = $1;
+  WHERE table_schema = $1 ${listTablePriority.length > 0 ? `AND (${table_nameCondition})` : ''};
 `;
 
     const triggersQuery = `
@@ -254,8 +266,8 @@ dbdiff.describeDatabase = async function (conString, schemaname) {
     action_orientation,
     action_condition
   FROM information_schema.triggers
-  WHERE event_object_schema = $1
-  ORDER BY event_object_table, trigger_name, event_manipulation;
+  WHERE event_object_schema = $1 ${listTablePriority.length > 0 ? `AND (${createConditionOnTables('event_object_table', listTablePriority)})` : ''}
+  ORDER BY event_object_table, trigger_name, event_manipulation ;
 `;
 
     const [columnsRes, triggersRes] = await Promise.all([
@@ -294,7 +306,7 @@ dbdiff.describeDatabase = async function (conString, schemaname) {
         triggers,
       };
     }
-    // Lấy danh sách indexes
+    // Lấy danh sách indexes tablename
     const indexesQuery = `
       SELECT
         i.relname as indname,
@@ -316,13 +328,13 @@ dbdiff.describeDatabase = async function (conString, schemaname) {
       JOIN pg_class AS t ON t.oid = idx.indrelid
       JOIN pg_namespace as ns ON ns.oid = i.relnamespace
       AND ns.nspname NOT IN ('pg_catalog', 'pg_toast')
-      WHERE ns.nspname = $1;
+      WHERE ns.nspname = $1 ${listTablePriority.length > 0 ? `AND (${createConditionOnTables('t.relname', listTablePriority)})` : ''};
     `;
 
     const indexesRes = await connection.query(indexesQuery, [schemaname]);
     schema.indexes = indexesRes.rows;
 
-    // Lấy danh sách constraints
+    // Lấy danh sách constraints table_name
     const constraintsQuery = `
       SELECT
         con.conname AS constraint_name,
@@ -333,7 +345,7 @@ dbdiff.describeDatabase = async function (conString, schemaname) {
       FROM pg_constraint con
       JOIN pg_class rel ON rel.oid = con.conrelid
       JOIN pg_namespace n ON n.oid = rel.relnamespace
-      WHERE n.nspname = $1;
+      WHERE n.nspname = $1 ${listTablePriority.length > 0 ? `AND (${createConditionOnTables('rel.relname', listTablePriority)})` : ''};
     `;
 
     const constraintsRes = await connection.query(constraintsQuery, [schemaname]);
@@ -638,7 +650,7 @@ function compareTriggers(table1, table2) {
   onlyInDb1.forEach(function (t) {
     dbdiff.log('DROP TRIGGER IF EXISTS \"%s\" ON \"%s\";',
       t.trigger_name,
-      t.table_name)
+      t.event_object_table)
   })
 
   onlyInDb2.forEach(function (t) {
@@ -724,13 +736,14 @@ dbdiff.compareSchemas = function (db1, db2) {
     dbdiff.log('ALTER TABLE "%s"."%s" ADD CONSTRAINT %s %s;', db2.schema, c.table_name, c.constraint_name, c.definition)
   })
 }
-dbdiff.compareDatabases = async function (comparison, callback) {
+//['bql_%', 'hop_dong%', 'get_%', 'kdt_%', 'qlda_%']
+dbdiff.compareDatabases = async function (comparison, listTablePriority = []) {
   const { current: currentDatabase, target: targetDatabase } = comparison;
 
   try {
     const [dbout1, dbout2] = await Promise.all([
-      dbdiff.describeDatabase(currentDatabase.conn, currentDatabase.schema),
-      dbdiff.describeDatabase(targetDatabase.conn, targetDatabase.schema)
+      dbdiff.describeDatabase(currentDatabase.conn, currentDatabase.schema, listTablePriority),
+      dbdiff.describeDatabase(targetDatabase.conn, targetDatabase.schema, listTablePriority)
     ]);
     dbout1.schema = currentDatabase.schema;
     dbout2.schema = targetDatabase.schema;
@@ -782,7 +795,7 @@ if (require.main && module.id === require.main.id) {
   var conn2 = argv._[2]
   var schema2 = argv._[3]
   dbdiff.logger = function (msg) {
-    console.log(msg)
+    console.error(msg)
   }
   dbdiff.compareDatabases({ current: { conn: conn1, schema: schema1 }, target: { conn: conn2, schema: schema2 } }, function (err) {
     if (err) {

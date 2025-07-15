@@ -30,8 +30,8 @@ export const getColumns = async (id, tableName, schema = 'public') => {
   return response.data;
 };
 
-export const getAllUpdateTables = async (targetDatabaseId, currentDatabaseId) => {
-  const response = await api.post('/table/all-update-tables', { currentDatabaseId, targetDatabaseId }, { requiresAuth: true });
+export const getAllUpdateTables = async (targetDatabaseId, currentDatabaseId, tablePrefixes) => {
+  const response = await api.post('/table/all-update-tables', { currentDatabaseId, targetDatabaseId, listTablePriority: tablePrefixes }, { requiresAuth: true });
   return response.data;
 };
 

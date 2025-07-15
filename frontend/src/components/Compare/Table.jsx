@@ -28,8 +28,8 @@ const TableCompareComponent = () => {
   const searchParams = new URLSearchParams(location.search);
   const targetDatabaseId = searchParams.get('targetDatabaseId');
   const currentDatabaseId = searchParams.get('currentDatabaseId');
-  const tablePrefixes = searchParams.get('tablePrefixes').split(',');
-  const functionPrefixes = searchParams.get('functionPrefixes').split(',');
+  const tablePrefixes = searchParams.get('tablePrefixes') ? searchParams.get('tablePrefixes').split(',') : [];
+  const functionPrefixes = searchParams.get('functionPrefixes') ? searchParams.get('functionPrefixes').split(',') : [];
   const { Title, Paragraph, Text } = Typography;
   const [loading, setLoading] = useState(true);
   const [updateData, setUpdateData] = useState([]);
@@ -78,12 +78,13 @@ const TableCompareComponent = () => {
   useEffect(() => {
     fetchUpdate();
     fetchFunctionUpdate();
+
     console.log(tablePrefixes);
     console.log(functionPrefixes);
   }, [])
   const fetchUpdate = async () => {
     try {
-      const data = await getAllUpdateTables(targetDatabaseId, currentDatabaseId);
+      const data = await getAllUpdateTables(targetDatabaseId, currentDatabaseId, tablePrefixes);
       setUpdateData(data.metaData.allUpdate);
       setCurrentDatabase(data.metaData.currentDB);
       setTargetDatabase(data.metaData.targetDB);
@@ -98,7 +99,7 @@ const TableCompareComponent = () => {
   const fetchFunctionUpdate = async () => {
     try {
       setFunctionLoading(true);
-      const data = await getAllUpdateFunction(targetDatabaseId, currentDatabaseId);
+      const data = await getAllUpdateFunction(targetDatabaseId, currentDatabaseId, functionPrefixes);
       setFunctionUpdateData(data.metaData.resultUpdate);
       setFunctionCurrentDatabase(data.metaData.currentDatabase);
       setFunctionTargetDatabase(data.metaData.targetDatabase);
@@ -217,7 +218,7 @@ const TableCompareComponent = () => {
                           ellipsis={{ rows: 4 }}
                           style={{ marginBottom: 0 }}
                         >
-                          {item.stmts.join('\n')}
+                          {item.stmts.join('\n') || ''}
                         </Paragraph>
                       </div>
                     </div>

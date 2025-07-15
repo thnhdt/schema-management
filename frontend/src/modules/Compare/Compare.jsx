@@ -23,7 +23,7 @@ const CompareComponent = ({ title, ddlPrime = '', ddlSecond = '', patch = '', ta
             <Col xs={24} md={16} style={{ display: 'flex' }}>
               <Card
                 bordered={false}
-                style={{ flex: 1 }}
+                style={{ flex: 1, fontFamily: 'system-ui' }}
                 bodyStyle={{ height: '100%', overflow: 'auto', padding: 0 }}
               >
                 <DiffViewer useDarkTheme={false}
@@ -32,6 +32,7 @@ const CompareComponent = ({ title, ddlPrime = '', ddlSecond = '', patch = '', ta
                   filePrimeTitle={targetDatabase}
                   fileSecondTitle={currentDatabase}
                   styles={{
+                    fontFamily: 'system-ui',
                     variables: {
                       light: {
                         diffViewerBackground: '#ffffff',
@@ -59,7 +60,7 @@ const CompareComponent = ({ title, ddlPrime = '', ddlSecond = '', patch = '', ta
                     color: '#fff',
                     whiteSpace: 'pre-wrap',
                     wordBreak: 'break-word',
-                    fontFamily: 'Menlo, Consolas, "Courier New", monospace',
+                    fontFamily: 'system-ui',
                     fontSize: '0.9rem',
                   }}
                 >

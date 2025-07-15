@@ -10,7 +10,7 @@ export const dropFunction = async (schema, id, functionName, args = '') => {
   return response.data;
 };
 
-export const getAllUpdateFunction = async (targetDatabaseId, currentDatabaseId) => {
-  const response = await api.post('/function/all-update-functions', { currentDatabaseId, targetDatabaseId }, { requiresAuth: true });
+export const getAllUpdateFunction = async (targetDatabaseId, currentDatabaseId, functionPrefixes) => {
+  const response = await api.post('/function/all-update-functions', { currentDatabaseId, targetDatabaseId, listPriorityFunction: functionPrefixes }, { requiresAuth: true });
   return response.data;
 }

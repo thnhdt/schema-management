@@ -356,7 +356,8 @@ const getStringUrl = async (id) => {
 const getAllUpdateBetweenDatabases = async (
   targetDatabaseUrl,
   currentDatabaseUrl,
-  schema = 'public'
+  schema = 'public',
+  listTablePriority
 ) => {
   const allLines = [];
   dbdiff.logger = msg => allLines.push(msg);
@@ -364,14 +365,14 @@ const getAllUpdateBetweenDatabases = async (
   await dbdiff.compareDatabases({
     current: { conn: currentDatabaseUrl, schema },
     target: { conn: targetDatabaseUrl, schema }
-  });
+  }, listTablePriority);
   return allLines;
 };
 
-const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapTables) => {
+const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapTables, listTablePriority) => {
   const [targetDatabaseUrl, currentDatabaseUrl] = await Promise.all([getStringUrl(targetDatabaseId), getStringUrl(currentDatabaseId)]);
   const allUpdate = await getAllUpdateBetweenDatabases(
-    targetDatabaseUrl.stringConnectPGUrl, currentDatabaseUrl.stringConnectPGUrl
+    targetDatabaseUrl.stringConnectPGUrl, currentDatabaseUrl.stringConnectPGUrl, 'public', listTablePriority
   );
   const sequence = [];
   const index = [];

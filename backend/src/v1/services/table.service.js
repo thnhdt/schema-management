@@ -150,7 +150,8 @@ const getAllTables = async (reqBody) => {
 };
 
 const getAllUpdateOnTables = async (reqBody, user) => {
-  const { targetDatabaseId, currentDatabaseId } = reqBody;
+  const { targetDatabaseId, currentDatabaseId, listTablePriority = [] } = reqBody;
+  console.log("listTablePriority", listTablePriority)
   if (!user.isAdmin) {
     const permissions = user.userPermissions.some(role => role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) && role?.permissions.some(p => p.databaseId.toString() === currentDatabaseId));
     if (!permissions) throw new BadResponseError("Bạn không có quyền truy cập một trong hai DB !")
@@ -159,7 +160,7 @@ const getAllUpdateOnTables = async (reqBody, user) => {
   const allTablesInTargetDB = defaultAllTablesInTargetDB;
   const allTablesInCurrentDB = defaultAllTablesInCurrentDB;
   const mapTables = mergeTables(allTablesInTargetDB, allTablesInCurrentDB);
-  const sqlUpdateSchemaTables = await getAllUpdateOnTableUtil(targetDatabaseId, currentDatabaseId, mapTables);
+  const sqlUpdateSchemaTables = await getAllUpdateOnTableUtil(targetDatabaseId, currentDatabaseId, mapTables, listTablePriority);
   const allUpdate = Array.from(
     sqlUpdateSchemaTables.mapTables
   ).filter(([key, value]) => value?.stmts != null)

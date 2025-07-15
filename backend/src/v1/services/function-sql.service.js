@@ -7,8 +7,19 @@ const { diffLines } = require('diff');
 const databaseService = require('../services/database.service');
 const databaseModel = require('../models/database.model');
 
+
+const createConditionOnTables = (key, listTablePriority) => {
+  if (!listTablePriority || listTablePriority.length === 0) return '';
+
+  const condition = listTablePriority
+    .map(item => `${key} LIKE '${item}'`)
+    .join(' OR\n');
+
+  return condition;
+};
 const getAllFunctions = async (reqBody) => {
-  const { schema, id } = reqBody;
+  const { schema, id, listPriorityFunction = [] } = reqBody;
+  const condition = createConditionOnTables('p.proname', listPriorityFunction)
   const sequelizeDatabase = await databaseService.connectToDatabase({ id });
   const allFunction = await sequelizeDatabase.query(
     `WITH func AS (
@@ -26,13 +37,7 @@ const getAllFunctions = async (reqBody) => {
         ) AS argtypes
     FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = :schema AND NOT EXISTS (
-          SELECT 1
-          FROM pg_depend d
-          JOIN pg_extension e ON e.oid = d.refobjid
-          WHERE d.objid = p.oid
-            AND e.extname = 'postgis'
-      )
+    WHERE n.nspname = :schema ${listPriorityFunction.length > 0 ? `AND (${condition})` : ''}
 )
 
 SELECT
@@ -115,14 +120,14 @@ const mergeFunctions = (arrFunctionPrime, arrFunctionSecond) => {
 }
 
 const getAllUpdate = async (reqBody, user) => {
-  const { currentDatabaseId, targetDatabaseId } = reqBody;
+  const { currentDatabaseId, targetDatabaseId, listPriorityFunction = [] } = reqBody;
   if (!user.isAdmin) {
     const permissions = user.userPermissions.some(role => role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) && role?.permissions.some(p => p.databaseId.toString() === currentDatabaseId));
     if (!permissions) throw new BadResponseError("Bạn không có quyền truy cập một trong hai DB !");
   }
   const [currentDatabase, targetDatabase] = await Promise.all([databaseModel.findById(currentDatabaseId).lean(), databaseModel.findById(targetDatabaseId).lean()]);
   if (!currentDatabase || !targetDatabase) throw new BadResponseError("Một trong hai database không tồn tại !");
-  const [defaultAllCurrentFunction, defaultAllTargetFunction] = await Promise.all([getAllFunctions({ schema: 'public', id: currentDatabaseId }), getAllFunctions({ schema: 'public', id: targetDatabaseId })]);
+  const [defaultAllCurrentFunction, defaultAllTargetFunction] = await Promise.all([getAllFunctions({ schema: 'public', id: currentDatabaseId, listPriorityFunction: listPriorityFunction }), getAllFunctions({ schema: 'public', id: targetDatabaseId, listPriorityFunction: listPriorityFunction })]);
 
   const allCurrentFunction = defaultAllCurrentFunction.metaData.data;
   const allTargetFunction = defaultAllTargetFunction.metaData.data;
