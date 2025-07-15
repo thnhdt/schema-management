@@ -1,6 +1,6 @@
 const { POOLMAP } = require('./database.service');
 const { BadResponseError } = require('../cores/error.response');
-const { ddl } = require('../utils/helper.utils');
+const { ddl, generateAllDdls } = require('../utils/helper.utils');
 const { QueryTypes } = require('sequelize');
 const databaseService = require('../services/database.service');
 const { getAllUpdateOnTableUtil, getAllUpdateBetweenDatabases, getStringUrl, timeFormat } = require('../utils/helper.utils');
@@ -8,7 +8,10 @@ const HistoryModel = require('../models/history.model');
 const databaseModel = require('../models/database.model');
 const functionService = require('./function-sql.service');
 const { default: mongoose } = require('mongoose');
-
+function ddlTrigger(trigger) {
+  const allManipulations = trigger.event_manipulation.join(' OR ');
+  return `CREATE OR REPLACE TRIGGER \"${trigger.trigger_name}\" ${trigger.action_timing} ${allManipulations} ON "${trigger.event_object_table}" FOR EACH ${trigger.action_orientation} ${trigger.action_condition ? `WHEN ${trigger.action_condition} ` : ''}${trigger.action_statement};`
+}
 const mergeTables = (arrTableTarget, arrTableCurrent) => {
   const map = new Map();
 
@@ -55,52 +58,106 @@ const createSchema = async (reqBody) => {
     }
   }
 }
-
-const getAllTables = async (reqBody) => {
-  const { schema, id } = reqBody;
+const getAllTableUtils = async ({ id }) => {
   const client = await databaseService.connectToDatabase({ id });
-  const allTables = await client.query(
-    `SELECT
+  const schema = 'public';
+  // Truy vấn toàn bộ thông tin cột
+  const columnsQuery = `
+      SELECT
   table_name,         
   COUNT(column_name) AS columns
   FROM information_schema.columns
   WHERE table_schema NOT IN ('pg_catalog', 'information_schema') AND  table_schema = :schema
   GROUP BY table_name
-  ORDER BY table_name;`,
-    {
+  ORDER BY table_name;
+    `;
+  const triggersQuery = `
+      SELECT
+        event_object_table AS table_name,
+        trigger_name,
+        event_manipulation,
+        action_statement,
+        action_timing,
+        action_orientation,
+        action_condition
+      FROM information_schema.triggers
+      WHERE trigger_schema = :schema
+      ORDER BY event_object_table, trigger_name;
+    `;
+
+  const [tablesResult, triggersResult] = await Promise.all([
+    client.query(columnsQuery, {
       replacements: { schema },
       type: QueryTypes.SELECT
-    }
-  );
-  const allSqlSchema = await Promise.all(
-    allTables.map(async (table) => {
-      const text = await ddl("public", table.table_name, client);
-      const trigger = await getAllTriggerOnTable(table.table_name, client);
-      const triggerDdl = trigger.map(t => t.ddl).join('\n');
-      const textDDL = trigger.length > 0 ? text + '\n' + '-- Trigger trong bảng' + '\n' + triggerDdl : text;
-      return { ...table, text: textDDL, trigger};
-    })
-  );
+    }),
+    client.query(triggersQuery, {
+      replacements: { schema },
+      type: QueryTypes.SELECT
+    }),
+  ]);
+  const tableDdlMap = await generateAllDdls('public', tablesResult, client);
+  const groupBy = (arr, key) =>
+    arr.reduce((acc, cur) => {
+      (acc[cur[key]] = acc[cur[key]] || []).push(cur);
+      return acc;
+    }, {});
 
+  const triggersByTable = groupBy(triggersResult, 'table_name');
+
+  const allSchemas = tablesResult.map((tableName) => {
+    let allTrigger = [];
+    let getAllTriggers = triggersByTable[tableName.table_name] || [];
+    if (getAllTriggers.length > 0) {
+      const map = new Map();
+      for (let item of getAllTriggers) {
+        const key = item.trigger_name;
+        if (map.has(key)) {
+          map.get(key).event_manipulation = [...map.get(key).event_manipulation, item.event_manipulation];
+        } else {
+          map.set(key, { ...item, event_manipulation: [item.event_manipulation] });
+        }
+      }
+      allTrigger = Array.from(
+        map
+      ).map(([key, value]) => ({
+        key,
+        ...value,
+        ddl: ddlTrigger(value)
+      }));
+    }
+    const trigger = (allTrigger || []).map(t => ({ ...t, ddl: ddlTrigger(t) }));
+    const text = tableDdlMap.get(tableName.table_name);
+    return {
+      ...tableName,
+      text: trigger.length > 0 ? text + '\n' + '-- Trigger trong bảng' + '\n' + trigger.map(t => t.ddl).join('\n') : text,
+      trigger: trigger,
+    }
+  });
   await client.close();
+  return allSchemas;
+}
+const getAllTables = async (reqBody) => {
+  const { id } = reqBody;
+  const allSqlSchema = await getAllTableUtils({ id });
   const timestampsUpdate = await HistoryModel.find({ databaseName: new mongoose.Types.ObjectId(id) });
   return {
     code: 200,
     metaData: {
       data: allSqlSchema,
-      timestamps: timeFormat(timestampsUpdate[0].updatedAt)
+      timestamps: timestampsUpdate[0]?.updatedAt ? timeFormat(timestampsUpdate[0]?.updatedAt) : "Chưa cập nhật"
     }
   }
 };
+
 const getAllUpdateOnTables = async (reqBody, user) => {
   const { targetDatabaseId, currentDatabaseId } = reqBody;
   if (!user.isAdmin) {
     const permissions = user.userPermissions.some(role => role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) && role?.permissions.some(p => p.databaseId.toString() === currentDatabaseId));
     if (!permissions) throw new BadResponseError("Bạn không có quyền truy cập một trong hai DB !")
   }
-  const [defaultAllTablesInTargetDB, defaultAllTablesInCurrentDB] = await Promise.all([getAllTables({ schema: 'public', id: targetDatabaseId }), getAllTables({ schema: 'public', id: currentDatabaseId })]);
-  const allTablesInTargetDB = defaultAllTablesInTargetDB.metaData.data;
-  const allTablesInCurrentDB = defaultAllTablesInCurrentDB.metaData.data;
+  const [defaultAllTablesInTargetDB, defaultAllTablesInCurrentDB] = await Promise.all([getAllTableUtils({ id: targetDatabaseId }), getAllTableUtils({ id: currentDatabaseId })]);
+  const allTablesInTargetDB = defaultAllTablesInTargetDB;
+  const allTablesInCurrentDB = defaultAllTablesInCurrentDB;
   const mapTables = mergeTables(allTablesInTargetDB, allTablesInCurrentDB);
   const sqlUpdateSchemaTables = await getAllUpdateOnTableUtil(targetDatabaseId, currentDatabaseId, mapTables);
   const allUpdate = Array.from(
@@ -382,10 +439,7 @@ const syncDatabase = async (reqBody, user) => {
     await sequelize.close();
   }
 };
-function ddlTrigger(trigger) {
-  const allManipulations = trigger.event_manipulation.join(' OR ');
-  return `CREATE OR REPLACE TRIGGER \"${trigger.trigger_name}\" ${trigger.action_timing} ${allManipulations} ON "${trigger.event_object_table}" FOR EACH ${trigger.action_orientation} ${trigger.action_condition ? `WHEN ${trigger.action_condition} ` : ''}${trigger.action_statement};`
-}
+
 const getAllTriggerOnTable = async (tableName, sequelize) => {
   // const sequelize = await databaseService.connectToDatabase({ id });
   const getAllTriggers = await sequelize.query(

@@ -7,6 +7,13 @@ var pg = require('pg')
 var util = require('util')
 
 var dbdiff = module.exports = {}
+
+const { Pool } = require('pg');
+const groupBy = (arr, key) =>
+  arr.reduce((acc, cur) => {
+    (acc[cur[key]] = acc[cur[key]] || []).push(cur);
+    return acc;
+  }, {});
 function ddlTrigger(trigger) {
   const allManipulations = trigger.event_manipulation.join(' OR ');
   return `CREATE OR REPLACE TRIGGER \"${trigger.trigger_name}\" ${trigger.action_timing} ${allManipulations} ON "${trigger.event_object_table}" FOR EACH ${trigger.action_orientation} ${trigger.action_condition ? `WHEN ${trigger.action_condition} ` : ''}${trigger.action_statement};`
@@ -16,186 +23,353 @@ dbdiff.log = function () {
   dbdiff.logger(msg)
 }
 
-dbdiff.describeDatabase = function (conString, schemaname, callback) {
-  const client = new pg.Client(conString);
-  const schema = { tables: {} };
+// dbdiff.describeDatabase = function (conString, schemaname, callback) {
+//   const client = new pg.Client(conString);
+//   // const client = new Pool({
+//   //   connectionString: conString,
+//   //   max: 20,
+//   //   idleTimeoutMillis: 30000,
+//   //   connectionTimeoutMillis: 2000,
+//   // });
+//   const schema = { tables: {} };
 
-  txain(function (callback) {
-    client.connect(callback);
-  })
-    .then(function (client, done, callback) {
-      client.query('SELECT * FROM pg_tables WHERE schemaname = $1', [schemaname], callback);
-    })
-    .then(function (result, callback) {
-      const tables = result.rows;
-      callback(null, tables);
-    })
+//   txain(function (callback) {
+//     client.connect(callback);
+//   })
+//     .then(function (client, done, callback) {
+//       client.query('SELECT * FROM pg_tables WHERE schemaname = $1', [schemaname], callback);
+//     })
+//     .then(function (result, callback) {
+//       const tables = result.rows;
+//       callback(null, tables);
+//     })
 
-    .map(function (table, callback) {
-      const tableName = table.tablename;
-      const columnsQuery = multiline(function () {/*
-        SELECT
-          table_name,
-          column_name,
-          data_type,
-          udt_name,
-          character_maximum_length,
-          is_nullable,
-          '' as column_default
-        FROM INFORMATION_SCHEMA.COLUMNS
-        WHERE table_name = $1 AND table_schema = $2;
-      */});
+//     .map(function (table, callback) {
+//       const tableName = table.tablename;
+//       const columnsQuery = multiline(function () {/*
+//         SELECT
+//           table_name,
+//           column_name,
+//           data_type,
+//           udt_name,
+//           character_maximum_length,
+//           is_nullable,
+//           '' as column_default
+//         FROM INFORMATION_SCHEMA.COLUMNS
+//         WHERE table_name = $1 AND table_schema = $2;
+//       */});
 
-      client.query(columnsQuery, [tableName, schemaname], function (err, result) {
-        if (err) return callback(err);
+//       client.query(columnsQuery, [tableName, schemaname], function (err, result) {
+//         if (err) return callback(err);
 
-        const columns = result.rows.map(row => {
-          delete row.table_name;
-          return row;
+//         const columns = result.rows.map(row => {
+//           delete row.table_name;
+//           return row;
+//         });
+
+//         callback(null, { tableName, columns });
+//       });
+//     })
+
+//     .then(function (columnTables, callback) {
+//       columnTables.forEach(({ tableName, columns }) => {
+//         schema.tables[tableName] = { columns, triggers: [] };
+//       });
+
+//       callback(null, columnTables.map(t => t.tableName)); // Truyền danh sách bảng cho bước sau
+//     })
+
+//     .map(function (tableName, callback) {
+//       const triggersQuery = multiline(function () {/*
+//         SELECT
+//           event_object_table,
+//           trigger_name,
+//           event_manipulation,
+//           action_statement,
+//           action_timing,
+//           action_orientation,
+//           action_condition
+//         FROM information_schema.triggers
+//         WHERE event_object_table = $1
+//         ORDER BY event_object_table, event_manipulation;
+//       */});
+
+//       client.query(triggersQuery, [tableName], function (err, result) {
+//         if (err) return callback(err);
+
+//         const map = new Map();
+//         for (const item of result.rows) {
+//           const key = item.trigger_name;
+//           if (map.has(key)) {
+//             map.get(key).event_manipulation.push(item.event_manipulation);
+//           } else {
+//             map.set(key, { ...item, event_manipulation: [item.event_manipulation] });
+//           }
+//         }
+
+//         const triggers = Array.from(map).map(([key, value]) => ({ key, ...value }));
+
+//         callback(null, { tableName, triggers });
+//       });
+//     })
+
+//     .then(function (triggerTables, callback) {
+//       triggerTables.forEach(({ tableName, triggers }) => {
+//         if (!schema.tables[tableName]) {
+//           schema.tables[tableName] = { columns: [], triggers: [] };
+//         }
+//         schema.tables[tableName].triggers = triggers;
+//       });
+
+//       callback(null);
+//     })
+
+//     .then(function (callback) {
+//       const query = multiline(function () {/*
+//         SELECT
+//           i.relname as indname,
+//           split_part(CAST(idx.indrelid::regclass as TEXT),'.',2),
+//           am.amname as indam,
+//           idx.indkey,
+//           ARRAY(
+//             SELECT pg_get_indexdef(idx.indexrelid, k + 1, true)
+//             FROM generate_subscripts(idx.indkey, 1) as k
+//             ORDER BY k
+//           ) AS indkey_names,
+//           idx.indexprs IS NOT NULL as indexprs,
+//           idx.indpred IS NOT NULL as indpred,
+//           ns.nspname,
+//           t.relname AS tablename
+//         FROM pg_index as idx
+//         JOIN pg_class as i ON i.oid = idx.indexrelid
+//         JOIN pg_am as am ON i.relam = am.oid
+//         JOIN pg_class AS t ON t.oid = idx.indrelid
+//         JOIN pg_namespace as ns ON ns.oid = i.relnamespace
+//         AND ns.nspname NOT IN ('pg_catalog', 'pg_toast')
+//         WHERE ns.nspname = $1;
+//       */});
+
+//       client.query(query, [schemaname], callback);
+//     })
+
+//     .then(function (indexes, callback) {
+//       schema.indexes = indexes.rows;
+
+//       const query = multiline(function () {/*
+//         SELECT
+//           con.conname AS constraint_name,
+//           n.nspname AS schema_name,
+//           rel.relname AS table_name,
+//           con.contype AS constraint_type,
+//           pg_get_constraintdef(con.oid) AS definition
+//         FROM pg_constraint con
+//         JOIN pg_class rel ON rel.oid = con.conrelid
+//         JOIN pg_namespace n ON n.oid = rel.relnamespace
+//         WHERE n.nspname = $1;
+//       */});
+
+//       client.query(query, [schemaname], callback);
+//     })
+
+//     .then(function (constraints, callback) {
+//       schema.constraints = constraints.rows;
+
+//       const query = multiline(function () {/*
+//         SELECT 
+//          sequence_name,
+//          data_type,
+//          numeric_precision,
+//          numeric_precision_radix,
+//          numeric_scale,
+//          start_value,
+//          minimum_value,
+//          maximum_value,
+//          increment,
+//          cycle_option
+//         FROM information_schema.sequences
+//         WHERE sequence_schema = $1;
+//       */});
+
+//       client.query(query, [schemaname], callback);
+//     })
+
+//     .then(function (result, callback) {
+//       schema.sequences = result.rows;
+//       schema.sequences.forEach(sequence => {
+//         sequence.name = sequence.sequence_name;
+//       });
+
+//       client.query('SELECT current_schema()', callback);
+//     })
+
+//     .end(function (err, result) {
+//       client.end();
+//       if (err) return callback(err);
+//       // callback(null, schema);
+//       return schema;
+//     });
+// };
+
+
+dbdiff.describeDatabase = async function (conString, schemaname) {
+  const client = new Pool({
+    connectionString: conString,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  });
+
+  const schema = { tables: {}, indexes: [], constraints: [], sequences: [] };
+
+  const connection = await client.connect();
+
+  try {
+    // Lấy danh sách bảng vả trigger
+    const tablesRes = await connection.query(
+      'SELECT * FROM pg_tables WHERE schemaname = $1',
+      [schemaname]
+    );
+    const tables = tablesRes.rows;
+
+    const columnsQuery = `
+  SELECT
+    table_name,
+    column_name,
+    data_type,
+    udt_name,
+    character_maximum_length,
+    is_nullable,
+    '' as column_default
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE table_schema = $1;
+`;
+
+    const triggersQuery = `
+  SELECT
+    event_object_table AS table_name,
+    trigger_name,
+    event_manipulation,
+    action_statement,
+    action_timing,
+    action_orientation,
+    action_condition
+  FROM information_schema.triggers
+  WHERE event_object_schema = $1
+  ORDER BY event_object_table, trigger_name, event_manipulation;
+`;
+
+    const [columnsRes, triggersRes] = await Promise.all([
+      connection.query(columnsQuery, [schemaname]),
+      connection.query(triggersQuery, [schemaname])
+    ]);
+
+    const columnsGrouped = groupBy(columnsRes.rows, 'table_name');
+
+    const triggerMapByTable = new Map();
+    for (const row of triggersRes.rows) {
+      const tbl = row.table_name;
+      const key = row.trigger_name;
+      if (!triggerMapByTable.has(tbl)) triggerMapByTable.set(tbl, new Map());
+
+      const tblTriggerMap = triggerMapByTable.get(tbl);
+      if (tblTriggerMap.has(key)) {
+        tblTriggerMap.get(key).event_manipulation.push(row.event_manipulation);
+      } else {
+        tblTriggerMap.set(key, {
+          ...row,
+          event_manipulation: [row.event_manipulation],
         });
+      }
+    }
 
-        callback(null, { tableName, columns });
-      });
-    })
+    for (const table of tables) {
+      const tableName = table.tablename;
+      const columns = columnsGrouped[tableName] || [];
 
-    .then(function (columnTables, callback) {
-      columnTables.forEach(({ tableName, columns }) => {
-        schema.tables[tableName] = { columns, triggers: [] };
-      });
+      const triggersMap = triggerMapByTable.get(tableName) || new Map();
+      const triggers = Array.from(triggersMap.values());
 
-      callback(null, columnTables.map(t => t.tableName)); // Truyền danh sách bảng cho bước sau
-    })
+      schema.tables[tableName] = {
+        columns,
+        triggers,
+      };
+    }
+    // Lấy danh sách indexes
+    const indexesQuery = `
+      SELECT
+        i.relname as indname,
+        split_part(CAST(idx.indrelid::regclass as TEXT),'.',2),
+        am.amname as indam,
+        idx.indkey,
+        ARRAY(
+          SELECT pg_get_indexdef(idx.indexrelid, k + 1, true)
+          FROM generate_subscripts(idx.indkey, 1) as k
+          ORDER BY k
+        ) AS indkey_names,
+        idx.indexprs IS NOT NULL as indexprs,
+        idx.indpred IS NOT NULL as indpred,
+        ns.nspname,
+        t.relname AS tablename
+      FROM pg_index as idx
+      JOIN pg_class as i ON i.oid = idx.indexrelid
+      JOIN pg_am as am ON i.relam = am.oid
+      JOIN pg_class AS t ON t.oid = idx.indrelid
+      JOIN pg_namespace as ns ON ns.oid = i.relnamespace
+      AND ns.nspname NOT IN ('pg_catalog', 'pg_toast')
+      WHERE ns.nspname = $1;
+    `;
 
-    .map(function (tableName, callback) {
-      const triggersQuery = multiline(function () {/*
-        SELECT
-          event_object_table,
-          trigger_name,
-          event_manipulation,
-          action_statement,
-          action_timing,
-          action_orientation,
-          action_condition
-        FROM information_schema.triggers
-        WHERE event_object_table = $1
-        ORDER BY event_object_table, event_manipulation;
-      */});
+    const indexesRes = await connection.query(indexesQuery, [schemaname]);
+    schema.indexes = indexesRes.rows;
 
-      client.query(triggersQuery, [tableName], function (err, result) {
-        if (err) return callback(err);
+    // Lấy danh sách constraints
+    const constraintsQuery = `
+      SELECT
+        con.conname AS constraint_name,
+        n.nspname AS schema_name,
+        rel.relname AS table_name,
+        con.contype AS constraint_type,
+        pg_get_constraintdef(con.oid) AS definition
+      FROM pg_constraint con
+      JOIN pg_class rel ON rel.oid = con.conrelid
+      JOIN pg_namespace n ON n.oid = rel.relnamespace
+      WHERE n.nspname = $1;
+    `;
 
-        const map = new Map();
-        for (const item of result.rows) {
-          const key = item.trigger_name;
-          if (map.has(key)) {
-            map.get(key).event_manipulation.push(item.event_manipulation);
-          } else {
-            map.set(key, { ...item, event_manipulation: [item.event_manipulation] });
-          }
-        }
+    const constraintsRes = await connection.query(constraintsQuery, [schemaname]);
+    schema.constraints = constraintsRes.rows;
 
-        const triggers = Array.from(map).map(([key, value]) => ({ key, ...value }));
+    // Lấy sequences
+    const sequencesQuery = `
+      SELECT 
+        sequence_name,
+        data_type,
+        numeric_precision,
+        numeric_precision_radix,
+        numeric_scale,
+        start_value,
+        minimum_value,
+        maximum_value,
+        increment,
+        cycle_option
+      FROM information_schema.sequences
+      WHERE sequence_schema = $1;
+    `;
 
-        callback(null, { tableName, triggers });
-      });
-    })
+    const sequencesRes = await connection.query(sequencesQuery, [schemaname]);
+    schema.sequences = sequencesRes.rows.map(seq => ({
+      ...seq,
+      name: seq.sequence_name,
+    }));
 
-    .then(function (triggerTables, callback) {
-      triggerTables.forEach(({ tableName, triggers }) => {
-        if (!schema.tables[tableName]) {
-          schema.tables[tableName] = { columns: [], triggers: [] };
-        }
-        schema.tables[tableName].triggers = triggers;
-      });
-
-      callback(null);
-    })
-
-    .then(function (callback) {
-      const query = multiline(function () {/*
-        SELECT
-          i.relname as indname,
-          split_part(CAST(idx.indrelid::regclass as TEXT),'.',2),
-          am.amname as indam,
-          idx.indkey,
-          ARRAY(
-            SELECT pg_get_indexdef(idx.indexrelid, k + 1, true)
-            FROM generate_subscripts(idx.indkey, 1) as k
-            ORDER BY k
-          ) AS indkey_names,
-          idx.indexprs IS NOT NULL as indexprs,
-          idx.indpred IS NOT NULL as indpred,
-          ns.nspname,
-          t.relname AS tablename
-        FROM pg_index as idx
-        JOIN pg_class as i ON i.oid = idx.indexrelid
-        JOIN pg_am as am ON i.relam = am.oid
-        JOIN pg_class AS t ON t.oid = idx.indrelid
-        JOIN pg_namespace as ns ON ns.oid = i.relnamespace
-        AND ns.nspname NOT IN ('pg_catalog', 'pg_toast')
-        WHERE ns.nspname = $1;
-      */});
-
-      client.query(query, [schemaname], callback);
-    })
-
-    .then(function (indexes, callback) {
-      schema.indexes = indexes.rows;
-
-      const query = multiline(function () {/*
-        SELECT
-          con.conname AS constraint_name,
-          n.nspname AS schema_name,
-          rel.relname AS table_name,
-          con.contype AS constraint_type,
-          pg_get_constraintdef(con.oid) AS definition
-        FROM pg_constraint con
-        JOIN pg_class rel ON rel.oid = con.conrelid
-        JOIN pg_namespace n ON n.oid = rel.relnamespace
-        WHERE n.nspname = $1;
-      */});
-
-      client.query(query, [schemaname], callback);
-    })
-
-    .then(function (constraints, callback) {
-      schema.constraints = constraints.rows;
-
-      const query = multiline(function () {/*
-        SELECT 
-         sequence_name,
-         data_type,
-         numeric_precision,
-         numeric_precision_radix,
-         numeric_scale,
-         start_value,
-         minimum_value,
-         maximum_value,
-         increment,
-         cycle_option
-        FROM information_schema.sequences
-        WHERE sequence_schema = $1;
-      */});
-
-      client.query(query, [schemaname], callback);
-    })
-
-    .then(function (result, callback) {
-      schema.sequences = result.rows;
-      schema.sequences.forEach(sequence => {
-        sequence.name = sequence.sequence_name;
-      });
-
-      client.query('SELECT current_schema()', callback);
-    })
-
-    .end(function (err, result) {
-      client.end();
-      if (err) return callback(err);
-      callback(null, schema);
-    });
-};
-
+    return schema;
+  } catch (err) {
+    throw err;
+  } finally {
+    connection.release();
+    await client.end();
+  }
+}
 function dataType(info) {
   var type
   if (info.data_type === 'ARRAY') {
@@ -490,17 +664,15 @@ function compareTriggers(table1, table2) {
 dbdiff.compareSchemas = function (db1, db2) {
   var tableNames1 = _.keys(db1.tables).sort()
   var tableNames2 = _.keys(db2.tables).sort()
-
   var diff1 = _.difference(tableNames1, tableNames2)
   var diff2 = _.difference(tableNames2, tableNames1)
+
+  var foreignKeyConstraints = [];
 
   diff1.forEach(function (tableName) {
     dbdiff.log('DROP TABLE IF EXISTS "%s"."%s" CASCADE;', db2.schema, tableName)
     compareTriggers(db1.tables[tableName], { triggers: [] })
   })
-
-  // Gom các FOREIGN KEY constraint để sinh sau
-  var foreignKeyConstraints = [];
 
   diff2.forEach(function (tableName) {
     var columns = db2.tables[tableName].columns.map(function (col) {
@@ -552,27 +724,46 @@ dbdiff.compareSchemas = function (db1, db2) {
     dbdiff.log('ALTER TABLE "%s"."%s" ADD CONSTRAINT %s %s;', db2.schema, c.table_name, c.constraint_name, c.definition)
   })
 }
+dbdiff.compareDatabases = async function (comparison, callback) {
+  const { current: currentDatabase, target: targetDatabase } = comparison;
 
-dbdiff.compareDatabases = function (comparison, callback) {
-  var currentDatabase = comparison.current
-  var targetDatabase = comparison.target
-  var dbout1, dbout2
-  txain(function (callback) {
-    dbdiff.describeDatabase(currentDatabase.conn, currentDatabase.schema, callback)
-  })
-    .then(function (dbout, callback) {
-      dbout1 = dbout
-      dbout1.schema = currentDatabase.schema
-      dbdiff.describeDatabase(targetDatabase.conn, targetDatabase.schema, callback)
-    })
-    .then(function (dbout, callback) {
-      dbout2 = dbout
-      dbout2.schema = targetDatabase.schema
-      dbdiff.compareSchemas(dbout1, dbout2)
-      callback()
-    })
-    .end(callback)
-}
+  try {
+    const [dbout1, dbout2] = await Promise.all([
+      dbdiff.describeDatabase(currentDatabase.conn, currentDatabase.schema),
+      dbdiff.describeDatabase(targetDatabase.conn, targetDatabase.schema)
+    ]);
+    dbout1.schema = currentDatabase.schema;
+    dbout2.schema = targetDatabase.schema;
+
+    const diff = dbdiff.compareSchemas(dbout1, dbout2);
+    // callback(null, diff);
+
+    return diff;
+  } catch (err) {
+    // callback(err);
+    console.error(err.message)
+  }
+};
+// dbdiff.compareDatabases = function (comparison, callback) {
+//   var currentDatabase = comparison.current
+//   var targetDatabase = comparison.target
+//   var dbout1, dbout2
+//   txain(function (callback) {
+//     dbdiff.describeDatabase(currentDatabase.conn, currentDatabase.schema, callback)
+//   })
+//     .then(function (dbout, callback) {
+//       dbout1 = dbout
+//       dbout1.schema = currentDatabase.schema
+//       dbdiff.describeDatabase(targetDatabase.conn, targetDatabase.schema, callback)
+//     })
+//     // .then(function (dbout, callback) {
+//     //   dbout2 = dbout
+//     //   dbout2.schema = targetDatabase.schema
+//     //   dbdiff.compareSchemas(dbout1, dbout2)
+//     //   callback()
+//     // })
+//     .end(callback)
+// }
 
 if (require.main && module.id === require.main.id) {
   var yargs = require('yargs')

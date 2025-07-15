@@ -1,5 +1,9 @@
 import React from 'react';
+import {
+  ArrowLeftOutlined
+} from '@ant-design/icons';
 import { Typography, Row, Col, Card, Layout, Space, Button } from 'antd';
+// import { useLocation, useNavigate } from 'react-router-dom';
 import DiffViewer from "./DiffViewer";
 
 const { Title } = Typography;
@@ -8,9 +12,9 @@ const CompareComponent = ({ title, ddlPrime = '', ddlSecond = '', patch = '', ta
   return (
     <Layout style={{ minHeight: '100vh', background: '#fafafa' }}>
       <Content style={{ maxWidth: 1440, margin: '0 auto', padding: '2rem' }}>
-          <Button onClick={onBack} style={{ marginBottom: 16 }}>
-            ← Quay lại
-          </Button>
+        <Button onClick={onBack} style={{ marginBottom: 16 }}>
+          ← Quay lại
+        </Button>
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
           <Title level={2} style={{ margin: 0 }}>
             {title}

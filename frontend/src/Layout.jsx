@@ -29,7 +29,7 @@ const AppLayout = () => {
     dispatch(logoutAction());
     sessionStorage.removeItem('userId');
     persistor.purge();
-    navigate('/', { replace: true });
+    navigate('/');
     logout().catch(() => { });
   }
   return (

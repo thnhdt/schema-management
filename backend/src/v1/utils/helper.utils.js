@@ -37,6 +37,116 @@ function unescapeSqlString(str) {
     .replace(/\\\\/g, '\\');
 }
 
+async function generateAllDdls(schema = 'public', tableNames, client) {
+  const nameList = tableNames.map(name => `'${name.table_name}'`).join(',');
+  const [columns, pks, uqs, fks, chks] = await Promise.all([
+    client.query(
+      `SELECT table_name, column_name, data_type, is_nullable, column_default, ordinal_position
+       FROM information_schema.columns
+       WHERE table_schema = :schema AND table_name IN (${nameList})
+       ORDER BY table_name, ordinal_position`,
+      { replacements: { schema }, type: QueryTypes.SELECT }
+    ),
+    client.query(
+      `SELECT tc.table_name, tc.constraint_name, string_agg(kcu.column_name, ', ') AS cols
+       FROM information_schema.table_constraints tc
+       JOIN information_schema.key_column_usage kcu 
+         ON tc.constraint_name = kcu.constraint_name
+       WHERE tc.table_schema = :schema AND tc.constraint_type = 'PRIMARY KEY' 
+         AND tc.table_name IN (${nameList})
+       GROUP BY tc.table_name, tc.constraint_name`,
+      { replacements: { schema }, type: QueryTypes.SELECT }
+    ),
+    client.query(
+      `SELECT tc.table_name, tc.constraint_name, string_agg(kcu.column_name, ', ') AS cols
+       FROM information_schema.table_constraints tc
+       JOIN information_schema.key_column_usage kcu 
+         ON tc.constraint_name = kcu.constraint_name
+       WHERE tc.table_schema = :schema AND tc.constraint_type = 'UNIQUE' 
+         AND tc.table_name IN (${nameList})
+       GROUP BY tc.table_name, tc.constraint_name`,
+      { replacements: { schema }, type: QueryTypes.SELECT }
+    ),
+    client.query(
+      `SELECT tc.table_name, tc.constraint_name,
+              string_agg(kcu.column_name, ', ') AS cols,
+              ccu.table_schema AS ref_schema,
+              ccu.table_name AS ref_table,
+              string_agg(ccu.column_name, ', ') AS ref_cols
+       FROM information_schema.table_constraints tc
+       JOIN information_schema.key_column_usage kcu 
+         ON tc.constraint_name = kcu.constraint_name
+       JOIN information_schema.constraint_column_usage ccu
+         ON tc.constraint_name = ccu.constraint_name
+       WHERE tc.table_schema = :schema AND tc.constraint_type = 'FOREIGN KEY'
+         AND tc.table_name IN (${nameList})
+       GROUP BY tc.table_name, tc.constraint_name, ccu.table_schema, ccu.table_name`,
+      { replacements: { schema }, type: QueryTypes.SELECT }
+    ),
+    client.query(
+      `SELECT tc.table_name, cc.constraint_name, cc.check_clause
+       FROM information_schema.table_constraints tc
+       JOIN information_schema.check_constraints cc 
+         ON tc.constraint_name = cc.constraint_name
+       WHERE tc.table_schema = :schema AND tc.constraint_type = 'CHECK' 
+         AND tc.table_name IN (${nameList})`,
+      { replacements: { schema }, type: QueryTypes.SELECT }
+    ),
+  ]);
+
+  const groupByTable = rows =>
+    rows.reduce((acc, row) => {
+      const t = row.table_name;
+      if (!acc[t]) acc[t] = [];
+      acc[t].push(row);
+      return acc;
+    }, {});
+
+  const groupedCols = groupByTable(columns);
+  const groupedPks = groupByTable(pks);
+  const groupedUqs = groupByTable(uqs);
+  const groupedFks = groupByTable(fks);
+  const groupedChks = groupByTable(chks);
+
+  const ddlMap = new Map();
+
+  for (const tableOb of tableNames) {
+    const table = tableOb.table_name;
+    const cols = groupedCols[table] || [];
+    const pk = groupedPks[table] || [];
+    const uq = groupedUqs[table] || [];
+    const fk = groupedFks[table] || [];
+    const chk = groupedChks[table] || [];
+
+    const colLines = cols.map((c) => {
+      const parts = [
+        `  "${c.column_name}"`,
+        fmtType(c),
+        c.column_default ? `DEFAULT ${c.column_default}` : "",
+        c.is_nullable === "NO" ? "NOT NULL" : "",
+      ].filter(Boolean);
+      return parts.join(" ");
+    });
+
+    const pkLines = pk.map(r => `  CONSTRAINT "${r.constraint_name}" PRIMARY KEY (${r.cols})`);
+    const uqLines = uq.map(r => `  CONSTRAINT "${r.constraint_name}" UNIQUE (${r.cols})`);
+    const fkLines = fk.map(
+      r =>
+        `  CONSTRAINT "${r.constraint_name}" FOREIGN KEY (${r.cols}) REFERENCES "${r.ref_schema}"."${r.ref_table}" (${r.ref_cols})`
+    );
+    const chkLines = chk.map(r => `  CONSTRAINT "${r.constraint_name}" CHECK (${r.check_clause})`);
+
+    const allLines = [...colLines, ...pkLines, ...uqLines, ...fkLines, ...chkLines];
+    const rawDdl = `CREATE TABLE "${schema}"."${table}" (\n` + allLines.join(',\n') + `\n);`;
+
+    const rawSql = unescapeSqlString(rawDdl.replace(/^"|"$/g, ''));
+    const formattedSql = format(rawSql, {
+      language: 'postgresql'
+    });
+    ddlMap.set(table, formattedSql);
+  }
+  return ddlMap;
+}
 const ddl = async (schema, table, client) => {
   try {
     /* ---------- COLUMNS TYPE ------------------------------------------------ */
@@ -175,6 +285,8 @@ const ddlPatterns = [
   { type: 'CREATE', target: 'TABLE', re: /create\s+table\s+(?:if\s+not\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
   { type: 'DELETE', target: 'TABLE', re: /drop\s+table\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
   { type: 'UPDATE', target: 'TABLE', re: /alter\s+table\s+(?:only\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'UPDATE', target: 'TABLE', re: /create\s+(?:unique\s+|bitmap\s+)?index\s+(?:if\s+not\s+exists\s+)?["`]?[\w]+["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'UPDATE', target: 'TABLE', re: /drop\s+index\s+(?:concurrently\s+)?(?:if\s+exists\s+)?["`]?[\w]+["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
   { type: 'UPDATE', target: 'TRIGGER', re: /create\s+(?:or\s+replace\s+)?trigger\s+["`]?([\w]+)["`]?\s+(?:before|after|instead\s+of)\s+[\w\s,]+\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?(?:\s+for\s+each\s+row)?(?:\s+when\s*\(.*?\))?/i },
   { type: 'UPDATE', target: 'TRIGGER', re: /drop\s+trigger\s+(?:if\s+exists\s+)?["`]?([\w]+)["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
 ];
@@ -241,26 +353,20 @@ const getStringUrl = async (id) => {
   const stringConnectPGUrl = `postgres://${targetDatabase.username}:${targetDatabase.password}@${targetNode.host}:${Number(targetNode.port)}/${targetDatabase.database}`
   return { stringConnectPGUrl, database: `${targetDatabase.username}:${targetDatabase.database}` };
 }
-const getAllUpdateBetweenDatabases = (
+const getAllUpdateBetweenDatabases = async (
   targetDatabaseUrl,
   currentDatabaseUrl,
   schema = 'public'
-) => new Promise((resolve, reject) => {
-
+) => {
   const allLines = [];
   dbdiff.logger = msg => allLines.push(msg);
 
-  dbdiff.compareDatabases(
-    {
-      current: { conn: currentDatabaseUrl, schema },
-      target: { conn: targetDatabaseUrl, schema }
-    },
-    (err) => {
-      if (err) return reject(err);
-      resolve(allLines);
-    }
-  );
-});
+  await dbdiff.compareDatabases({
+    current: { conn: currentDatabaseUrl, schema },
+    target: { conn: targetDatabaseUrl, schema }
+  });
+  return allLines;
+};
 
 const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapTables) => {
   const [targetDatabaseUrl, currentDatabaseUrl] = await Promise.all([getStringUrl(targetDatabaseId), getStringUrl(currentDatabaseId)]);
@@ -271,6 +377,7 @@ const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapT
   const index = [];
   for (const line of allUpdate) {
     const info = parseDDL(line);
+    // console.log(line);
     if (!info) {
       if (parseDDLSequence(line)) {
         sequence.push({ key: parseDDLSequence(line).sequence, ddl: line, type: parseDDLSequence(line).type })
@@ -330,5 +437,6 @@ module.exports = {
   getAllUpdateBetweenDatabases,
   getStringUrl,
   sequenceDescription,
-  timeFormat
+  timeFormat,
+  generateAllDdls
 }

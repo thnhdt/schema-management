@@ -23,7 +23,7 @@ function Main() {
       const username = user.name;
       const roles = Array.isArray(user.roles) ? user.roles : [];
       dispatch(setCredentials({ token, roles, userId, username, isAdmin: user.isAdmin }));
-      navigate('/node', { replace: true });
+      navigate('/node');
     } catch (error) {
       messageApi.open({
         type: 'error',
