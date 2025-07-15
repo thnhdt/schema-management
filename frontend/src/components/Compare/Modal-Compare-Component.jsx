@@ -22,6 +22,8 @@ const ModalCompareComponent = (props) => {
   const [functionInput, setFunctionInput] = useState('');
   const tableInputRef = useRef(null);
   const functionInputRef = useRef(null);
+  const [selectedTablePrefixes, setSelectedTablePrefixes] = useState([]);
+  const [selectedFunctionPrefixes, setSelectedFunctionPrefixes] = useState([]);
 
   let indexTable = 0;
   const onPrefixChangeTable = event => {
@@ -54,8 +56,8 @@ const ModalCompareComponent = (props) => {
     navigate(
       `/compare?` +
       `targetDatabaseId=${selectedTargetDb}&currentDatabaseId=${selectedCurrentDb}` +
-      `&tablePrefixes=${encodeURIComponent(tablePrefixes.join(','))}` +
-      `&functionPrefixes=${encodeURIComponent(functionPrefixes.join(','))}`
+      `&tablePrefixes=${encodeURIComponent(selectedTablePrefixes.join(','))}` +
+      `&functionPrefixes=${encodeURIComponent(selectedFunctionPrefixes.join(','))}`
     );
   }
   useEffect(() => {
@@ -240,6 +242,8 @@ const ModalCompareComponent = (props) => {
                         </>
                       )}
                       options={tablePrefixes.map(item => ({ label: item, value: item }))}
+                      value={selectedTablePrefixes}
+                      onChange={setSelectedTablePrefixes}
                     />
                   </Form.Item>
                 </Col>
@@ -272,6 +276,8 @@ const ModalCompareComponent = (props) => {
                         </>
                       )}
                       options={functionPrefixes.map(item => ({ label: item, value: item }))}
+                      value={selectedFunctionPrefixes}
+                      onChange={setSelectedFunctionPrefixes}
                     />
                   </Form.Item>
                 </Col>
