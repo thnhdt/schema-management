@@ -28,6 +28,8 @@ const TableCompareComponent = () => {
   const searchParams = new URLSearchParams(location.search);
   const targetDatabaseId = searchParams.get('targetDatabaseId');
   const currentDatabaseId = searchParams.get('currentDatabaseId');
+  const tablePrefixes = searchParams.get('tablePrefixes').split(',');
+  const functionPrefixes = searchParams.get('functionPrefixes').split(',');
   const { Title, Paragraph, Text } = Typography;
   const [loading, setLoading] = useState(true);
   const [updateData, setUpdateData] = useState([]);
@@ -76,6 +78,8 @@ const TableCompareComponent = () => {
   useEffect(() => {
     fetchUpdate();
     fetchFunctionUpdate();
+    console.log(tablePrefixes);
+    console.log(functionPrefixes);
   }, [])
   const fetchUpdate = async () => {
     try {

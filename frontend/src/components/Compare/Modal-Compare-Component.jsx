@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { Space, Select, Card, Typography, Form, Row, Col, message } from "antd";
+import React, { useState, useEffect, useRef } from "react";
+import { Space, Select, Card, Typography, Form, Row, Col, message, Divider, Input, Button } from "antd";
 import { useNavigate } from "react-router-dom";
 import { getAllNodes, getAllDatabaseInHost } from "../../api";
 import { ModalComponent } from "../../util/helper";
-import { SwapOutlined, DatabaseOutlined } from '@ant-design/icons';
+import { SwapOutlined, DatabaseOutlined, PlusOutlined  } from '@ant-design/icons';
 
 const ModalCompareComponent = (props) => {
   const { onCancel, visible } = props;
@@ -16,10 +16,46 @@ const ModalCompareComponent = (props) => {
   const [selectedTargetDb, setSelectedTargetDb] = useState(null);
   const [selectedCurrentDb, setSelectedCurrentDb] = useState(null);
   const [messageApi, contextHolder] = message.useMessage();
+  const [tablePrefixes, setTablePrefixes] = useState(['fw', 'cb']);
+  const [functionPrefixes, setFunctionPrefixes] = useState([]);
+  const [tableInput, setTableInput] = useState('');
+  const [functionInput, setFunctionInput] = useState('');
+  const tableInputRef = useRef(null);
+  const functionInputRef = useRef(null);
+
+  let indexTable = 0;
+  const onPrefixChangeTable = event => {
+    setTableInput(event.target.value);
+  };
+  const addItemTable = e => {
+    e.preventDefault();
+    setTablePrefixes([...tablePrefixes, tableInput || `New item ${indexTable++}`]);
+    setTableInput('');
+    setTimeout(() => {
+      var _a;
+      (_a = tableInputRef.current) === null || _a === void 0 ? void 0 : _a.focus();
+    }, 0);
+  };
+  let indexFunction = 0;
+  const onPrefixChangeFunction = event => {
+    setFunctionInput(event.target.value);
+  };
+  const addItemFunction = e => {
+    e.preventDefault();
+    setFunctionPrefixes([...functionPrefixes, functionInput || `New item ${indexFunction++}`]);
+    setFunctionInput('');
+    setTimeout(() => {
+      var _a;
+      (_a = functionInputRef.current) === null || _a === void 0 ? void 0 : _a.focus();
+    }, 0);
+  };
+
   const onOk = () => {
     navigate(
       `/compare?` +
-      `targetDatabaseId=${selectedTargetDb}&currentDatabaseId=${selectedCurrentDb}`
+      `targetDatabaseId=${selectedTargetDb}&currentDatabaseId=${selectedCurrentDb}` +
+      `&tablePrefixes=${encodeURIComponent(tablePrefixes.join(','))}` +
+      `&functionPrefixes=${encodeURIComponent(functionPrefixes.join(','))}`
     );
   }
   useEffect(() => {
@@ -171,6 +207,72 @@ const ModalCompareComponent = (props) => {
                         onChange={(value) => setSelectedTargetDb(value)}
                       />
                     </div>
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Tiền tố cho Table">
+                    <Select
+                      mode="multiple"
+                      placeholder="Tiền tố cho Table"
+                      style={{ width: '100%' }}
+                      popupRender={menu => (
+                        <>
+                          {menu}
+                          <Divider style={{ margin: '8px 0' }} />
+                          <Space style={{ padding: '0 8px 4px' }}>
+                            <Input
+                              placeholder="Thêm tiền tố"
+                              ref={tableInputRef}
+                              value={tableInput}
+                              onChange={onPrefixChangeTable}
+                              onKeyDown={e => e.stopPropagation()}
+                            />
+                            <Button
+                              type="text"
+                              icon={<PlusOutlined />}
+                              onClick={addItemTable}
+                            >
+                              Add item
+                            </Button>
+                          </Space>
+                        </>
+                      )}
+                      options={tablePrefixes.map(item => ({ label: item, value: item }))}
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <Form.Item label="Tiền tố cho Function">
+                    <Select
+                      mode="multiple"
+                      placeholder="Tiền tố cho Function"
+                      style={{ width: '100%' }}
+                      popupRender={menu => (
+                        <>
+                          {menu}
+                          <Divider style={{ margin: '8px 0' }} />
+                          <Space style={{ padding: '0 8px 4px' }}>
+                            <Input
+                              placeholder="Thêm tiền tố"
+                              ref={functionInputRef}
+                              value={functionInput}
+                              onChange={onPrefixChangeFunction}
+                              onKeyDown={e => e.stopPropagation()}
+                            />
+                            <Button
+                              type="text"
+                              icon={<PlusOutlined />}
+                              onClick={addItemFunction}
+                            >
+                              Add item
+                            </Button>
+                          </Space>
+                        </>
+                      )}
+                      options={functionPrefixes.map(item => ({ label: item, value: item }))}
+                    />
                   </Form.Item>
                 </Col>
               </Row>

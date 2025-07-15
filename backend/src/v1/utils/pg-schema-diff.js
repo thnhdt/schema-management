@@ -16,7 +16,7 @@ const groupBy = (arr, key) =>
   }, {});
 function ddlTrigger(trigger) {
   const allManipulations = trigger.event_manipulation.join(' OR ');
-  return `CREATE OR REPLACE TRIGGER \"${trigger.trigger_name}\" ${trigger.action_timing} ${allManipulations} ON "${trigger.event_object_table}" FOR EACH ${trigger.action_orientation} ${trigger.action_condition ? `WHEN ${trigger.action_condition} ` : ''}${trigger.action_statement};`
+  return `CREATE OR REPLACE TRIGGER \"${trigger.trigger_name}\" ${trigger.action_timing} ${allManipulations} ON "${trigger.table_name}" FOR EACH ${trigger.action_orientation} ${trigger.action_condition ? `WHEN ${trigger.action_condition} ` : ''}${trigger.action_statement};`
 }
 dbdiff.log = function () {
   var msg = util.format.apply(null, Array.prototype.slice.call(arguments))
@@ -638,7 +638,7 @@ function compareTriggers(table1, table2) {
   onlyInDb1.forEach(function (t) {
     dbdiff.log('DROP TRIGGER IF EXISTS \"%s\" ON \"%s\";',
       t.trigger_name,
-      t.event_object_table)
+      t.table_name)
   })
 
   onlyInDb2.forEach(function (t) {
