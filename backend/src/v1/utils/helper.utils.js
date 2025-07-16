@@ -5,6 +5,7 @@ const databaseModel = require('../models/database.model');
 const nodeModel = require('../models/node.model');
 var util = require('util')
 const { NotFoundError } = require('../cores/error.response');
+
 function fmtType(r) {
   if (r.data_type === 'character varying')
     return r.character_maximum_length
@@ -283,8 +284,9 @@ const ddl = async (schema, table, client) => {
 const ddlPatterns = [
   // ----- TABLE -----
   { type: 'CREATE', target: 'TABLE', re: /create\s+table\s+(?:if\s+not\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
-  { type: 'DELETE', target: 'TABLE', re: /drop\s+table\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
-  { type: 'UPDATE', target: 'TABLE', re: /alter\s+table\s+(?:only\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  // { type: 'DELETE', target: 'TABLE', re: /drop\s+table\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  // { type: 'UPDATE', target: 'TABLE', re: /alter\s+table\s+(?:only\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
+  { type: 'UPDATE', target: 'TABLE', re: /alter\s+table\s+(?:only\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`](?!.*\b(drop\s+column|alter\s+column\s+["`]?[\w]+["`]?\s+set\s+(data\s+type|not\s+null))\b).*$/i },
   { type: 'UPDATE', target: 'TABLE', re: /create\s+(?:unique\s+|bitmap\s+)?index\s+(?:if\s+not\s+exists\s+)?["`]?[\w]+["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
   { type: 'UPDATE', target: 'TABLE', re: /drop\s+index\s+(?:concurrently\s+)?(?:if\s+exists\s+)?["`]?[\w]+["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
   { type: 'UPDATE', target: 'TRIGGER', re: /create\s+(?:or\s+replace\s+)?trigger\s+["`]?([\w]+)["`]?\s+(?:before|after|instead\s+of)\s+[\w\s,]+\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?(?:\s+for\s+each\s+row)?(?:\s+when\s*\(.*?\))?/i },
@@ -299,14 +301,30 @@ const ddlPatternsIndex = [
   { type: 'CREATE', re: /create\s+(?:unique\s+|bitmap\s+)?index\s+(?:if\s+not\s+exists\s+)?["`]?[\w]+["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
   { type: 'DELETE', re: /drop\s+index\s+(?:concurrently\s+)?(?:if\s+exists\s+)?["`]?[\w]+["`]?\s+on\s+(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i },
 ]
+const ddlPatternsLog = [
+  {
+    type: 'UPDATE',
+    target: 'drop_column',
+    re: /alter\s+table\s+"([\w]+)"\s+drop\s+column\s+"([\w]+)"/i
+  },
+  {
+    type: 'UPDATE',
+    target: 'set_type',
+    re: /alter\s+table\s+"([\w]+)"\s+alter\s+column\s+"([\w]+)"\s+set\s+data\s+type\s+(.+)/i
+  },
+  {
+    type: 'UPDATE',
+    target: 'set_not_null',
+    re: /alter\s+table\s+"([\w]+)"\s+alter\s+column\s+"([\w]+)"\s+set\s+not\s+null/i
+  },
+  {
+    type: 'DELETE',
+    target: 'drop_table',
+    re: /drop\s+table\s+(?:if\s+exists\s+)?(?:["`]?[\w]+["`]?\.)?["`]?([\w]+)["`]?/i
+  }
+]
 const PRIORITY = { CREATE: 3, DELETE: 2, UPDATE: 1 };
-// function parseDDL(line) {
-//   for (const { re, type } of ddlPatterns) {
-//     const m = line.match(re);
-//     if (m) return { table: m[1], type };
-//   }
-//   return null;
-// }
+const sortPriority = (a, b) => PRIORITY[b.type] - PRIORITY[a.type];
 function parseDDL(line) {
   for (const { re, type, target } of ddlPatterns) {
     const m = line.match(re);
@@ -332,18 +350,24 @@ function parseDDL(line) {
 function parseDDLSequence(line) {
   for (const { re, type } of ddlPatternsSequence) {
     const m = line.match(re);
-    if (m) return { sequence: m[1], type };
+    if (m) return { key: m[0], sequence: m[1], type };
   }
   return null;
 }
 function parseDDLIndex(line) {
   for (const { re, type } of ddlPatternsIndex) {
     const m = line.match(re);
-    if (m) return { index: m[1], type };
+    if (m) return { key: m[0], index: m[1], type };
   }
   return null;
 }
-
+function parseDDLLog(line) {
+  for (const { re, target, type } of ddlPatternsLog) {
+    const m = line.match(re);
+    if (m) return { key: m[0], table: m[1], type, target };
+  }
+  return null;
+}
 
 const getStringUrl = async (id) => {
   const targetDatabase = await databaseModel.findById(id).lean();
@@ -376,6 +400,7 @@ const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapT
   );
   const sequence = [];
   const index = [];
+  const log = [];
   for (const line of allUpdate) {
     const info = parseDDL(line);
     // console.log(line);
@@ -385,6 +410,22 @@ const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapT
       }
       else if (parseDDLIndex(line)) {
         index.push({ key: parseDDLIndex(line).index, ddl: line, type: parseDDLIndex(line).type })
+      }
+      else if (parseDDLLog(line)) {
+        const { table, type } = parseDDLLog(line);
+        if (!mapTables.has(table)) continue;
+        const objectTabel = mapTables.get(table);
+        if (!objectTabel?.stmts && !objectTabel?.type) {
+          objectTabel.stmts = [line];
+          objectTabel.type = type;
+        }
+        else {
+          objectTabel.stmts.push(line);
+          if (PRIORITY[type] > PRIORITY[objectTabel.type]) {
+            objectTabel.type = type;
+          }
+        }
+        log.push({ key: parseDDLLog(line).key, type: parseDDLLog(line).type, target: parseDDLLog(line).target, ddl: line, table: table })
       }
       continue;
     }
@@ -403,12 +444,15 @@ const getAllUpdateOnTableUtil = async (targetDatabaseId, currentDatabaseId, mapT
     }
   }
   return {
-    updateSchema: allUpdate,
+    updateSchema: allUpdate.filter(line =>
+      !(log.some(entry => entry.ddl.trim() === line.trim()))),
+    // updateSchema: allUpdate,
     mapTables,
     targetDatabase: targetDatabaseUrl.database,
     currentDatabase: currentDatabaseUrl.database,
     sequence,
-    index
+    index,
+    log: log.sort(sortPriority)
   };
 }
 function isNumber(n) {
@@ -439,5 +483,6 @@ module.exports = {
   getStringUrl,
   sequenceDescription,
   timeFormat,
-  generateAllDdls
+  generateAllDdls,
+  sortPriority
 }

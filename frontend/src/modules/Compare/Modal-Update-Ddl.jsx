@@ -1,6 +1,6 @@
 
 import { Card, message, FloatButton } from "antd";
-import { SwapOutlined, FunctionOutlined, TableOutlined, CustomerServiceOutlined } from '@ant-design/icons';
+import { SwapOutlined, FunctionOutlined, TableOutlined, CustomerServiceOutlined, CopyOutlined } from '@ant-design/icons';
 import { DrawerComponent } from "../../util/helper";
 import { syncDatabase } from "../../api/table";
 import { useState } from "react";
@@ -10,8 +10,14 @@ const DrawerCompareComponent = (props) => {
   const { onClose, open, allUpdateFunction, allUpdateDdlTable, targetDatabaseId, currentDatabaseId, onRefetchTable, onRefetchFunction } = props;
   const [messageApi, contextHolder] = message.useMessage();
   const [floatButtonOpen, setFloatButtonOpen] = useState(false);
-  const allDdlUpdateSchema = '-- Cập nhật trên Function' + '\n' + allUpdateFunction + '\n' + '-- Cập nhật trên Table' + '\n' + allUpdateDdlTable;
-
+  const allDdlUpdateSchema = '-- Cập nhật trên Table' + '\n' + allUpdateDdlTable + '\n' + '-- Cập nhật trên Function' + '\n' + allUpdateFunction;
+  const hanldeCopyText = () => {
+    navigator.clipboard.writeText(allDdlUpdateSchema);
+    messageApi.open({
+      type: 'success',
+      content: 'Copy thành công',
+    });
+  }
   const handleUpdateDatabase = async (isFunction, isTable) => {
     try {
       messageApi.loading({ content: 'Đang cập nhật database...', key: 'update' });
@@ -121,6 +127,13 @@ const DrawerCompareComponent = (props) => {
                 icon={<SwapOutlined />}
                 style={{ insetInlineEnd: 24 }}
                 onClick={() => handleUpdateDatabase(true, true)}
+                tooltip="Cập nhật toàn bộ"
+              />
+              <FloatButton
+                className='add-btn'
+                icon={< CopyOutlined />}
+                style={{ insetInlineEnd: 24 }}
+                onClick={() => hanldeCopyText()}
                 tooltip="Cập nhật toàn bộ"
               />
             </FloatButton.Group >

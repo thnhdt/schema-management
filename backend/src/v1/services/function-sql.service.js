@@ -198,7 +198,7 @@ const compareFunctionInPosgresql = async (reqBody) => {
     // const functionName = primeFunction.functionName;
     // const functionArgs = primeFunction.functionArguments;
     const regprocName = primeFunction.regprocName;
-    const dropStmt = `DROP FUNCTION IF EXISTS ${regprocName};`;
+    const dropStmt = `DROP FUNCTION IF EXISTS ${regprocName}`;
     patch = dropStmt;
     type = "DELETE"
   }

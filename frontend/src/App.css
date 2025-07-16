@@ -191,3 +191,41 @@ body,
   background-color: rgba(241, 165, 23, 0.953);
   border-color: rgb(234, 158, 17);
 }
+
+.success-btn.ant-float-btn .ant-float-btn-body {
+  background: #1d6a10;
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
+  transition: background .25s;
+}
+
+.success-btn.ant-float-btn:hover .ant-float-btn-body,
+.success-btn.ant-float-btn:focus .ant-float-btn-body {
+  background: #218421 !important;
+  color: #f7f7f7 !important;
+}
+
+.success-btn.ant-float-btn .ant-float-btn-body svg {
+  color: #fff !important;
+  fill: #fff !important;
+}
+
+.error-btn.ant-float-btn .ant-float-btn-body {
+  background: #c71313;
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
+  transition: background .25s;
+}
+
+.error-btn.ant-float-btn:hover .ant-float-btn-body,
+.error-btn.ant-float-btn:focus .ant-float-btn-body {
+  background: #de1212 !important;
+  color: #f7f7f7 !important;
+}
+
+.error-btn.ant-float-btn .ant-float-btn-body svg {
+  color: #fff !important;
+  fill: #fff !important;
+}

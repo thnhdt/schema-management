@@ -3,7 +3,6 @@ import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
 import { Typography, Row, Col, Card, Layout, Space, Button } from 'antd';
-// import { useLocation, useNavigate } from 'react-router-dom';
 import DiffViewer from "./DiffViewer";
 
 const { Title } = Typography;

@@ -1,12 +1,13 @@
 const { POOLMAP } = require('./database.service');
 const { BadResponseError } = require('../cores/error.response');
-const { ddl, generateAllDdls } = require('../utils/helper.utils');
+const { ddl, generateAllDdls, sortPriority } = require('../utils/helper.utils');
 const { QueryTypes } = require('sequelize');
 const databaseService = require('../services/database.service');
 const { getAllUpdateOnTableUtil, getAllUpdateBetweenDatabases, getStringUrl, timeFormat } = require('../utils/helper.utils');
 const HistoryModel = require('../models/history.model');
 const databaseModel = require('../models/database.model');
 const functionService = require('./function-sql.service');
+const logger = require('../utils/logger');
 const { default: mongoose } = require('mongoose');
 function ddlTrigger(trigger) {
   const allManipulations = trigger.event_manipulation.join(' OR ');
@@ -151,7 +152,6 @@ const getAllTables = async (reqBody) => {
 
 const getAllUpdateOnTables = async (reqBody, user) => {
   const { targetDatabaseId, currentDatabaseId, listTablePriority = [] } = reqBody;
-  console.log("listTablePriority", listTablePriority)
   if (!user.isAdmin) {
     const permissions = user.userPermissions.some(role => role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) && role?.permissions.some(p => p.databaseId.toString() === currentDatabaseId));
     if (!permissions) throw new BadResponseError("Bạn không có quyền truy cập một trong hai DB !")
@@ -167,7 +167,7 @@ const getAllUpdateOnTables = async (reqBody, user) => {
     .map(([key, value]) => ({
       key,
       ...value
-    }));
+    })).sort(sortPriority);
   return {
     code: 200,
     updateSchema: sqlUpdateSchemaTables.updateSchema,
@@ -175,7 +175,8 @@ const getAllUpdateOnTables = async (reqBody, user) => {
     targetDB: sqlUpdateSchemaTables.targetDatabase,
     currentDB: sqlUpdateSchemaTables.currentDatabase,
     sequence: sqlUpdateSchemaTables.sequence,
-    index: sqlUpdateSchemaTables.index
+    index: sqlUpdateSchemaTables.index,
+    log: sqlUpdateSchemaTables.log
   }
 }
 const getAllDdlText = async (reqBody) => {
@@ -320,7 +321,6 @@ const saveDBHistory = async (databaseId) => {
 
 const syncDatabase = async (reqBody, user) => {
   const { targetDatabaseId, currentDatabaseId, allUpdateFunction, allUpdateDdlTable } = reqBody;
-
   if (!user.isAdmin) {
     const permissions = user.userPermissions.some(role =>
       role?.permissions.some(p => p.databaseId.toString() === targetDatabaseId) &&
@@ -356,13 +356,15 @@ const syncDatabase = async (reqBody, user) => {
         const tableQueries = allUpdateDdlTable
           .split(';')
           .map(q => q.trim())
-          .filter(q => q && /^(CREATE|ALTER|DROP|TRUNCATE|COMMENT|RENAME)/i.test(q));
+          .filter(q => q && /^(-- | CREATE|ALTER|DROP|TRUNCATE|COMMENT|RENAME)/i.test(q));
         for (const query of tableQueries) {
           try {
             console.log('Đang thực thi DDL:', query);
             await sequelize.query(query);
+            logger.info('Thành công :', query)
           } catch (err) {
             console.error('Lỗi khi thực thi lệnh DDL:', query, err.message);
+            logger.error('Lỗi khi thực thi lệnh DDL :', query)
             throw err;
           }
         }
@@ -373,6 +375,8 @@ const syncDatabase = async (reqBody, user) => {
         await transaction.commit();
       } catch (err) {
         if (transaction) await transaction.rollback();
+
+        logger.error('Lỗi khi thực thi function/procedure sau khi cập nhật bảng:', err.message);
         throw new BadResponseError(`Lỗi khi thực thi function/procedure sau khi cập nhật bảng: ${err.message}`);
       }
     } else {
@@ -380,13 +384,14 @@ const syncDatabase = async (reqBody, user) => {
         const tableQueries = allUpdateDdlTable
           .split(';')
           .map(q => q.trim())
-          .filter(q => q && /^(CREATE|ALTER|DROP|TRUNCATE|COMMENT|RENAME)/i.test(q));
+          .filter(q => q && /^(--| CREATE|ALTER|DROP|TRUNCATE|COMMENT|RENAME)/i.test(q));
         for (const query of tableQueries) {
           try {
             console.log('Đang thực thi DDL:', query);
             await sequelize.query(query, { transaction });
           } catch (err) {
             console.error('Lỗi khi thực thi lệnh DDL:', query, err.message);
+            logger.error(`Lỗi khi thực thi lệnh DDL:${query}`);
             await transaction.rollback();
             throw err;
           }

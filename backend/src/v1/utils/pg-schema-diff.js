@@ -16,7 +16,7 @@ const groupBy = (arr, key) =>
   }, {});
 function ddlTrigger(trigger) {
   const allManipulations = trigger.event_manipulation.join(' OR ');
-  return `CREATE OR REPLACE TRIGGER \"${trigger.trigger_name}\" ${trigger.action_timing} ${allManipulations} ON "${trigger.event_object_table}" FOR EACH ${trigger.action_orientation} ${trigger.action_condition ? `WHEN ${trigger.action_condition} ` : ''}${trigger.action_statement};`
+  return `CREATE OR REPLACE TRIGGER \"${trigger.trigger_name}\" ${trigger.action_timing} ${allManipulations} ON "${trigger.table_name}" FOR EACH ${trigger.action_orientation} ${trigger.action_condition ? `WHEN ${trigger.action_condition} ` : ''}${trigger.action_statement};`
 }
 dbdiff.log = function () {
   var msg = util.format.apply(null, Array.prototype.slice.call(arguments))
@@ -608,7 +608,6 @@ function compareConstraints(db1, db2) {
   var inBoth = constraints1.filter(c => inBothNames.includes(c.constraint_name))
 
   onlyInDb1.forEach(function (c) {
-
     dbdiff.log(`ALTER TABLE "public"."%s" DROP CONSTRAINT IF EXISTS \"%s\" CASCADE;
       DROP INDEX IF EXISTS "%s";`,
       c.table_name,
@@ -633,9 +632,6 @@ function compareConstraints(db1, db2) {
 function compareTriggers(table1, table2) {
   var triggers1 = table1.triggers;
   var triggers2 = table2.triggers;
-  // console.log(triggers1, triggers2)
-  // console.log("triggers1", triggers1);
-  // console.log("triggers2", triggers2);
   if (triggers1.length === 0 && triggers2.length === 0) return;
   var names1 = triggers1.map(t => t?.trigger_name)
   var names2 = triggers2.map(t => t?.trigger_name)
@@ -650,7 +646,7 @@ function compareTriggers(table1, table2) {
   onlyInDb1.forEach(function (t) {
     dbdiff.log('DROP TRIGGER IF EXISTS \"%s\" ON \"%s\";',
       t.trigger_name,
-      t.event_object_table)
+      t.table_name)
   })
 
   onlyInDb2.forEach(function (t) {
@@ -664,10 +660,6 @@ function compareTriggers(table1, table2) {
     var desc2 = ddlTrigger(t2)
 
     if (desc2 !== desc1) {
-      // var trigger = t2
-      // dbdiff.log('DROP TRIGGER IF EXISTS \%s\" ON \"$s\"',
-      //   trigger.trigger_name,
-      //   trigger.event_object_table)
       dbdiff.log(desc2)
     }
   })
@@ -682,7 +674,7 @@ dbdiff.compareSchemas = function (db1, db2) {
   var foreignKeyConstraints = [];
 
   diff1.forEach(function (tableName) {
-    dbdiff.log('DROP TABLE IF EXISTS "%s"."%s" CASCADE;', db2.schema, tableName)
+    dbdiff.log('DROP TABLE IF EXISTS "%s"."%s";', db2.schema, tableName)
     compareTriggers(db1.tables[tableName], { triggers: [] })
   })
 
@@ -725,7 +717,6 @@ dbdiff.compareSchemas = function (db1, db2) {
     {
       ...db1,
       constraints: db1.constraints.filter(c => inter.includes(c.table_name))
-
     },
     {
       ...db2,

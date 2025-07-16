@@ -7,7 +7,7 @@ module.exports = createLogger({
     ),
     transports: [
         new transports.File({
-            filename: "logs/info.log",
+            filename: "src/v1/logs/info.log",
             level: "info",
             format: format.combine(
                 format.printf((i) =>
@@ -16,7 +16,7 @@ module.exports = createLogger({
             ),
         }),
         new transports.File({
-            filename: "logs/error.log",
+            filename: "src/v1/logs/error.log",
             level: "error",
         }),
     ],

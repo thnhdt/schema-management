@@ -2,17 +2,20 @@ import {
   UnorderedListOutlined,
   LoadingOutlined,
   DatabaseOutlined,
-  SwapOutlined
+  SwapOutlined,
+  BugOutlined
 } from '@ant-design/icons';
 import '../../App.css';
 import { useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react'
-import { getAllUpdateTables, getAllUpdateFunction } from '../../api';
-import { Card, List, Typography, Spin, Flex, Tag, Space, Divider, Tabs, Button } from 'antd';
+import { getAllUpdateTables, getAllUpdateFunction, getAllLogs } from '../../api';
+import { Card, List, Typography, Spin, Flex, Tag, Space, Divider, Tabs, Button, FloatButton } from 'antd';
 import FunctionCompareComponent from '../../modules/Compare/Function';
 import SequenceCompareComponent from '../../modules/Compare/Sequence';
 import DrawerCompareComponent from '../../modules/Compare/Modal-Update-Ddl';
 import CompareComponent from '../../modules/Compare/Compare';
+import ModalLogComponent from '../../modules/Compare/Modal-Log';
+import ModalLogErrorComponent from '../../modules/Compare/Modal-Logs-Error';
 const enumTypeColor = {
   'CREATE': 'green',
   'UPDATE': 'purple',
@@ -45,6 +48,10 @@ const TableCompareComponent = () => {
   const [functionUpdateData, setFunctionUpdateData] = useState([]);
   const [functionCurrentDatabase, setFunctionCurrentDatabase] = useState(null);
   const [functionTargetDatabase, setFunctionTargetDatabase] = useState(null);
+  const [openLog, setOpenLog] = useState(false);
+  const [openErrorLog, setOpenErrorLog] = useState(false);
+  const [log, setLog] = useState([]);
+  const [logError, setLogError] = useState('');
   const handleGetDetailUpdate = (item) => {
     let ddlPrime = '';
     let ddlSecond = '';
@@ -78,7 +85,6 @@ const TableCompareComponent = () => {
   useEffect(() => {
     fetchUpdate();
     fetchFunctionUpdate();
-
     console.log(tablePrefixes);
     console.log(functionPrefixes);
   }, [])
@@ -90,6 +96,7 @@ const TableCompareComponent = () => {
       setTargetDatabase(data.metaData.targetDB);
       setSequence(data.metaData.sequence);
       setAllUpdateDdlTable(data.metaData.updateSchema.join('\n'));
+      setLog(data.metaData.log)
     } catch (error) {
       console.error(error.message)
     } finally {
@@ -100,10 +107,12 @@ const TableCompareComponent = () => {
     try {
       setFunctionLoading(true);
       const data = await getAllUpdateFunction(targetDatabaseId, currentDatabaseId, functionPrefixes);
+      const dataLogs = await getAllLogs();
       setFunctionUpdateData(data.metaData.resultUpdate);
       setFunctionCurrentDatabase(data.metaData.currentDatabase);
       setFunctionTargetDatabase(data.metaData.targetDatabase);
       setAllUpdateFunction(data.metaData.allPatchDdl);
+      setLogError(dataLogs.data);
     } catch (error) {
       console.error(error.message)
     } finally {
@@ -254,6 +263,31 @@ const TableCompareComponent = () => {
         currentDatabaseId={currentDatabaseId}
         onRefetchTable={fetchUpdate}
         onRefetchFunction={fetchFunctionUpdate}
+      />
+      <ModalLogComponent
+        visible={openLog}
+        onCancel={() => setOpenLog(false)}
+        log={log}
+      />
+      <ModalLogErrorComponent
+        visible={openErrorLog}
+        onCancel={() => setOpenErrorLog(false)}
+        log={logError}
+      />
+      <FloatButton
+        style={{ insetInlineEnd: 40 }}
+        className='success-btn'
+        badge={{ count: log.length }}
+        tooltip={'Các logs cập nhật'}
+        onClick={() => setOpenLog(true)}
+      />
+      <FloatButton
+        style={{ insetInlineEnd: 94 }}
+        icon={<BugOutlined />}
+        className='error-btn'
+        badge={{ count: logError.split('\n').length }}
+        tooltip={'Các logs lỗi'}
+        onClick={() => setOpenErrorLog(true)}
       />
     </div>
   );

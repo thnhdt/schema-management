@@ -13,6 +13,9 @@ const { spawnSync } = require('child_process');
 const ddlToMermaid = require('./testDDL');
 const path = require('path');
 const PUBLIC_DIR = path.resolve(__dirname, '..', 'public');
+const fs = require('fs');
+// const fsPromises = require('fs').promises;
+const logModel = require('../src/v1/models/logs.model');
 //init dbs 
 // require('./v1/databases/init.mongodb')
 // require('./v1/databases/init.redis')
@@ -47,37 +50,26 @@ app.use('/api/table', require('./v1/routes/table.route'));
 app.use('/api/function', require('./v1/routes/function.route'));
 app.use('/api/sequence', require('./v1/routes/sequence.route'));
 
-app.post('/api/diagram', async (req, res) => {
-    const ddl = (req.body.sql || '').trim();
-    if (!ddl) return res.status(400).json({ error: 'SQL text required' });
-    try {
-        /* 1) SQL ➜ Mermaid */
-        const mmd = ddlToMermaid(ddl);
-        const mmdTmp = join(tmpdir(), `2.mmd`);
-        await writeFile(mmdTmp, mmd, 'utf8');
+app.get('/api/log/error', async (req, res) => {
+    const filePath = path.join(__dirname, 'v1', 'logs', `error.log`);
 
-        /* 2) Mermaid ➜ PNG vào thư mục public */
-        // await mkdir(PUBLIC_DIR, { recursive: true });      // chắc chắn có thư mục
-        const fileName = `diagram-2.png`;      // tên file duy nhất
-        const imgPath = join(PUBLIC_DIR, fileName);
-
-        const { status, stderr } = spawnSync(
-            'npx',
-            ['mmdc', '-i', mmdTmp, '-o', imgPath],
-            { encoding: 'utf8', shell: true }
-        );
-        if (status !== 0) throw new Error(stderr);
-
-        /* 3) Trả URL thay vì base64 */
-        const url = `/public/${fileName}`;   // đường dẫn tĩnh
-        res.json({ url });                   // { "url": "/public/diagram‑123.png" }
-
-        /* 4) Dọn file tạm .mmd */
-        await unlink(mmdTmp).catch(() => { });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Render failed', detail: String(e) });
-    }
+    fs.readFile(filePath, 'utf8', (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Không thể đọc file log.' });
+        }
+        res.status(200).send({ data: data });
+    });
+});
+app.post('/api/log/clear', async (req, res) => {
+    const filePath = path.join(__dirname, 'v1', 'logs', `error.log`);
+    const message = await fs.promises.readFile(filePath, 'utf8');
+    const newLogs = await logModel.create({ message: message });
+    fs.truncate(filePath, 0, (err, data) => {
+        if (err) {
+            return res.status(500).json({ error: 'Ghi file không thành công!' });
+        }
+        res.status(200).send({ message: 'Ghi file thành công ', data: newLogs });
+    });
 });
 // Error Handling Middleware called
 
