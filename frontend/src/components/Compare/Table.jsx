@@ -9,10 +9,11 @@ import '../../App.css';
 import { useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react'
 import { getAllUpdateTables, getAllUpdateFunction, getAllLogs } from '../../api';
-import { Card, List, Typography, Spin, Flex, Tag, Space, Divider, Tabs, Button, FloatButton } from 'antd';
+import { Card, List, Typography, Spin, Flex, Tag, Space, Divider, Tabs, Button, FloatButton, Modal, Checkbox } from 'antd';
 import FunctionCompareComponent from '../../modules/Compare/Function';
 import SequenceCompareComponent from '../../modules/Compare/Sequence';
 import DrawerCompareComponent from '../../modules/Compare/Modal-Update-Ddl';
+import DrawerCompareAllComponent from '../../modules/Compare/Modal-Update-All';
 import CompareComponent from '../../modules/Compare/Compare';
 import ModalLogComponent from '../../modules/Compare/Modal-Log';
 import ModalLogErrorComponent from '../../modules/Compare/Modal-Logs-Error';
@@ -26,6 +27,94 @@ const enumTypeTitle = {
   'UPDATE': 'Cập nhật trên bảng',
   "DELETE": 'Xóa bảng'
 }
+const TableListComponent = ({ updateData, selectedTables, setSelectedTables, handleGetDetailUpdate }) => {
+  const allKeys = updateData.map(item => item.key);
+  const allChecked = selectedTables.length === allKeys.length && allKeys.length > 0;
+  const isIndeterminate = selectedTables.length > 0 && selectedTables.length < allKeys.length;
+  return (
+    <div style={{ maxHeight: 'calc(100vh - 330px)', overflowY: 'auto', padding: '0.5rem 0' }}>
+      <div style={{ marginBottom: 8, marginLeft: 16 }}>
+        <Checkbox
+          indeterminate={isIndeterminate}
+          checked={allChecked}
+          onChange={e => {
+            if (e.target.checked) {
+              setSelectedTables(allKeys);
+            } else {
+              setSelectedTables([]);
+            }
+          }}
+        >
+          Chọn tất cả
+        </Checkbox>
+      </div>
+      <List
+        itemLayout="vertical"
+        size="large"
+        pagination={false}
+        dataSource={updateData}
+        scroll={{ y: 'max-content' }}
+        renderItem={item => {
+          const checked = selectedTables.includes(item.key);
+          return (
+            <List.Item
+              key={item.key}
+              className="hover-overlay shadow-sm rounded mb-2"
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  width: '100%',
+                  marginLeft: '1rem'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={e => {
+                    if (e.target.checked) {
+                      setSelectedTables([...selectedTables, item.key]);
+                    } else {
+                      setSelectedTables(selectedTables.filter(k => k !== item.key));
+                    }
+                  }}
+                  style={{ marginRight: 8 }}
+                />
+                <Tag
+                  color={enumTypeColor[item.type]}
+                  style={{ margin: 0, flexShrink: 0 }}
+                >
+                  {item.type}
+                </Tag>
+                <div style={{ flex: 1 }} onClick={() => handleGetDetailUpdate(item)}>
+                  <List.Item.Meta
+                    title={`${enumTypeTitle[item.type]} ${item.key}`}
+                  />
+                  <div
+                    style={{
+                      marginBottom: 0,
+                      overflow: 'hidden',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 4,
+                      WebkitBoxOrient: 'vertical',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'pre-line',
+                    }}
+                    title={item.stmts.join('\n') || ''}
+                  >
+                    {item.stmts.join('\n') || ''}
+                  </div>
+                </div>
+              </div>
+            </List.Item>
+          );
+        }}
+      />
+    </div>
+  );
+};
 const TableCompareComponent = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -40,9 +129,8 @@ const TableCompareComponent = () => {
   const [targetDatabase, setTargetDatabase] = useState(null);
   const [activeTab, setActiveTab] = useState('function');
   const [sequence, setSequence] = useState([]);
-  const [allUpdateFunction, setAllUpdateFunction] = useState('');
-  const [allUpdateDdlTable, setAllUpdateDdlTable] = useState('');
   const [openDrawer, setOpenDrawer] = useState(false);
+  const [openDrawerAll, setOpenDrawerAll] = useState(false);
   const [selectedChange, setSelectedChange] = useState(null);
   const [functionLoading, setFunctionLoading] = useState(true);
   const [functionUpdateData, setFunctionUpdateData] = useState([]);
@@ -52,6 +140,10 @@ const TableCompareComponent = () => {
   const [openErrorLog, setOpenErrorLog] = useState(false);
   const [log, setLog] = useState([]);
   const [logError, setLogError] = useState('');
+  const [allUpdateFunction, setAllUpdateFunction] = useState('');
+  const [allUpdateDdlTable, setAllUpdateDdlTable] = useState('');
+  const [selectedTables, setSelectedTables] = useState([]);
+  const [selectedFunctions, setSelectedFunctions] = useState([]);
   const handleGetDetailUpdate = (item) => {
     let ddlPrime = '';
     let ddlSecond = '';
@@ -119,6 +211,7 @@ const TableCompareComponent = () => {
       setFunctionLoading(false);
     }
   }
+  const hasSelected = selectedTables.length > 0 || selectedFunctions.length > 0;
   if (loading) {
     return (
       <Flex align="center"
@@ -127,29 +220,50 @@ const TableCompareComponent = () => {
         <Spin indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />} />
       </Flex>);
   }
-  if (selectedChange) {
-    return (
-      <CompareComponent
-        {...selectedChange}
-        onBack={handleBack}
-      />
-    );
-  }
   return (
-    <div style={{ maxHeight: '100vh' }}>
-      <Space direction="vertical" size={2} style={{ width: '100%', marginBottom: 8 }}>
-        <Title level={3} style={{ display: 'flex', alignItems: 'center' }}>
-          <UnorderedListOutlined style={{ marginRight: 8, color: '#1677ff' }} />
-          Danh sách cập nhật gần đây
-        </Title>
+    <>
+      <Modal
+        open={!!selectedChange}
+        onCancel={handleBack}
+        footer={null}
+        width={1000}
+        style={{ top: 32 }}
+      >
+        {selectedChange && (
+          <CompareComponent
+            {...selectedChange}
+            onBack={handleBack}
+          />
+        )}
+      </Modal>
+      <div style={{ maxHeight: '100vh' }}>
+        <Space direction="vertical" size={2} style={{ width: '100%', marginBottom: 8 }}>
+          <Title level={3} style={{ display: 'flex', alignItems: 'center' }}>
+            <UnorderedListOutlined style={{ marginRight: 8, color: '#1677ff' }} />
+            Danh sách cập nhật gần đây
+          </Title>
 
-        <Text type="secondary">
-          <DatabaseOutlined /> Đích: <strong>{targetDatabase}</strong> &nbsp;|&nbsp;
-          <DatabaseOutlined /> Hiện tại: <strong>{currentDatabase}</strong>
-        </Text>
+          <Text type="secondary">
+            <Tag color='red'>
+              <DatabaseOutlined /> Hiện tại: <strong>{currentDatabase}</strong> 
+            </Tag>
+            &nbsp; | &nbsp;
+            <Tag color='green'>
+              <DatabaseOutlined /> Đích: <strong>{targetDatabase}</strong> 
+            </Tag>
+          </Text>
 
         <Divider style={{ margin: '12px 0 0' }} />
       </Space>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+          <Button
+            type="primary"
+            disabled={!hasSelected}
+            onClick={() => setOpenDrawer(true)}
+          >
+            Đồng bộ
+          </Button>
+        </div>
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
@@ -177,8 +291,9 @@ const TableCompareComponent = () => {
               updateData={functionUpdateData}
               currentDatabase={functionCurrentDatabase}
               targetDatabase={functionTargetDatabase}
-              setAllUpdateFunction={setAllUpdateFunction}
               onShowDetail={handleGetDetailUpdate}
+              selectedFunctions={selectedFunctions}
+              setSelectedFunctions={setSelectedFunctions}
             />),
         },
         {
@@ -190,51 +305,12 @@ const TableCompareComponent = () => {
             </Space>
           ),
           children: (
-            <div style={{ maxHeight: 'calc(100vh - 330px)', overflowY: 'auto', padding: '0.5rem 0' }}>
-              <List
-                itemLayout="vertical"
-                size="large"
-                pagination={false}
-                dataSource={updateData}
-                scroll={{ y: 'max-content' }}
-                renderItem={item => (
-                  <List.Item
-                    key={item.key}
-                    onClick={() => handleGetDetailUpdate(item)}
-                    className="hover-overlay shadow-sm rounded mb-2"
-                  >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '3rem',
-                        width: '100%',
-                        marginLeft: '1rem'
-                      }}
-                    >
-                      <Tag
-                        color={enumTypeColor[item.type]}
-                        style={{ margin: 0, flexShrink: 0 }}
-                      >
-                        {item.type}
-                      </Tag>
-
-                      <div style={{ flex: 1 }}>
-                        <List.Item.Meta
-                          title={`${enumTypeTitle[item.type]} ${item.key}`}
-                        />
-                        <Paragraph
-                          ellipsis={{ rows: 4 }}
-                          style={{ marginBottom: 0 }}
-                        >
-                          {item.stmts.join('\n') || ''}
-                        </Paragraph>
-                      </div>
-                    </div>
-                  </List.Item>
-                )}
-              />
-            </div >)
+            <TableListComponent
+              updateData={updateData}
+              selectedTables={selectedTables}
+              setSelectedTables={setSelectedTables}
+              handleGetDetailUpdate={handleGetDetailUpdate}
+            />)
         },
         {
           key: 'sequence',
@@ -254,17 +330,29 @@ const TableCompareComponent = () => {
         },
         ]}
       />
-      <DrawerCompareComponent
-        open={openDrawer}
-        onClose={() => setOpenDrawer(false)}
-        allUpdateFunction={allUpdateFunction}
-        allUpdateDdlTable={allUpdateDdlTable}
-        targetDatabaseId={targetDatabaseId}
-        currentDatabaseId={currentDatabaseId}
-        onRefetchTable={fetchUpdate}
-        onRefetchFunction={fetchFunctionUpdate}
-      />
-      <ModalLogComponent
+        <DrawerCompareComponent
+          open={openDrawer}
+          onClose={() => setOpenDrawer(false)}
+          targetDatabaseId={targetDatabaseId}
+          currentDatabaseId={currentDatabaseId}
+          onRefetchTable={fetchUpdate}
+          onRefetchFunction={fetchFunctionUpdate}
+          selectedTables={selectedTables}
+          selectedFunctions={selectedFunctions}
+          updateData={updateData}
+          functionUpdateData={functionUpdateData}
+        />
+        <DrawerCompareAllComponent
+          open={openDrawerAll}
+          onClose={() => setOpenDrawerAll(false)}
+          targetDatabaseId={targetDatabaseId}
+          currentDatabaseId={currentDatabaseId}
+          onRefetchTable={fetchUpdate}
+          onRefetchFunction={fetchFunctionUpdate}
+          allUpdateFunction={allUpdateFunction}
+          allUpdateDdlTable={allUpdateDdlTable}
+        />
+        <ModalLogComponent
         visible={openLog}
         onCancel={() => setOpenLog(false)}
         log={log}
@@ -290,6 +378,7 @@ const TableCompareComponent = () => {
         onClick={() => setOpenErrorLog(true)}
       />
     </div>
+    </>
   );
 }
 

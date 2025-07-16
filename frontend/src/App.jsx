@@ -13,6 +13,7 @@ import { AlreadyLogined, RequireUsername } from './Authentication';
 import User from './modules/user/User';
 import TableCompareComponent from './components/Compare/Table';
 import ResetPassword from './modules/user/ResetPassword';
+import Project from './modules/project/Project';
 function App() {
   return (
     <BrowserRouter>
@@ -31,6 +32,7 @@ function App() {
             <Route element={<RequireUsername />}>
               <Route element={<AppLayout />}>
                 <Route path='/node' element={<Node />} />
+                <Route path='/project' element={<Project />} />
                 <Route path='/database' element={<Database />} />
                 <Route path='/schema' element={<Schema />} />
                 <Route path='/schema/:id' element={<Schema />} />

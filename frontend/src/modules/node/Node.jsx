@@ -71,7 +71,6 @@ const Node = () => {
     const updatedNodes = nodes.filter(node => node._id !== nodeId);
     await deleteNode(nodeId);
     setNodes(updatedNodes);
-    localStorage.setItem('databaseNodes', JSON.stringify(updatedNodes));
     messageApi.success('Xóa node thành công!');
   };
 
@@ -234,7 +233,7 @@ const Node = () => {
                 onClick={handleAddNode}
               >
                 Thêm
-              </Button>
+              </Button>        
             }
             {/* <Button
                 type="primary"

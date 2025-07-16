@@ -6,6 +6,7 @@ import * as sequence from './sequence';
 import * as user from './user';
 import * as node from './node';
 import * as log from './log'
+import * as project from './project';
 
 export * from './auth';
 export * from './database';
@@ -15,6 +16,8 @@ export * from './sequence';
 export * from './user';
 export * from './node';
 export * from './log';
+export * from './project';
+
 export default {
   auth,
   database,
@@ -23,5 +26,4 @@ export default {
   sequence,
   user,
   node,
-  log,
 }; 

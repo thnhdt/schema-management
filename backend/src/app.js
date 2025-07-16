@@ -49,6 +49,7 @@ app.use('/api/database', require('./v1/routes/database.route'));
 app.use('/api/table', require('./v1/routes/table.route'));
 app.use('/api/function', require('./v1/routes/function.route'));
 app.use('/api/sequence', require('./v1/routes/sequence.route'));
+app.use('/api/project', require('./v1/routes/project.route'));
 
 app.get('/api/log/error', async (req, res) => {
     const filePath = path.join(__dirname, 'v1', 'logs', `error.log`);

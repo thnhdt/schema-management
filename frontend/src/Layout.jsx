@@ -5,6 +5,7 @@ import {
   FileExcelOutlined,
   UserOutlined,
   LogoutOutlined,
+  ProjectOutlined
 } from '@ant-design/icons';
 import { Button, Layout, Menu, theme, Avatar, Flex, Divider, Typography } from 'antd';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -62,6 +63,11 @@ const AppLayout = () => {
           selectedKeys={[currentPath]}
           onClick={({ key }) => navigate(key)}
           items={[
+            {
+              key: '/project',
+              icon: <ProjectOutlined />,
+              label: 'Project',
+            },
             {
               key: '/node',
               icon: <FileExcelOutlined />,

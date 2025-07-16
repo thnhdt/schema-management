@@ -1,53 +1,28 @@
-
-import { Card, message, FloatButton } from "antd";
+import { Card, message, Drawer, Button } from "antd";
 import { SwapOutlined, FunctionOutlined, TableOutlined, CustomerServiceOutlined, CopyOutlined } from '@ant-design/icons';
 import { DrawerComponent } from "../../util/helper";
 import { syncDatabase } from "../../api/table";
-import { useState } from "react";
 import '../../App.css'
 
 const DrawerCompareComponent = (props) => {
-  const { onClose, open, allUpdateFunction, allUpdateDdlTable, targetDatabaseId, currentDatabaseId, onRefetchTable, onRefetchFunction } = props;
+  const { onClose, open, targetDatabaseId, currentDatabaseId, onRefetchTable, onRefetchFunction, selectedTables = [], selectedFunctions = [], updateData = [], functionUpdateData = [] } = props;
   const [messageApi, contextHolder] = message.useMessage();
-  const [floatButtonOpen, setFloatButtonOpen] = useState(false);
-  const allDdlUpdateSchema = '-- Cập nhật trên Table' + '\n' + allUpdateDdlTable + '\n' + '-- Cập nhật trên Function' + '\n' + allUpdateFunction;
-  const hanldeCopyText = () => {
-    navigator.clipboard.writeText(allDdlUpdateSchema);
-    messageApi.open({
-      type: 'success',
-      content: 'Copy thành công',
-    });
-  }
-  const handleUpdateDatabase = async (isFunction, isTable) => {
+  const selectedTableObjs = updateData.filter(item => selectedTables.includes(item.key));
+  const selectedFunctionObjs = functionUpdateData.filter(item => selectedFunctions.includes(item.key));
+
+  const handleSyncSelected = async () => {
     try {
       messageApi.loading({ content: 'Đang cập nhật database...', key: 'update' });
-      if (isFunction && isTable) {
-        await syncDatabase(
-          targetDatabaseId,
-          currentDatabaseId,
-          allUpdateFunction,
-          allUpdateDdlTable
-        );
-        onRefetchTable();
-        onRefetchFunction();
-      }
-      else if (isFunction && !isTable) {
-        await syncDatabase(
-          targetDatabaseId,
-          currentDatabaseId,
-          allUpdateFunction,
-          ''
-        );
-        onRefetchFunction();
-      } else {
-        await syncDatabase(
-          targetDatabaseId,
-          currentDatabaseId,
-          '',
-          allUpdateDdlTable
-        );
-        onRefetchTable();
-      }
+      const patchFunction = selectedFunctionObjs.map(fn => fn.patch).join('\n');
+      const patchTable = selectedTableObjs.map(tb => Array.isArray(tb.stmts) ? tb.stmts.join('\n') : (tb.stmts ?? '')).join('\n');
+      await syncDatabase(
+        targetDatabaseId,
+        currentDatabaseId,
+        patchFunction,
+        patchTable
+      );
+      await onRefetchTable();
+      await onRefetchFunction();
       messageApi.success({
         content: 'Cập nhật database thành công!',
         key: 'update',
@@ -57,7 +32,7 @@ const DrawerCompareComponent = (props) => {
     } catch (error) {
       console.error('Lỗi khi cập nhật database:', error);
       messageApi.error({
-        content: `${error.response.data.error.message}`,
+        content: error?.response?.data?.error?.message || 'Có lỗi xảy ra!',
         key: 'update',
         duration: 5
       });
@@ -67,79 +42,38 @@ const DrawerCompareComponent = (props) => {
   return (
     <>
       {contextHolder}
-      <DrawerComponent
+      <Drawer
+        title="Xác nhận đồng bộ các mục đã chọn"
+        placement="right"
         onClose={onClose}
         open={open}
-        Component={(
-          <>
-            <div>
-              <Card
-                title="Tất cả Cập nhật"
-                style={{ flex: 1 }}
-                bodyStyle={{
-                  overflow: 'auto',
-                  height: '100%',
-                  padding: '1rem',
-                  background: '#2d2d2d',
-                }}
-              >
-                <pre
-                  style={{
-                    margin: 0,
-                    color: '#fff',
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    fontFamily: 'Menlo, Consolas, "Courier New", monospace',
-                    fontSize: '0.9rem',
-                  }}
-                >
-                  {allDdlUpdateSchema}
-                </pre>
-              </Card>
-
-            </div>
-            <FloatButton.Group
-              open={floatButtonOpen}
-              placement='left'
-              shape="circle"
-              trigger="hover"
-              style={{ insetInlineEnd: 24 }}
-              icon={<SwapOutlined />}
-              onOpenChange={setFloatButtonOpen}
-              className='main-float-btn'
-            >
-              <FloatButton
-                className='add-btn'
-                icon={<FunctionOutlined />}
-                style={{ insetInlineEnd: 24 }}
-                onClick={() => handleUpdateDatabase(true, false)}
-                tooltip="Cập nhật function"
-              />
-              <FloatButton
-                className='add-btn'
-                icon={<TableOutlined />}
-                style={{ insetInlineEnd: 24 }}
-                onClick={() => handleUpdateDatabase(false, true)}
-                tooltip="Cập nhật table"
-              />
-              <FloatButton
-                className='add-btn'
-                icon={<SwapOutlined />}
-                style={{ insetInlineEnd: 24 }}
-                onClick={() => handleUpdateDatabase(true, true)}
-                tooltip="Cập nhật toàn bộ"
-              />
-              <FloatButton
-                className='add-btn'
-                icon={< CopyOutlined />}
-                style={{ insetInlineEnd: 24 }}
-                onClick={() => hanldeCopyText()}
-                tooltip="Cập nhật toàn bộ"
-              />
-            </FloatButton.Group >
-          </>
-        )}
-      />
+        width={480}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <b>Function đã chọn:</b>
+          <ul>
+            {selectedFunctionObjs.length === 0 && <li><i>Không có</i></li>}
+            {selectedFunctionObjs.map(fn => (
+              <li key={fn.key}>{fn.key}</li>
+            ))}
+          </ul>
+          <b>Table đã chọn:</b>
+          <ul>
+            {selectedTableObjs.length === 0 && <li><i>Không có</i></li>}
+            {selectedTableObjs.map(tb => (
+              <li key={tb.key}>{tb.key}</li>
+            ))}
+          </ul>
+        </div>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <Button type="primary" onClick={handleSyncSelected} disabled={selectedFunctionObjs.length === 0 && selectedTableObjs.length === 0}>
+            Xác nhận đồng bộ
+          </Button>
+          <Button onClick={onClose}>
+            Hủy
+          </Button>
+        </div>
+      </Drawer>
     </>
   );
 };
