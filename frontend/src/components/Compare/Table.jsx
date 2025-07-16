@@ -272,7 +272,7 @@ const TableCompareComponent = () => {
           <Button
             icon={<SwapOutlined />}
             className='add-btn'
-            onClick={() => setOpenDrawer(true)}
+            onClick={() => setOpenDrawerAll(true)}
           >
             Đồng bộ
           </Button>
