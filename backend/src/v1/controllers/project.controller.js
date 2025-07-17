@@ -29,9 +29,18 @@ const editProject = async (req, res, next) => {
     }).send(res)
 };
 
+const getPrefixes = async (req, res, next) => {
+    const { projectId } = req.query;
+    const result = await projectService.getPrefixes(projectId);
+    new SucessReponse({
+      metaData: result
+    }).send(res)
+};
+
 module.exports = {
     getAllProject,
     createProject,
     dropProject,
-    editProject
+    editProject,
+    getPrefixes
 }

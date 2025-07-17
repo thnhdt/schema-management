@@ -33,7 +33,7 @@ export const TableComponent = (props) => {
   )
 };
 
-export const ModalComponent = ({ onCancel, onOk = null, open = null, title, Component, okText = null, footer = undefined, width = undefined }) => {
+export const ModalComponent = ({ onCancel, onOk = null, open = null, title, Component, okText = null, footer = undefined, width = undefined , okButtonProps = null}) => {
   return (
     <Modal
       width={width}
@@ -42,6 +42,7 @@ export const ModalComponent = ({ onCancel, onOk = null, open = null, title, Comp
       onCancel={onCancel}
       onOk={onOk}
       okText={okText}
+      okButtonProps={okButtonProps}
       cancelButtonProps={{ style: { display: 'none' } }}
       getContainer={false}
       centered

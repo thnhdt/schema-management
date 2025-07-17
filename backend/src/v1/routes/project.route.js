@@ -13,4 +13,6 @@ projectRouter.route('/edit-project')
   .patch(handlerError(projectController.editProject))
 projectRouter.route('/drop-project')
   .delete(handlerError(projectController.dropProject))
+projectRouter.route('/get-prefixes')
+  .get(handlerError(projectController.getPrefixes))
 module.exports = projectRouter

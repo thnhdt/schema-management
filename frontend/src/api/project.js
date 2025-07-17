@@ -20,3 +20,8 @@ export const editProject = async (data) => {
   const response = await api.patch('/project/edit-project', data, { requiresAuth: true });
   return response.data;
 }
+
+export const getProjectPrefixes = async (projectId) => {
+  const response = await api.get(`/project/get-prefixes?projectId=${projectId}`, { requiresAuth: true });
+  return response.data;
+};

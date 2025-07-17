@@ -1,30 +1,64 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Space, Select, Card, Typography, Form, Row, Col, message, Divider, Input, Button } from "antd";
 import { useNavigate } from "react-router-dom";
-import { getAllNodes, getAllDatabaseInHost } from "../../api";
-import { getProjectPrefixes } from "../../api/project";
+import { getAllDatabasesAll } from '../../api/database';
+import { getProjectPrefixes, getAllProject } from '../../api/project';
 import { ModalComponent } from "../../util/helper";
 import { SwapOutlined, DatabaseOutlined, PlusOutlined  } from '@ant-design/icons';
 
-const ModalCompareComponent = (props) => {
+const ModalCompareProjectComponent = (props) => {
   const { onCancel, visible, projectId } = props;
   const navigate = useNavigate();
-  const [optionHost, setOptionHost] = useState([]);
-  const [optionTargetDatabase, setOptionTargetDatabase] = useState([]);
-  const [optionCurrentDatabase, setOptionCurrentDatabase] = useState([]);
-  const [selectedCurrentHost, setSelectedCurrentHost] = useState(null);
-  const [_, setSelectedTargetHost] = useState(null);
+  const [optionDatabases, setOptionDatabases] = useState([]);
   const [selectedTargetDb, setSelectedTargetDb] = useState(null);
   const [selectedCurrentDb, setSelectedCurrentDb] = useState(null);
-  const [messageApi, contextHolder] = message.useMessage();
-  const [tablePrefixes, setTablePrefixes] = useState(['fw', 'cb']);
+  const [, contextHolder] = message.useMessage();
+  const [tablePrefixes, setTablePrefixes] = useState([]);
   const [functionPrefixes, setFunctionPrefixes] = useState([]);
+  const [selectedTablePrefixes, setSelectedTablePrefixes] = useState([]);
+  const [selectedFunctionPrefixes, setSelectedFunctionPrefixes] = useState([]);
   const [tableInput, setTableInput] = useState('');
   const [functionInput, setFunctionInput] = useState('');
   const tableInputRef = useRef(null);
   const functionInputRef = useRef(null);
-  const [selectedTablePrefixes, setSelectedTablePrefixes] = useState([]);
-  const [selectedFunctionPrefixes, setSelectedFunctionPrefixes] = useState([]);
+
+  useEffect(() => {
+    if (visible && projectId) {
+      (async () => {
+        try {
+          const allProjects = await getAllProject();
+          const project = (allProjects.metaData || []).find(p => p._id === projectId);
+          if (project && Array.isArray(project.databaseId)) {
+            const allDbsRes = await getAllDatabasesAll();
+            const allDbs = allDbsRes.metaData || [];
+            const dbOptions = project.databaseId.map(dbId => {
+              const db = allDbs.find(d => d._id === dbId);
+              return db ? { value: db._id, label: `${db.username ? db.username + ':' : ''}${db.name}` } : { value: dbId, label: dbId };
+            });
+            setOptionDatabases(dbOptions);
+          } else {
+            setOptionDatabases([]);
+          }
+          const prefixRes = await getProjectPrefixes(projectId);
+          setTablePrefixes(prefixRes.metaData.tablePrefix || []);
+          setFunctionPrefixes(prefixRes.metaData.functionPrefix || []);
+        } catch {
+          setOptionDatabases([]);
+          setTablePrefixes([]);
+          setFunctionPrefixes([]);
+        }
+      })();
+    }
+  }, [visible, projectId]);
+
+  const onOk = () => {
+    navigate(
+      `/compare?` +
+      `targetDatabaseId=${selectedTargetDb}&currentDatabaseId=${selectedCurrentDb}` +
+      `&tablePrefixes=${encodeURIComponent(selectedTablePrefixes.join(','))}` +
+      `&functionPrefixes=${encodeURIComponent(selectedFunctionPrefixes.join(','))}`
+    );
+  }
 
   let indexTable = 0;
   const onPrefixChangeTable = event => {
@@ -53,86 +87,6 @@ const ModalCompareComponent = (props) => {
     }, 0);
   };
 
-  const onOk = () => {
-    navigate(
-      `/compare?` +
-      `targetDatabaseId=${selectedTargetDb}&currentDatabaseId=${selectedCurrentDb}` +
-      `&tablePrefixes=${encodeURIComponent(selectedTablePrefixes.join(','))}` +
-      `&functionPrefixes=${encodeURIComponent(selectedFunctionPrefixes.join(','))}`
-    );
-  }
-  useEffect(() => {
-    fetchData();
-  }, [])
-
-  useEffect(() => {
-    if (visible && projectId) {
-      (async () => {
-        try {
-          const res = await getProjectPrefixes(projectId);
-          setTablePrefixes(res.metaData.tablePrefix || []);
-          setFunctionPrefixes(res.metaData.functionPrefix || []);
-        } catch {
-          setTablePrefixes([]);
-          setFunctionPrefixes([]);
-        }
-      })();
-    }
-  }, [visible, projectId]);
-  const fetchData = async () => {
-    try {
-      const response = await getAllNodes();
-      const data = response.metaData.metaData.node.map(item => ({
-        value: item._id,
-        label: `${item.name}`
-      }));
-      setOptionHost(data);
-    } catch (error) {
-      messageApi.open({
-        type: 'error',
-        content: `${error.message}`,
-      })
-      console.error(error.message);
-    }
-  };
-  const handleChangeCurrentDb = async (value) => {
-    try {
-      const response = await getAllDatabaseInHost(value);
-      const data = response.metaData.metaData.database.map(item => ({
-        value: item._id,
-        label: `${item.username}:${item.name}`
-      }));
-      setOptionCurrentDatabase(data);
-      setSelectedCurrentHost(value)
-    } catch (error) {
-      messageApi.open({
-        type: 'error',
-        content: `${error.response.data.error.message}`,
-      })
-      console.error(error.message);
-    }
-  }
-
-  const handleChangeTargetDb = async (value) => {
-    try {
-      const response = await getAllDatabaseInHost(value);
-      let data = response.metaData.metaData.database.map(item => ({
-        value: item._id,
-        label: `${item.username}:${item.name}`
-      }));
-      if (selectedCurrentHost === value) {
-        data = data.filter(item => item.value !== selectedCurrentDb);
-      }
-      setOptionTargetDatabase(data);
-      setSelectedTargetHost(value);
-    } catch (error) {
-      messageApi.open({
-        type: 'error',
-        content: `${error.response.data.error.message}`,
-      })
-      console.error(error.message);
-    }
-  }
   return (
     <>
       {contextHolder}
@@ -155,76 +109,44 @@ const ModalCompareComponent = (props) => {
             <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>
               Chọn <strong>database hiện tại</strong> và <strong>database đích</strong> để tiếp tục thao tác.
             </Typography.Paragraph>
-
             <Form layout="vertical">
-              <Row gutter={[16, 16]} >
+              <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12}>
                   <Form.Item
                     name="currentDb"
                     label="Current Database"
                     rules={[{ required: true, message: 'Bắt buộc chọn!' }]}
                   >
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <Select
-                        style={{ flex: 1, minWidth: 0 }}
-                        size="medium"
-                        placeholder="Chọn host hiện tại"
-                        suffixIcon={<DatabaseOutlined />}
-                        showSearch
-                        allowClear
-                        optionFilterProp="children"
-                        dropdownStyle={{ borderRadius: 12 }}
-                        options={optionHost}
-                        onChange={(value) => handleChangeCurrentDb(value)}
-                      />
-                      <Select
-                        style={{ flex: 1, minWidth: 0 }}
-                        size="medium"
-                        placeholder="Chọn database hiện tại"
-                        suffixIcon={<DatabaseOutlined />}
-                        showSearch
-                        allowClear
-                        optionFilterProp="children"
-                        dropdownStyle={{ borderRadius: 12 }}
-                        options={optionCurrentDatabase}
-                        onChange={(value) => setSelectedCurrentDb(value)}
-                      />
-                    </div>
+                    <Select
+                      style={{ width: '100%' }}
+                      size="medium"
+                      placeholder="Chọn database hiện tại"
+                      showSearch
+                      allowClear
+                      optionFilterProp="children"
+                      dropdownStyle={{ borderRadius: 12 }}
+                      options={optionDatabases}
+                      onChange={setSelectedCurrentDb}
+                    />
                   </Form.Item>
                 </Col>
-
-                <Col xs={24} sm={12} >
+                <Col xs={24} sm={12}>
                   <Form.Item
                     name="targetDb"
                     label="Target Database"
                     rules={[{ required: true, message: 'Bắt buộc chọn!' }]}
                   >
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <Select
-                        style={{ flex: 1, minWidth: 0 }}
-                        size="medium"
-                        placeholder="Chọn host đích"
-                        suffixIcon={<DatabaseOutlined />}
-                        showSearch
-                        allowClear
-                        optionFilterProp="children"
-                        dropdownStyle={{ borderRadius: 12 }}
-                        options={optionHost}
-                        onChange={(value) => handleChangeTargetDb(value)}
-                      />
-                      <Select
-                        style={{ flex: 1, minWidth: 0 }}
-                        size="medium"
-                        placeholder="Chọn database đích"
-                        suffixIcon={<DatabaseOutlined />}
-                        showSearch
-                        allowClear
-                        optionFilterProp="children"
-                        dropdownStyle={{ borderRadius: 12 }}
-                        options={optionTargetDatabase}
-                        onChange={(value) => setSelectedTargetDb(value)}
-                      />
-                    </div>
+                    <Select
+                      style={{ width: '100%' }}
+                      size="medium"
+                      placeholder="Chọn database đích"
+                      showSearch
+                      allowClear
+                      optionFilterProp="children"
+                      dropdownStyle={{ borderRadius: 12 }}
+                      options={optionDatabases.filter(opt => opt.value !== selectedCurrentDb)}
+                      onChange={setSelectedTargetDb}
+                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -303,8 +225,7 @@ const ModalCompareComponent = (props) => {
         )}
       />
     </>
-
   );
 };
 
-export default ModalCompareComponent
+export default ModalCompareProjectComponent;

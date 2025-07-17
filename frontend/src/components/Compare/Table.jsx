@@ -3,7 +3,8 @@ import {
   LoadingOutlined,
   DatabaseOutlined,
   SwapOutlined,
-  BugOutlined
+  BugOutlined,
+  FileSyncOutlined
 } from '@ant-design/icons';
 import '../../App.css';
 import { useLocation } from 'react-router-dom';
@@ -177,8 +178,6 @@ const TableCompareComponent = () => {
   useEffect(() => {
     fetchUpdate();
     fetchFunctionUpdate();
-    console.log(tablePrefixes);
-    console.log(functionPrefixes);
   }, [])
   const fetchUpdate = async () => {
     try {
@@ -211,7 +210,7 @@ const TableCompareComponent = () => {
       setFunctionLoading(false);
     }
   }
-  const hasSelected = selectedTables.length > 0 || selectedFunctions.length > 0;
+  // const hasSelected = selectedTables.length > 0 || selectedFunctions.length > 0;
   if (loading) {
     return (
       <Flex align="center"
@@ -255,15 +254,6 @@ const TableCompareComponent = () => {
 
         <Divider style={{ margin: '12px 0 0' }} />
       </Space>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-          <Button
-            type="primary"
-            disabled={!hasSelected}
-            onClick={() => setOpenDrawer(true)}
-          >
-            Đồng bộ
-          </Button>
-        </div>
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
@@ -370,12 +360,20 @@ const TableCompareComponent = () => {
         onClick={() => setOpenLog(true)}
       />
       <FloatButton
-        style={{ insetInlineEnd: 94 }}
+        style={{ insetInlineEnd: 95 }}
         icon={<BugOutlined />}
         className='error-btn'
         badge={{ count: logError.split('\n').length }}
         tooltip={'Các logs lỗi'}
         onClick={() => setOpenErrorLog(true)}
+      />
+      <FloatButton
+        style={{ insetInlineEnd: 150 }}
+        className='sync-btn'
+        icon={<FileSyncOutlined />}
+        tooltip={'Đồng bộ đã chọn'}
+        badge={{count: selectedFunctions.length + selectedTables.length}}
+        onClick={() => setOpenDrawer(true)}
       />
     </div>
     </>

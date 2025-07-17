@@ -34,8 +34,8 @@ const CreateProject = ({ visible, onCancel, onOk }) => {
     try {
       const values = await form.validateFields();
       setLoading(true);
-      const tablePre = values.tablePrefix.split(',');
-      const functionPre = values.functionPrefix.split(',');
+      const tablePre = values.tablePrefix.split(',').filter(Boolean);
+      const functionPre = values.functionPrefix.split(',').filter(Boolean);
       const data = {
         name: values.name,
         selectedDbs,

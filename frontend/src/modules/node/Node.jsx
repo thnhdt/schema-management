@@ -359,6 +359,7 @@ const Node = () => {
       <ModalCompareComponent
         visible={openCompareFunction}
         onCancel={() => setOpenCompareFunction(false)}
+        
       />
     </div >
   );

@@ -2,15 +2,16 @@ import React from 'react';
 import {
   ArrowLeftOutlined
 } from '@ant-design/icons';
-import { Typography, Row, Col, Card, Layout, Space, Button, message, Modal } from 'antd';
+import { Typography, Row, Col, Card, Layout, Space, Button, message, Modal, Drawer } from 'antd';
 // import { useLocation, useNavigate } from 'react-router-dom';
 import DiffViewer from "./DiffViewer";
 const { Title } = Typography;
 const { Content } = Layout;
 const CompareComponent = ({ title, ddlPrime = '', ddlSecond = '', patch = '', targetDatabase = '', currentDatabase = '', onBack }) => {
   const [messageApi, contextHolder] = message.useMessage();
-  const [showSqlModal, setShowSqlModal] = React.useState(false);
-  const handleShowSql = () => setShowSqlModal(true);
+  const [showSqlDrawer, setShowSqlDrawer] = React.useState(false);
+  const handleShowSql = () => setShowSqlDrawer(true);
+  const handleCloseSql = () => setShowSqlDrawer(false);
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(patch);
@@ -22,14 +23,15 @@ const CompareComponent = ({ title, ddlPrime = '', ddlSecond = '', patch = '', ta
   return (
     <>
       {contextHolder}
-      <Modal
-        open={showSqlModal}
-        onCancel={() => setShowSqlModal(false)}
-        footer={null}
-        width={700}
+      <Drawer
         title="SQL thay đổi"
+        placement="right"
+        onClose={handleCloseSql}
+        open={showSqlDrawer}
+        width={520}
+        bodyStyle={{ padding: 0 }}
       >
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16, padding: '1rem 1rem 0 1rem' }}>
           <Button type="primary" onClick={handleCopy}>
             Copy SQL thay đổi
           </Button>
@@ -39,17 +41,18 @@ const CompareComponent = ({ title, ddlPrime = '', ddlSecond = '', patch = '', ta
           wordBreak: 'break-word',
           fontFamily: 'Menlo, Consolas, "Courier New", monospace',
           fontSize: '0.95rem',
-          margin: 0,
-          padding: '1rem',
-          border: '1px solid #eee',
-          borderRadius: 8,
-          background: '#f7f7f7',
+          margin: '0 1rem 1rem 1rem',
+          padding: '1.25rem',
+          border: '1px solid #d9d9d9',
+          borderRadius: 10,
+          background: '#f0f2f5',
           maxHeight: 400,
           overflow: 'auto',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
         }}>
           {patch}
         </pre>
-      </Modal>
+      </Drawer>
       <Layout style={{ minHeight: '80vh', background: '#fafafa' }}>
         {/* <Content style={{ maxWidth: '100vw', height: '100vh', margin: 0, padding: 0, fontSize: '0.9rem', display: 'flex', flexDirection: 'column' }}> */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2rem 2rem 1rem 2rem' }}>

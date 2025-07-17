@@ -134,7 +134,7 @@ const DrawerCompareAllComponent = (props) => {
                 icon={< CopyOutlined/>}
                 style={{ insetInlineEnd: 24 }}
                 onClick={() => hanldeCopyText()}
-                tooltip="Cập nhật toàn bộ"
+                tooltip="Copy text"
               />
             </FloatButton.Group >
           </>

@@ -229,3 +229,22 @@ body,
   color: #fff !important;
   fill: #fff !important;
 }
+
+.sync-btn.ant-float-btn .ant-float-btn-body {
+  background: #1677ff;
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .15);
+  transition: background .25s;
+}
+
+.sync-btn.ant-float-btn:hover .ant-float-btn-body,
+.sync-btn.ant-float-btn:focus .ant-float-btn-body {
+  background: #3c8efc  !important;
+  color: #f7f7f7 !important;
+}
+
+.sync-btn.ant-float-btn .ant-float-btn-body svg {
+  color: #fff !important;
+  fill: #fff !important;
+}

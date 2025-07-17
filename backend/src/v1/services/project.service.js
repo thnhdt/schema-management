@@ -40,9 +40,20 @@ const editProject = async (reqBody) => {
     }
   }
 
+const getPrefixes = async (projectId) => {
+    if (!projectId) throw new BadResponseError('Missing projectId');
+    const project = await projectModel.findById(projectId).lean();
+    if (!project) return { tablePrefix: [], functionPrefix: [] };
+    return {
+        tablePrefix: Array.isArray(project.tablePrefix) ? project.tablePrefix : [],
+        functionPrefix: Array.isArray(project.functionPrefix) ? project.functionPrefix : []
+    };
+}
+
 module.exports = {
   getAllProject,
   createProject,
   dropProject,
-  editProject
+  editProject,
+  getPrefixes
 }

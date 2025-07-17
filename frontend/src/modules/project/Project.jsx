@@ -9,36 +9,31 @@ import {
   ProjectOutlined,
   DiffOutlined
 } from '@ant-design/icons';
-import { getAllNodes, createNode, editNode, getAllProject, dropProject, getAllDatabasesAll, editProject } from '../../api';
-import { ModalComponent } from '../../util/helper';
+import { getAllProject, dropProject, getAllDatabasesAll, editProject } from '../../api';
 import '../../App.css';
-import AddDatabaseInNode from '../database/ModalAddDatabase';
-import ModalCompareComponent from '../../components/Compare/Modal-Compare-Component';
+import ModalCompareProjectComponent from './Modal-Compare-Project';
 import { store } from '../../store';
 import CreateProject from './ModalCreateProject';
+import ModalViewProjectDatabases from './ModalViewProjectDatabases';
 
 const { Title, Text } = Typography;
 
+//TODO: prefix + so sánh //  split(',') .....
+
 const Project = () => {
-  const [nodes, setNodes] = useState([]);
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
-  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  const [isAddProjectModalVisible, setIsAddProjectModalVisible] = useState(false);
-  const [editingNode, setEditingNode] = useState(null);
   const [messageApi, contextHolder] = message.useMessage();
-  const [visible, setVisible] = useState(false);
-  const [nodeIdAddDatabase, setNodeIdAddDatabase] = useState(null);
   const [databases, setDatabases] = useState([]);
-  const [urlString, setUrlString] = useState([]);
   const isAdmin = store.getState().user.isAdmin;
   const [openCompareFunction, setOpenCompareFunction] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [editingKey, setEditingKey] = useState('');
-  const [showUpdate, setShowUpdate] = useState(false);
   const canUpdateNodeAndDb = store.getState().user.roles.some(p => p?.isCreate);
+  const [compareProjectId, setCompareProjectId] = useState(null);
+  const [showViewDb, setShowViewDb] = useState(false);
+  const [viewDbIds, setViewDbIds] = useState([]);
 
   useEffect(() => {
     fetchProject();
@@ -70,28 +65,6 @@ const Project = () => {
       message.error('Không lấy được danh sách database!');
     }
   }
-
-  const fetchNode = async (idNode = null) => {
-    try {
-      const response = await getAllNodes();
-      setNodes(response.metaData.metaData.node);
-      if (idNode) {
-        const targetNode = response.metaData.metaData.node.filter(item => item._id === idNode);
-        setDatabases(targetNode[0].databases);
-      }
-    } catch (error) {
-      if (error.status === 403) {
-        messageApi.open({
-          key: 'expired',
-          type: 'error',
-          content: 'Hết phiên đăng nhập. Vui lòng đăng nhập lại!'
-        });
-      }
-      console.error('Error fetching Sheets:', error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
   const isEditing = (record) => record._id === editingKey;
 
   const saveEdit = async (record) => {
@@ -102,8 +75,8 @@ const Project = () => {
         updateData: {
           name: values.name,
           databaseId: values.databaseId,
-          tablePrefix: values.tablePrefix,
-          functionPrefix: values.functionPrefix
+          tablePrefix: typeof values.tablePrefix === 'string' ? values.tablePrefix.split(',').filter(Boolean) : values.tablePrefix,
+          functionPrefix: typeof values.functionPrefix === 'string' ? values.functionPrefix.split(',').filter(Boolean) : values.functionPrefix
         }
       })
       setEditingKey('');
@@ -124,7 +97,9 @@ const Project = () => {
     setEditingKey(record._id);
     form.setFieldsValue({
       name: record.name,
-      databaseId: record.databaseId || []
+      databaseId: record.databaseId || [],
+      tablePrefix: (record.tablePrefix || []).join(','),
+      functionPrefix: (record.functionPrefix || []).join(',')
     });
   };
 
@@ -133,70 +108,12 @@ const Project = () => {
     form.resetFields();
   };
 
-  const handleEditNode = (node) => {
-    setEditingNode(node);
-    setIsEditModalVisible(true);
-  };
-
   const handleDeleteProject = async (pId) => {
     const updateProject = projects.filter(project => project._id !== pId);
     await dropProject(pId);
     setProjects(updateProject);
     messageApi.success('Xóa Project thành công!');
   }
-
-  const onAddSubmit = async (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const name = form.name.value.trim();
-    const host = form.host.value.trim();
-    const port = form.port.value.trim();
-    const username = form.username.value.trim();
-    const password = form.password.value.trim();
-    const database = form.database.value.trim();
-    if (!name || !host || !port || !username || !password || !database) {
-      messageApi.error('Vui lòng điền đầy đủ thông tin!');
-      return;
-    }
-    const newNode = {
-      name,
-      host,
-      port,
-      databaseInfo: {
-        username,
-        password,
-        database
-      },
-    };
-    await createNode(newNode);
-    const updatedNodes = [newNode, ...nodes];
-    setNodes(updatedNodes);
-    setIsAddModalVisible(false);
-    messageApi.success('Thêm node thành công!');
-  };
-
-  const onEditSubmit = async (e) => {
-    e.preventDefault();
-    const form = e.target;
-    const name = form.name.value.trim();
-    const host = form.host.value.trim();
-    const port = form.port.value.trim();
-    if (!name || !host || !port) {
-      messageApi.error('Vui lòng điền đầy đủ thông tin!');
-      return;
-    }
-    const values = { name, host, port };
-    const updatedNodes = nodes.map(node =>
-      node._id === editingNode._id
-        ? { ...node, ...values }
-        : node
-    );
-    await editNode(editingNode._id, values);
-    setNodes(updatedNodes);
-    setIsEditModalVisible(false);
-    setEditingNode(null);
-    messageApi.success('Cập nhật node thành công!');
-  };
 
   // const handleViewDatabase = (node) => {
   //   navigate(`/database?id=${node._id}`, {
@@ -243,7 +160,7 @@ const Project = () => {
       title: 'Tên Database',
       dataIndex: 'database',
       key: 'databaseId',
-      width: '60%',
+      width: '30%',
       render: (_, record) => {
         const editable = isEditing(record);
         if (editable) {
@@ -274,6 +191,42 @@ const Project = () => {
                 </Tag>
               );
             })}
+          </Space>
+        );
+      }
+    },
+    {
+      title: 'Prefix',
+      key: 'prefix',
+      width: '30%',
+      render: (_, record) => {
+        const editable = isEditing(record);
+        if (editable) {
+          return (
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Form.Item name="tablePrefix" style={{ margin: 0 }}>
+                <Input placeholder="Table prefix, cách nhau bởi dấu phẩy" />
+              </Form.Item>
+              <Form.Item name="functionPrefix" style={{ margin: 0 }}>
+                <Input placeholder="Function prefix, cách nhau bởi dấu phẩy" />
+              </Form.Item>
+            </Space>
+          );
+        }
+        return (
+          <Space direction="vertical">
+            <div>
+              <span style={{ fontWeight: 500 }}>Table: </span>
+              {(record.tablePrefix || []).map((p, idx) => (
+                <Tag color="blue" key={p + idx}>{p}</Tag>
+              ))}
+            </div>
+            <div>
+              <span style={{ fontWeight: 500 }}>Func: </span>
+              {(record.functionPrefix || []).map((p, idx) => (
+                <Tag color="purple" key={p + idx}>{p}</Tag>
+              ))}
+            </div>
           </Space>
         );
       }
@@ -310,21 +263,20 @@ const Project = () => {
                 type="primary"
                 color="black"
                 icon={<DiffOutlined />}
-                onClick={() => setOpenCompareFunction(true)}
+                onClick={() => {
+                  setCompareProjectId(record._id);
+                  setOpenCompareFunction(true);
+                }}
               />
             </Tooltip>
             <Tooltip title="Xem Project">
               <Button
                 type="primary"
                 icon={<EyeOutlined />}
-              // onClick={() => {
-              //   setNodeIdAddDatabase(record._id);
-              //   setVisible(true);
-              //   setDatabases(record.databases);
-              //   setUrlString(
-              //     `postgres://${record.username}:${record.password}@${record.host}:${record.port}`,
-              //   );
-              // }}
+                onClick={() => {
+                  setViewDbIds(record.databaseId || []);
+                  setShowViewDb(true);
+                }}
               />
             </Tooltip>
             {(isAdmin || canUpdateNodeAndDb) && (
@@ -363,7 +315,7 @@ const Project = () => {
           <ProjectOutlined /> Project
         </Title>
         <Text type="secondary">
-          Tổng hợp tất cả project
+          Tổng hợp tất cả Project
         </Text>
       </div>
 
@@ -393,19 +345,10 @@ const Project = () => {
           />
         </Form>
       </Card>
-      <AddDatabaseInNode
-        visible={visible}
-        onOk={() => setVisible(false)}
-        onCancel={() => setVisible(false)}
-        idNode={nodeIdAddDatabase}
-        databases={databases}
-        urlStringDefault={urlString}
-        fetchNode={fetchNode}
-        nodes={nodes}
-      />
-      <ModalCompareComponent
+      <ModalCompareProjectComponent
         visible={openCompareFunction}
         onCancel={() => setOpenCompareFunction(false)}
+        projectId={compareProjectId}
       />
       <CreateProject
         visible={showCreate}
@@ -415,14 +358,11 @@ const Project = () => {
           fetchProject();
         }}
       />
-      {/* <UpdateProject
-        visible={showUpdate}
-        onCancel={() => setShowUpdate(false)}
-        onOk={() => {
-          setShowUpdate(false);
-          fetchProject();
-        }}
-      /> */}
+      <ModalViewProjectDatabases
+        visible={showViewDb}
+        onCancel={() => setShowViewDb(false)}
+        databaseIds={viewDbIds}
+      />
     </div >
   );
 };
